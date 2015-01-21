@@ -38,7 +38,7 @@ module.exports = function(app) {
 
   subscriptionsRouter.get('/', function(req, res) {
     res.send({
-      'subscriptions': subscriptions
+      'results': subscriptions
     });
   });
 
@@ -48,15 +48,13 @@ module.exports = function(app) {
 
   subscriptionsRouter.get('/:id', function(req, res) {
     res.send({
-      'subscriptions': {
         id: req.params.id
-      }
     });
   });
 
   subscriptionsRouter.put('/:id', function(req, res) {
     res.send({
-      'subscriptions': {
+      'subscription': {
         id: req.params.id
       }
     });
