@@ -12,6 +12,4 @@ export default DS.Model.extend({
   fullName: function() {
     return this.get('firstname') + ' ' + this.get('lastname');
   }.property('firstname', 'lastname')
-
-
 });
