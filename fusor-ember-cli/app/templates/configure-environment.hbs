@@ -7,7 +7,7 @@
 
     <div class="path-selector">
         <ul class="path-list">
-          {{#each env in environments itemController="environment"}}
+          {{#each env in model itemController="lifecycle-environment"}}
             {{env-path-list-item env=env selectedEnvironment=selectedEnvironment}}
           {{/each}}
           <li class="path-list-item">
@@ -19,7 +19,7 @@
     </div>
 
     {{#if hasNewEnvs}}
-      {{#each env in newenvs itemController="environment"}}
+      {{#each env in model itemController="lifecycle-environment"}}
       <div class="path-selector">
         <ul class="path-list">
           <li class="path-list-item">

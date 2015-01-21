@@ -17,8 +17,8 @@ export default Ember.Controller.extend({
   }.property('fields_env.name'),
 
   hasNewEnvs: function() {
-    return (this.get('newenvs').get('length') > 0);
-  }.property('newenvs.@each.[]'),
+    return (this.get('length') > 0);
+  }.property('model.@each.[]'),
 
   actions: {
     createEnvironment: function() {
