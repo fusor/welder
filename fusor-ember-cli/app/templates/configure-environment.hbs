@@ -7,9 +7,13 @@
       </button>
     </div>
 
+    {{text-f value=organization_id}}
+    <button {{action 'submit'}}>Submit</button>
+    {{organization_id}}
+
     <div class="path-selector">
         <ul class="path-list">
-          {{#each env in model itemController="lifecycle-environment"}}
+          {{#each env in filteredEnvironments itemController="lifecycle-environment"}}
             {{env-path-list-item env=env selectedEnvironment=selectedEnvironment}}
           {{/each}}
           <li class="path-list-item">
@@ -39,7 +43,6 @@
       </div>
       {{/each}}
     {{/if}}
-
 
     <br />
     <br />

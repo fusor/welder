@@ -1,6 +1,22 @@
 import Ember from 'ember';
 
-export default Ember.Controller.extend({
+export default Ember.ArrayController.extend({
+  //needs: ['configure-organization'],
+  queryParams: ['organization_id'],
+
+  organization_id: null,
+
+  filteredEnvironments: function() {
+    var organization_id = this.get('organization_id');
+    var environments = this.get('model');
+
+    if (organization_id) {
+      return environments.filterBy('organization_id', organization_id);
+    } else {
+      return environments;
+    }
+  }.property('organization_id', 'model'),
+
   fields_env: {},
 
   selectedEnvironment: "Development",
@@ -26,7 +42,12 @@ export default Ember.Controller.extend({
       this.set('selectedEnvironment', environment.get('name'));
       this.set('fields_env',{});
       return Bootstrap.ModalManager.hide('newEnvironmentModal');
-    }
+    },
+
+     submit: function() {
+      return alert(this.get('organization_id')); // null value
+     }
+
   }
 
 });
