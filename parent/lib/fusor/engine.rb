@@ -11,6 +11,10 @@ module Fusor
       app.config.paths['db/migrate'] += Fusor::Engine.paths['db/migrate'].existent
     end
 
+    initializer 'fusor.mount_engine', :after => :build_middleware_stack do |app|
+      app.routes_reloader.paths << "#{Fusor::Engine.root}/config/routes/mount_engine.rb"
+    end
+
     initializer 'fusor.register_plugin', :after => :finisher_hook do |app|
       Foreman::Plugin.register :fusor do
         requires_foreman '>= 1.8'
