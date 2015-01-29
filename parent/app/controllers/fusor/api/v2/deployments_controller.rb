@@ -1,13 +1,14 @@
 module Fusor
-  class Api::V2::DeploymentsController < V2::BaseController
+  class Api::V2::DeploymentsController < Api::V2::BaseController
 
     def index
       puts "XXX index called"
-      Rails.logger.info("YYY index")
+      Rails.logger.info("XXX index called")
+      @deployment = Deployment.all
     end
 
     def create
-      Rails.logger.info("YYY create")
+      Rails.logger.info("XXX create")
       puts "XXX create"
       @deployment = Deployment.new(params[:deployment])
       process_response @deployment.save

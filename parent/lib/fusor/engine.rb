@@ -1,5 +1,6 @@
 module Fusor
   class Engine < ::Rails::Engine
+    isolate_namespace Fusor
 
     config.autoload_paths += Dir["#{config.root}/app/controllers/concerns"]
     config.autoload_paths += Dir["#{config.root}/app/helpers/concerns"]
