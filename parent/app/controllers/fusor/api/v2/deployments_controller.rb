@@ -1,12 +1,12 @@
 module Fusor
   class Api::V2::DeploymentsController < Api::V2::BaseController
 
-   before_filter :find_deployment, :only => [:destroy, :show, :update, :index]
+   before_filter :find_deployment, :only => [:destroy, :show, :update]
 
     def index
       puts "XXX index called"
       Rails.logger.info("XXX index called")
-      @deployment = Deployment.all
+      @deployments = Deployment.all
     end
 
     def show
