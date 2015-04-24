@@ -94,11 +94,7 @@ module Actions
             hostgroup_params[:medium_id] = operating_system.try(:media).try(:first).try(:id)
             hostgroup_params[:ptable_id] = operating_system.try(:ptables).try(:first).try(:id)
             hostgroup_params[:architecture_id] = operating_system.try(:architectures).try(:first).try(:id)
-
-            # TODO: the root_pass should later be configurable by the user.  In addition, we'll need to make
-            # sure that it aligns with the password (if any) used by the puppet modules
-            # (e.g. ovirt::engine::config, root_password)
-            hostgroup_params[:root_pass] = "changeme"
+            hostgroup_params[:root_pass] = deployment.root_password
           end
         else
           fail _("Unable to locate content view '%s'.") % content_view_name(deployment.name)
@@ -172,6 +168,7 @@ module Actions
                   [
                     { :name => "host_name", :value => deployment.rhev_engine_hostname },
                     { :name => "host_address", :value => fqdn(deployment.discovered_hosts.first.try(:name), hostgroup) },
+                    { :name => "root_password", :value => deployment.root_password },
                     { :name => "cluster_name", :value => deployment.rhev_cluster_name },
                     { :name => "storage_name", :value => deployment.rhev_storage_name },
                     { :name => "storage_address", :value => deployment.rhev_storage_address },
