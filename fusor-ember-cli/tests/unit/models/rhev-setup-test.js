@@ -3,7 +3,7 @@ import {
   test
 } from 'ember-qunit';
 
-moduleForModel('rhev-setup', 'RhevSetup', {
+moduleForModel('ovirt-setup', 'OvirtSetup', {
   // Specify the other units that are required for this test.
   needs: []
 });

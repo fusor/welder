@@ -3,7 +3,7 @@ import {
   test
 } from 'ember-qunit';
 
-moduleFor('controller:rhev-setup', 'RhevSetupController', {
+moduleFor('controller:ovirt-setup', 'OvirtSetupController', {
   // Specify the other units that are required for this test.
   // needs: ['controller:foo']
 });

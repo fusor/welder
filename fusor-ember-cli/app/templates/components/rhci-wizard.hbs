@@ -6,8 +6,8 @@
   <ul class="deployment-wizard">
     {{wizard-item num=1 name=nameSatellite routeName='satellite' isDisabled=false}}
 
-    {{#if isRhev}}
-      {{wizard-item num=stepNumberRhev name=nameRhev routeName='rhev' isDisabled=isDisabledRhev}}
+    {{#if isOvirt}}
+      {{wizard-item num=stepNumberOvirt name=nameOvirt routeName='ovirt' isDisabled=isDisabledOvirt}}
     {{/if}}
 
     {{#if isOpenStack}}

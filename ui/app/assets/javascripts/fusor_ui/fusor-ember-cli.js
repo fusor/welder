@@ -622,7 +622,7 @@ define('fusor-ember-cli/controllers/application', ['exports', 'ember'], function
     loginUsername: Ember['default'].computed.alias('session.currentUser.login'),
 
     nameRHCI: Ember['default'].computed.alias('controllers.deployment.nameRHCI'),
-    nameRhev: Ember['default'].computed.alias('controllers.deployment.nameRhev'),
+    nameOvirt: Ember['default'].computed.alias('controllers.deployment.nameOvirt'),
     nameOpenStack: Ember['default'].computed.alias('controllers.deployment.nameOpenStack'),
     nameCloudForms: Ember['default'].computed.alias('controllers.deployment.nameCloudForms'),
     nameSatellite: Ember['default'].computed.alias('controllers.deployment.nameSatellite'),
@@ -768,7 +768,7 @@ define('fusor-ember-cli/controllers/deployment-new', ['exports', 'ember', 'fusor
   exports['default'] = Ember['default'].ObjectController.extend(DeploymentControllerMixin['default'], DisableTabMixin['default'], {
 
     // these tabs will always be disabled within deployment-new
-    isDisabledRhev: true,
+    isDisabledOvirt: true,
     isDisabledOpenstack: true,
     isDisabledCloudForms: true,
     isDisabledSubscriptions: true,
@@ -929,7 +929,7 @@ define('fusor-ember-cli/controllers/deployment-new/start', ['exports', 'ember', 
 
     needs: ['deployment-new'],
 
-    isRhev: Ember['default'].computed.alias('controllers.deployment-new.deploy_rhev'),
+    isOvirt: Ember['default'].computed.alias('controllers.deployment-new.deploy_ovirt'),
     isOpenStack: Ember['default'].computed.alias('controllers.deployment-new.deploy_openstack'),
     isCloudForms: Ember['default'].computed.alias('controllers.deployment-new.deploy_cfme'),
     isSubscriptions: Ember['default'].computed.alias('controllers.deployment-new.isSubscriptions') });
@@ -942,7 +942,7 @@ define('fusor-ember-cli/controllers/deployment', ['exports', 'ember', 'fusor-emb
   exports['default'] = Ember['default'].ObjectController.extend(DeploymentControllerMixin['default'], DisableTabMixin['default'], {
 
     // disable Steps 2, 3, 4, etc on wizard
-    isDisabledRhev: Ember['default'].computed.alias("satelliteInvalid"),
+    isDisabledOvirt: Ember['default'].computed.alias("satelliteInvalid"),
     isDisabledOpenstack: Ember['default'].computed.alias("satelliteInvalid"),
     isDisabledCloudForms: Ember['default'].computed.alias("satelliteInvalid"),
     isDisabledSubscriptions: Ember['default'].computed.alias("satelliteInvalid"),
@@ -959,7 +959,7 @@ define('fusor-ember-cli/controllers/deployment', ['exports', 'ember', 'fusor-emb
         length: { minimum: 2 }
       } },
 
-    selectedRhevEngine: null,
+    selectedOvirtEngine: null,
 
     satelliteInvalid: Ember['default'].computed.or("hasNoName", "hasNoOrganization", "hasNoLifecycleEnvironment"),
 
@@ -978,7 +978,7 @@ define('fusor-ember-cli/controllers/deployment/start', ['exports', 'ember', 'fus
 
     needs: ['deployment'],
 
-    isRhev: Ember['default'].computed.alias('controllers.deployment.deploy_rhev'),
+    isOvirt: Ember['default'].computed.alias('controllers.deployment.deploy_ovirt'),
     isOpenStack: Ember['default'].computed.alias('controllers.deployment.deploy_openstack'),
     isCloudForms: Ember['default'].computed.alias('controllers.deployment.deploy_cfme'),
     isSubscriptions: Ember['default'].computed.alias('controllers.deployment.isSubscriptions') });
@@ -1030,9 +1030,9 @@ define('fusor-ember-cli/controllers/discovered-host', ['exports', 'ember'], func
 
     allDiscoveredHosts: Ember['default'].computed.alias('controllers.hypervisor/discovered-host.allDiscoveredHosts'),
     // same as controllers.deployment.discovered_hosts
-    selectedRhevHypervisorHosts: Ember['default'].computed.alias('controllers.hypervisor/discovered-host.model'),
+    selectedOvirtHypervisorHosts: Ember['default'].computed.alias('controllers.hypervisor/discovered-host.model'),
     // same as controllers.deployment.discovered_host
-    selectedRhevEngineHost: Ember['default'].computed.alias('controllers.engine/discovered-host.model'),
+    selectedOvirtEngineHost: Ember['default'].computed.alias('controllers.engine/discovered-host.model'),
 
     isAllChecked: Ember['default'].computed.alias('controllers.hypervisor/discovered-host.isAllChecked'),
     allChecked: Ember['default'].computed.alias('controllers.hypervisor/discovered-host.allChecked'),
@@ -1046,17 +1046,17 @@ define('fusor-ember-cli/controllers/discovered-host', ['exports', 'ember'], func
     }).observes('isSelectedAsHypervisor'),
 
     isSelectedAsHypervisor: (function () {
-      if (this.get('selectedRhevHypervisorHosts')) {
-        var selectedIds = this.get('selectedRhevHypervisorHosts').getEach('id');
+      if (this.get('selectedOvirtHypervisorHosts')) {
+        var selectedIds = this.get('selectedOvirtHypervisorHosts').getEach('id');
         return selectedIds.contains(this.get('id'));
       } else {
         return false;
       }
-    }).property('selectedRhevHypervisorHosts.[]'),
+    }).property('selectedOvirtHypervisorHosts.[]'),
 
     isSelectedAsEngine: (function () {
-      return this.get('selectedRhevEngineHost.id') === this.get('id');
-    }).property('selectedRhevEngineHost'),
+      return this.get('selectedOvirtEngineHost.id') === this.get('id');
+    }).property('selectedOvirtEngineHost'),
 
     actions: {
       engineHostChanged: function engineHostChanged(host) {
@@ -1077,8 +1077,8 @@ define('fusor-ember-cli/controllers/engine', ['exports', 'ember'], function (exp
   'use strict';
 
   exports['default'] = Ember['default'].Controller.extend({
-    needs: ['rhev'],
-    engineTabName: Ember['default'].computed.alias('controllers.rhev.engineTabName'),
+    needs: ['ovirt'],
+    engineTabName: Ember['default'].computed.alias('controllers.ovirt.engineTabName'),
     engineTabNameLowercase: (function () {
       return this.get('engineTabName').toLowerCase();
     }).property('engineTabName')
@@ -1093,7 +1093,7 @@ define('fusor-ember-cli/controllers/engine/discovered-host', ['exports', 'ember'
 
     needs: ['deployment', 'hypervisor/discovered-host'],
 
-    selectedRhevEngineHost: Ember['default'].computed.alias('model'),
+    selectedOvirtEngineHost: Ember['default'].computed.alias('model'),
     hypervisorModelIds: Ember['default'].computed.alias('controllers.hypervisor/discovered-host.hypervisorModelIds'),
 
     // Set by route's setupController. Needed since hypervisorModelIds is
@@ -1128,7 +1128,7 @@ define('fusor-ember-cli/controllers/hypervisor', ['exports', 'ember'], function 
   'use strict';
 
   exports['default'] = Ember['default'].Controller.extend({
-    needs: ['rhev'] });
+    needs: ['ovirt'] });
 
 });
 define('fusor-ember-cli/controllers/hypervisor/discovered-host', ['exports', 'ember'], function (exports, Ember) {
@@ -1140,21 +1140,21 @@ define('fusor-ember-cli/controllers/hypervisor/discovered-host', ['exports', 'em
 
     itemController: ['discovered-host'],
 
-    selectedRhevEngine: Ember['default'].computed.alias('controllers.deployment.discovered_host'),
+    selectedOvirtEngine: Ember['default'].computed.alias('controllers.deployment.discovered_host'),
 
     // Filter out hosts selected as Hypervisor
     availableHosts: Ember['default'].computed.filter('allDiscoveredHosts', function (host, index, array) {
-      return host.get('id') != this.get('selectedRhevEngine.id');
-    }).property('allDiscoveredHosts', 'selectedRhevEngine'),
+      return host.get('id') != this.get('selectedOvirtEngine.id');
+    }).property('allDiscoveredHosts', 'selectedOvirtEngine'),
 
     hypervisorModelIds: (function () {
       if (this.get('model')) {
         var allIds = this.get('model').getEach('id');
-        return allIds.removeObject(this.get('selectedRhevEngine').get('id'));
+        return allIds.removeObject(this.get('selectedOvirtEngine').get('id'));
       } else {
         return [];
       }
-    }).property('model.[]', 'selectedRhevEngine'),
+    }).property('model.[]', 'selectedOvirtEngine'),
 
     cntSelectedHypervisorHosts: Ember['default'].computed.alias('hypervisorModelIds.length'),
 
@@ -1367,7 +1367,7 @@ define('fusor-ember-cli/controllers/review/installation', ['exports', 'ember'], 
   'use strict';
 
   exports['default'] = Ember['default'].Controller.extend({
-    needs: ['application', 'rhci', 'deployment', 'satellite', 'configure-organization', 'configure-environment', 'rhev-setup', 'hypervisor', 'hypervisor/discovered-host', 'engine/discovered-host', 'storage', 'networking', 'rhev-options', 'where-install', 'cloudforms-storage-domain', 'cloudforms-vm', 'review'],
+    needs: ['application', 'rhci', 'deployment', 'satellite', 'configure-organization', 'configure-environment', 'ovirt-setup', 'hypervisor', 'hypervisor/discovered-host', 'engine/discovered-host', 'storage', 'networking', 'ovirt-options', 'where-install', 'cloudforms-storage-domain', 'cloudforms-vm', 'review'],
 
     // TODO - DRY and update while deployment is finished and button should say "Deployed"
     buttonDeployTitle: (function () {
@@ -1378,13 +1378,13 @@ define('fusor-ember-cli/controllers/review/installation', ['exports', 'ember'], 
       }
     }).property('controllers.deployment.isStarted'),
 
-    rhevValidated: (function () {
-      if (this.get('isRhev')) {
-        return Ember['default'].isPresent(this.get('controllers.deployment.rhev_engine_admin_password')) && Ember['default'].isPresent(this.get('selectedRhevEngine')) && Ember['default'].isPresent(this.get('selectedHypervisorHosts')) && Ember['default'].isPresent(this.get('controllers.deployment.rhev_storage_type'));
+    ovirtValidated: (function () {
+      if (this.get('isOvirt')) {
+        return Ember['default'].isPresent(this.get('controllers.deployment.ovirt_engine_admin_password')) && Ember['default'].isPresent(this.get('selectedOvirtEngine')) && Ember['default'].isPresent(this.get('selectedHypervisorHosts')) && Ember['default'].isPresent(this.get('controllers.deployment.ovirt_storage_type'));
       } else {
         return true;
       }
-    }).property('controllers.deployment.rhev_engine_admin_password', 'controllers.deployment.rhev_storage_type', 'selectedRhevEngine', 'selectedHypervisorHosts'),
+    }).property('controllers.deployment.ovirt_engine_admin_password', 'controllers.deployment.ovirt_storage_type', 'selectedOvirtEngine', 'selectedHypervisorHosts'),
 
     cfmeValidated: (function () {
       if (this.get('isCloudForms')) {
@@ -1395,39 +1395,39 @@ define('fusor-ember-cli/controllers/review/installation', ['exports', 'ember'], 
     }).property('controllers.deployment.cfme_install_loc'),
 
     buttonDeployDisabled: (function () {
-      return this.get('controllers.deployment.isStarted') || !this.get('rhevValidated') || !this.get('cfmeValidated');
-    }).property('controllers.deployment.isStarted', 'rhevValidated', 'cfmeValidated'),
+      return this.get('controllers.deployment.isStarted') || !this.get('ovirtValidated') || !this.get('cfmeValidated');
+    }).property('controllers.deployment.isStarted', 'ovirtValidated', 'cfmeValidated'),
 
     showErrorMessage: false,
     errorMsg: null,
     foremanTasksURL: null,
     skipContent: Ember['default'].computed.alias('controllers.deployment.skipContent'),
 
-    isRhevOpen: true,
+    isOvirtOpen: true,
     isOpenStackOpen: false,
     isCloudFormsOpen: false,
 
     engineHostAddressDefault: 'ovirt-hypervisor.rhci.redhat.com',
-    hostAddress: Ember['default'].computed.alias('controllers.rhev-options.hostAddress'),
-    engineHostName: Ember['default'].computed.alias('controllers.rhev-options.engineHostName'),
+    hostAddress: Ember['default'].computed.alias('controllers.ovirt-options.hostAddress'),
+    engineHostName: Ember['default'].computed.alias('controllers.ovirt-options.engineHostName'),
 
     nameDeployment: Ember['default'].computed.alias('controllers.deployment.name'),
     selectedOrganization: Ember['default'].computed.alias('controllers.deployment.selectedOrganzation'),
     selectedEnvironment: Ember['default'].computed.alias('controllers.deployment.selectedEnvironment'),
-    rhevSetup: Ember['default'].computed.alias('controllers.deployment.rhevSetup'),
+    ovirtSetup: Ember['default'].computed.alias('controllers.deployment.ovirtSetup'),
 
-    isRhev: Ember['default'].computed.alias('controllers.deployment.isRhev'),
+    isOvirt: Ember['default'].computed.alias('controllers.deployment.isOvirt'),
     isOpenStack: Ember['default'].computed.alias('controllers.deployment.isOpenStack'),
     isCloudForms: Ember['default'].computed.alias('controllers.deployment.isCloudForms'),
 
-    isSelfHosted: Ember['default'].computed.alias('controllers.deployment.rhev_is_self_hosted'),
+    isSelfHosted: Ember['default'].computed.alias('controllers.deployment.ovirt_is_self_hosted'),
     selectedHypervisorHosts: Ember['default'].computed.alias('controllers.deployment.discovered_hosts'),
 
-    rhev_engine_host: Ember['default'].computed.alias('controllers.deployment.discovered_host'),
-    selectedRhevEngine: Ember['default'].computed.alias('controllers.deployment.discovered_host'),
+    ovirt_engine_host: Ember['default'].computed.alias('controllers.deployment.discovered_host'),
+    selectedOvirtEngine: Ember['default'].computed.alias('controllers.deployment.discovered_host'),
 
     nameRHCI: Ember['default'].computed.alias('controllers.rhci.nameRHCI'),
-    nameRhev: Ember['default'].computed.alias('controllers.rhci.nameRhev'),
+    nameOvirt: Ember['default'].computed.alias('controllers.rhci.nameOvirt'),
     nameOpenStack: Ember['default'].computed.alias('controllers.rhci.nameOpenStack'),
     nameCloudForms: Ember['default'].computed.alias('controllers.rhci.nameCloudForms'),
     nameSatellite: Ember['default'].computed.alias('controllers.rhci.nameSatellite') });
@@ -1441,7 +1441,7 @@ define('fusor-ember-cli/controllers/review/progress', ['exports', 'ember'], func
 
     needs: ['deployment'],
 
-    isRhevOpen: true,
+    isOvirtOpen: true,
     isOpenStackOpen: false,
     isCloudFormsOpen: false,
     foremanTasksURL: null,
@@ -1496,7 +1496,7 @@ define('fusor-ember-cli/controllers/rhci', ['exports', 'ember'], function (expor
 	exports['default'] = Ember['default'].ObjectController.extend({});
 
 });
-define('fusor-ember-cli/controllers/rhev-options', ['exports', 'ember'], function (exports, Ember) {
+define('fusor-ember-cli/controllers/ovirt-options', ['exports', 'ember'], function (exports, Ember) {
 
    'use strict';
 
@@ -1504,11 +1504,11 @@ define('fusor-ember-cli/controllers/rhev-options', ['exports', 'ember'], functio
 
       needs: ['deployment'],
 
-      rhev_engine_admin_password: Ember['default'].computed.alias('controllers.deployment.rhev_engine_admin_password'),
-      rhev_database_name: Ember['default'].computed.alias('controllers.deployment.rhev_database_name'),
-      rhev_cluster_name: Ember['default'].computed.alias('controllers.deployment.rhev_cluster_name'),
-      rhev_storage_name: Ember['default'].computed.alias('controllers.deployment.rhev_storage_name'),
-      rhev_cpu_type: Ember['default'].computed.alias('controllers.deployment.rhev_cpu_type'),
+      ovirt_engine_admin_password: Ember['default'].computed.alias('controllers.deployment.ovirt_engine_admin_password'),
+      ovirt_database_name: Ember['default'].computed.alias('controllers.deployment.ovirt_database_name'),
+      ovirt_cluster_name: Ember['default'].computed.alias('controllers.deployment.ovirt_cluster_name'),
+      ovirt_storage_name: Ember['default'].computed.alias('controllers.deployment.ovirt_storage_name'),
+      ovirt_cpu_type: Ember['default'].computed.alias('controllers.deployment.ovirt_cpu_type'),
 
       applicationModes: ['Both', 'Virt', 'Gluster'],
       engineLocation: ['Local', 'Remote'],
@@ -1523,7 +1523,7 @@ define('fusor-ember-cli/controllers/rhev-options', ['exports', 'ember'], functio
          name: 'Gluster' }] });
 
 });
-define('fusor-ember-cli/controllers/rhev-setup', ['exports', 'ember'], function (exports, Ember) {
+define('fusor-ember-cli/controllers/ovirt-setup', ['exports', 'ember'], function (exports, Ember) {
 
   'use strict';
 
@@ -1531,41 +1531,41 @@ define('fusor-ember-cli/controllers/rhev-setup', ['exports', 'ember'], function 
 
     needs: ['deployment'],
 
-    rhev_is_self_hosted: Ember['default'].computed.alias('controllers.deployment.rhev_is_self_hosted'),
+    ovirt_is_self_hosted: Ember['default'].computed.alias('controllers.deployment.ovirt_is_self_hosted'),
 
-    rhevSetup: (function () {
-      return this.get('rhev_is_self_hosted') ? 'selfhost' : 'rhevhost';
-    }).property('rhev_is_self_hosted'),
+    ovirtSetup: (function () {
+      return this.get('ovirt_is_self_hosted') ? 'selfhost' : 'ovirthost';
+    }).property('ovirt_is_self_hosted'),
 
-    rhevSetupTitle: (function () {
-      return this.get('rhev_is_self_hosted') ? 'Self Hosted' : 'Host + Engine';
-    }).property('rhev_is_self_hosted'),
+    ovirtSetupTitle: (function () {
+      return this.get('ovirt_is_self_hosted') ? 'Self Hosted' : 'Host + Engine';
+    }).property('ovirt_is_self_hosted'),
 
     isSelfHosted: (function () {
-      return this.get('rhevSetup') === 'selfhost';
-    }).property('rhevSetup'),
+      return this.get('ovirtSetup') === 'selfhost';
+    }).property('ovirtSetup'),
 
     actions: {
-      rhevSetupChanged: function rhevSetupChanged(value) {
-        return this.get('controllers.deployment').set('rhev_is_self_hosted', this.get('isSelfHosted'));
+      ovirtSetupChanged: function ovirtSetupChanged(value) {
+        return this.get('controllers.deployment').set('ovirt_is_self_hosted', this.get('isSelfHosted'));
       }
     }
 
   });
 
 });
-define('fusor-ember-cli/controllers/rhev', ['exports', 'ember'], function (exports, Ember) {
+define('fusor-ember-cli/controllers/ovirt', ['exports', 'ember'], function (exports, Ember) {
 
   'use strict';
 
   exports['default'] = Ember['default'].Controller.extend({
-    needs: ['application', 'rhev-setup', 'side-menu'],
+    needs: ['application', 'ovirt-setup', 'side-menu'],
 
-    rhevSetup: Ember['default'].computed.alias('controllers.rhev-setup.rhevSetup'),
+    ovirtSetup: Ember['default'].computed.alias('controllers.ovirt-setup.ovirtSetup'),
 
     isSelfHost: (function () {
-      return this.get('rhevSetup') === 'selfhost';
-    }).property('rhevSetup'),
+      return this.get('ovirtSetup') === 'selfhost';
+    }).property('ovirtSetup'),
 
     engineTabName: (function () {
       if (this.get('isSelfHost')) {
@@ -1666,14 +1666,14 @@ define('fusor-ember-cli/controllers/storage', ['exports', 'ember'], function (ex
 
     needs: ['deployment'],
 
-    rhev_storage_type: Ember['default'].computed.alias('controllers.deployment.rhev_storage_type'),
-    rhev_storage_address: Ember['default'].computed.alias('controllers.deployment.rhev_storage_address'),
-    rhev_share_path: Ember['default'].computed.alias('controllers.deployment.rhev_share_path'),
+    ovirt_storage_type: Ember['default'].computed.alias('controllers.deployment.ovirt_storage_type'),
+    ovirt_storage_address: Ember['default'].computed.alias('controllers.deployment.ovirt_storage_address'),
+    ovirt_share_path: Ember['default'].computed.alias('controllers.deployment.ovirt_share_path'),
     step3RouteName: Ember['default'].computed.alias('controllers.deployment.step3RouteName'),
 
     isNFS: (function () {
-      return this.get('rhev_storage_type') === 'NFS';
-    }).property('rhev_storage_type') });
+      return this.get('ovirt_storage_type') === 'NFS';
+    }).property('ovirt_storage_type') });
 
 });
 define('fusor-ember-cli/controllers/subscription', ['exports', 'ember'], function (exports, Ember) {
@@ -1799,7 +1799,7 @@ define('fusor-ember-cli/controllers/where-install', ['exports', 'ember'], functi
 
     cfme_install_loc: Ember['default'].computed.alias('controllers.deployment.cfme_install_loc'),
 
-    disableRHEV: false,
+    disableoVirt: false,
     disableOpenStack: false,
 
     actions: {
@@ -2085,7 +2085,7 @@ define('fusor-ember-cli/mixins/deployment-controller-mixin', ['exports', 'ember'
 
     needs: ['application', 'subscriptions', 'configure-organization', 'configure-environment', 'subscriptions/select-subscriptions'],
 
-    isRhev: Ember['default'].computed.alias('deploy_rhev'),
+    isOvirt: Ember['default'].computed.alias('deploy_ovirt'),
     isOpenStack: Ember['default'].computed.alias('deploy_openstack'),
     isCloudForms: Ember['default'].computed.alias('deploy_cfme'),
 
@@ -2100,7 +2100,7 @@ define('fusor-ember-cli/mixins/deployment-controller-mixin', ['exports', 'ember'
     isHideWizard: null,
 
     // declared in controllers, and not in mixin
-    // isRhev
+    // isOvirt
     // isOpenStack
     // isCloudForms
 
@@ -2115,8 +2115,8 @@ define('fusor-ember-cli/mixins/deployment-controller-mixin', ['exports', 'ember'
     // }.property('isUpstream'),
 
     disableNextOnStart: (function () {
-      return !(this.get('isRhev') || this.get('isOpenStack') || this.get('isCloudForms'));
-    }).property('isRhev', 'isOpenStack', 'isCloudForms'),
+      return !(this.get('isOvirt') || this.get('isOpenStack') || this.get('isCloudForms'));
+    }).property('isOvirt', 'isOpenStack', 'isCloudForms'),
 
     // names
     nameRHCI: (function () {
@@ -2143,11 +2143,11 @@ define('fusor-ember-cli/mixins/deployment-controller-mixin', ['exports', 'ember'
       }
     }).property('isUpstream'),
 
-    nameRhev: (function () {
+    nameOvirt: (function () {
       if (this.get('isUpstream')) {
         return 'oVirt';
       } else {
-        return 'RHEV';
+        return 'oVirt';
       }
     }).property('isUpstream'),
 
@@ -2177,50 +2177,50 @@ define('fusor-ember-cli/mixins/deployment-controller-mixin', ['exports', 'ember'
     }).property('isUpstream'),
 
     // steps
-    stepNumberRhev: 2,
+    stepNumberOvirt: 2,
 
     stepNumberOpenstack: (function () {
-      if (this.get('isRhev')) {
+      if (this.get('isOvirt')) {
         return 3;
       } else {
         return 2;
       }
-    }).property('isRhev'),
+    }).property('isOvirt'),
 
     stepNumberCloudForms: (function () {
-      if (this.get('isRhev') && this.get('isOpenStack')) {
+      if (this.get('isOvirt') && this.get('isOpenStack')) {
         return 4;
-      } else if (this.get('isRhev') || this.get('isOpenStack')) {
+      } else if (this.get('isOvirt') || this.get('isOpenStack')) {
         return 3;
       } else {
         return 2;
       }
-    }).property('isRhev', 'isOpenStack'),
+    }).property('isOvirt', 'isOpenStack'),
 
     stepNumberSubscriptions: (function () {
-      if (this.get('isRhev') && this.get('isOpenStack') && this.get('isCloudForms')) {
+      if (this.get('isOvirt') && this.get('isOpenStack') && this.get('isCloudForms')) {
         return 5;
-      } else if (this.get('isRhev') && this.get('isOpenStack') || this.get('isRhev') && this.get('isCloudForms') || this.get('isOpenStack') && this.get('isCloudForms')) {
+      } else if (this.get('isOvirt') && this.get('isOpenStack') || this.get('isOvirt') && this.get('isCloudForms') || this.get('isOpenStack') && this.get('isCloudForms')) {
         return 4;
-      } else if (this.get('isRhev') || this.get('isOpenStack') || this.get('isCloudForms')) {
+      } else if (this.get('isOvirt') || this.get('isOpenStack') || this.get('isCloudForms')) {
         return 3;
       } else {
         return 2;
       }
-    }).property('isRhev', 'isOpenStack', 'isCloudForms'),
+    }).property('isOvirt', 'isOpenStack', 'isCloudForms'),
 
     // calculate temporary without isSubscriptions
     stepNumberReviewTemp: (function () {
-      if (this.get('isRhev') && this.get('isOpenStack') && this.get('isCloudForms')) {
+      if (this.get('isOvirt') && this.get('isOpenStack') && this.get('isCloudForms')) {
         return 6;
-      } else if (this.get('isRhev') && this.get('isOpenStack') || this.get('isRhev') && this.get('isCloudForms') || this.get('isOpenStack') && this.get('isCloudForms')) {
+      } else if (this.get('isOvirt') && this.get('isOpenStack') || this.get('isOvirt') && this.get('isCloudForms') || this.get('isOpenStack') && this.get('isCloudForms')) {
         return 5;
-      } else if (this.get('isRhev') || this.get('isOpenStack') || this.get('isCloudForms')) {
+      } else if (this.get('isOvirt') || this.get('isOpenStack') || this.get('isCloudForms')) {
         return 4;
       } else {
         return 3;
       }
-    }).property('isRhev', 'isOpenStack', 'isCloudForms'),
+    }).property('isOvirt', 'isOpenStack', 'isCloudForms'),
 
     stepNumberReview: (function () {
       if (this.get('isSubscriptions')) {
@@ -2231,17 +2231,17 @@ define('fusor-ember-cli/mixins/deployment-controller-mixin', ['exports', 'ember'
     }).property('stepNumberReviewTemp', 'isSubscriptions'),
 
     step2RouteName: (function () {
-      if (this.get('isRhev')) {
-        return 'rhev';
+      if (this.get('isOvirt')) {
+        return 'ovirt';
       } else if (this.get('isOpenStack')) {
         return 'openstack';
       } else if (this.get('isCloudForms')) {
         return 'cloudforms';
       }
-    }).property('isRhev', 'isOpenStack', 'isCloudForms'),
+    }).property('isOvirt', 'isOpenStack', 'isCloudForms'),
 
     step3RouteName: (function () {
-      if (this.get('step2RouteName') === 'rhev') {
+      if (this.get('step2RouteName') === 'ovirt') {
         if (this.get('isOpenStack')) {
           return 'openstack';
         } else if (this.get('isCloudForms')) {
@@ -2527,7 +2527,7 @@ define('fusor-ember-cli/mixins/start-controller-mixin', ['exports', 'ember'], fu
     isUpstream: false,
 
     // declared in controllers, and not in mixin
-    // isRhev
+    // isOvirt
     // isOpenStack
     // isCloudForms
 
@@ -2536,8 +2536,8 @@ define('fusor-ember-cli/mixins/start-controller-mixin', ['exports', 'ember'], fu
 
     // disable Next button if none selected
     disableNextOnStart: (function () {
-      return !(this.get('isRhev') || this.get('isOpenStack') || this.get('isCloudForms'));
-    }).property('isRhev', 'isOpenStack', 'isCloudForms'),
+      return !(this.get('isOvirt') || this.get('isOpenStack') || this.get('isCloudForms'));
+    }).property('isOvirt', 'isOpenStack', 'isCloudForms'),
 
     // names
     nameRHCI: (function () {
@@ -2564,11 +2564,11 @@ define('fusor-ember-cli/mixins/start-controller-mixin', ['exports', 'ember'], fu
       }
     }).property('isUpstream'),
 
-    nameRhev: (function () {
+    nameOvirt: (function () {
       if (this.get('isUpstream')) {
         return 'oVirt';
       } else {
-        return 'RHEV';
+        return 'oVirt';
       }
     }).property('isUpstream'),
 
@@ -2589,11 +2589,11 @@ define('fusor-ember-cli/mixins/start-controller-mixin', ['exports', 'ember'], fu
     }).property('isUpstream'),
 
     // images
-    imgRhev: (function () {
+    imgOvirt: (function () {
       if (this.get('isUpstream')) {
         return '/assets/r/ovirt-640-210.png';
       } else {
-        return '/assets/r/rhci-rhev-640-210.png';
+        return '/assets/r/rhci-ovirt-640-210.png';
       }
     }).property('isUpstream'),
 
@@ -2625,20 +2625,20 @@ define('fusor-ember-cli/models/deployment', ['exports', 'ember-data'], function 
     lifecycle_environment: DS['default'].belongsTo('lifecycle-environment', { async: true }),
     foreman_task_uuid: DS['default'].attr('string'),
 
-    deploy_rhev: DS['default'].attr('boolean'),
+    deploy_ovirt: DS['default'].attr('boolean'),
     deploy_cfme: DS['default'].attr('boolean'),
     deploy_openstack: DS['default'].attr('boolean'),
 
-    rhev_is_self_hosted: DS['default'].attr('boolean'),
+    ovirt_is_self_hosted: DS['default'].attr('boolean'),
 
-    rhev_engine_admin_password: DS['default'].attr('string'),
-    rhev_database_name: DS['default'].attr('string'),
-    rhev_cluster_name: DS['default'].attr('string'),
-    rhev_storage_name: DS['default'].attr('string'),
-    rhev_storage_type: DS['default'].attr('string'),
-    rhev_storage_address: DS['default'].attr('string'),
-    rhev_cpu_type: DS['default'].attr('string'),
-    rhev_share_path: DS['default'].attr('string'),
+    ovirt_engine_admin_password: DS['default'].attr('string'),
+    ovirt_database_name: DS['default'].attr('string'),
+    ovirt_cluster_name: DS['default'].attr('string'),
+    ovirt_storage_name: DS['default'].attr('string'),
+    ovirt_storage_type: DS['default'].attr('string'),
+    ovirt_storage_address: DS['default'].attr('string'),
+    ovirt_cpu_type: DS['default'].attr('string'),
+    ovirt_share_path: DS['default'].attr('string'),
 
     cfme_install_loc: DS['default'].attr('string'),
 
@@ -2923,8 +2923,8 @@ define('fusor-ember-cli/router', ['exports', 'ember', 'fusor-ember-cli/config/en
         this.resource('configure-environment');
       });
 
-      this.resource('rhev', function () {
-        this.resource('rhev-setup', { path: 'setup' });
+      this.resource('ovirt', function () {
+        this.resource('ovirt-setup', { path: 'setup' });
         this.resource('hypervisor', function () {
           this.route('discovered-host');
           this.route('existing-host');
@@ -2936,7 +2936,7 @@ define('fusor-ember-cli/router', ['exports', 'ember', 'fusor-ember-cli/config/en
           this.route('existing-host');
           this.route('new-host');
         });
-        this.resource('rhev-options', { path: 'configuration' });
+        this.resource('ovirt-options', { path: 'configuration' });
         this.resource('storage');
         this.resource('networking');
       });
@@ -3202,7 +3202,7 @@ define('fusor-ember-cli/routes/deployment-new/start', ['exports', 'ember'], func
 
     activate: function activate() {
       this.controllerFor('deployment-new').set('isHideWizard', true);
-      this.controllerFor('deployment-new').set('deploy_rhev', true);
+      this.controllerFor('deployment-new').set('deploy_ovirt', true);
       this.controllerFor('deployment-new').set('deploy_openstack', false);
       this.controllerFor('deployment-new').set('deploy_cfme', false);
     },
@@ -3514,7 +3514,7 @@ define('fusor-ember-cli/routes/hypervisor/discovered-host', ['exports', 'ember']
             success: function success(response) {
               resolve(response);
               if (redirectPath) {
-                self.transitionTo('rhev-options');
+                self.transitionTo('ovirt-options');
               }
             },
 
@@ -3595,7 +3595,7 @@ define('fusor-ember-cli/routes/networking', ['exports', 'ember'], function (expo
 
   exports['default'] = Ember['default'].Route.extend({
     activate: function activate() {
-      this.controllerFor('side-menu').set('etherpadName', '51'); //route-rhev-networking
+      this.controllerFor('side-menu').set('etherpadName', '51'); //route-ovirt-networking
     },
 
     deactivate: function deactivate() {
@@ -3783,7 +3783,7 @@ define('fusor-ember-cli/routes/rhci', ['exports', 'ember'], function (exports, E
 	exports['default'] = Ember['default'].Route.extend({});
 
 });
-define('fusor-ember-cli/routes/rhev-options', ['exports', 'ember'], function (exports, Ember) {
+define('fusor-ember-cli/routes/ovirt-options', ['exports', 'ember'], function (exports, Ember) {
 
   'use strict';
 
@@ -3793,7 +3793,7 @@ define('fusor-ember-cli/routes/rhev-options', ['exports', 'ember'], function (ex
     } });
 
 });
-define('fusor-ember-cli/routes/rhev-setup', ['exports', 'ember'], function (exports, Ember) {
+define('fusor-ember-cli/routes/ovirt-setup', ['exports', 'ember'], function (exports, Ember) {
 
   'use strict';
 
@@ -3804,20 +3804,20 @@ define('fusor-ember-cli/routes/rhev-setup', ['exports', 'ember'], function (expo
   });
 
 });
-define('fusor-ember-cli/routes/rhev', ['exports', 'ember'], function (exports, Ember) {
+define('fusor-ember-cli/routes/ovirt', ['exports', 'ember'], function (exports, Ember) {
 
 	'use strict';
 
 	exports['default'] = Ember['default'].Route.extend({});
 
 });
-define('fusor-ember-cli/routes/rhev/index', ['exports', 'ember'], function (exports, Ember) {
+define('fusor-ember-cli/routes/ovirt/index', ['exports', 'ember'], function (exports, Ember) {
 
   'use strict';
 
   exports['default'] = Ember['default'].Route.extend({
     beforeModel: function beforeModel() {
-      this.transitionTo('rhev-setup');
+      this.transitionTo('ovirt-setup');
     }
   });
 
@@ -3935,18 +3935,18 @@ define('fusor-ember-cli/routes/where-install', ['exports', 'ember'], function (e
     setupController: function setupController(controller, model) {
       controller.set('model', model);
 
-      var isRhev = this.controllerFor('deployment').get('isRhev');
+      var isOvirt = this.controllerFor('deployment').get('isOvirt');
       var isOpenStack = this.controllerFor('deployment').get('isOpenStack');
-      if (isRhev && !isOpenStack) {
-        this.controllerFor('where-install').set('disableRHEV', false);
+      if (isOvirt && !isOpenStack) {
+        this.controllerFor('where-install').set('disableoVirt', false);
         this.controllerFor('where-install').set('disableOpenStack', true);
-        return this.controllerFor('deployment').set('cfme_install_loc', 'RHEV');
-      } else if (!isRhev && isOpenStack) {
-        this.controllerFor('where-install').set('disableRHEV', true);
+        return this.controllerFor('deployment').set('cfme_install_loc', 'oVirt');
+      } else if (!isOvirt && isOpenStack) {
+        this.controllerFor('where-install').set('disableoVirt', true);
         this.controllerFor('where-install').set('disableOpenStack', false);
         return this.controllerFor('deployment').set('cfme_install_loc', 'OpenStack');
       } else {
-        this.controllerFor('where-install').set('disableRHEV', false);
+        this.controllerFor('where-install').set('disableoVirt', false);
         this.controllerFor('where-install').set('disableOpenStack', false);
       }
     },
@@ -8343,7 +8343,7 @@ define('fusor-ember-cli/templates/components/rhci-start', ['exports'], function 
         var morph5 = dom.createMorphAt(element1,1,1);
         var morph6 = dom.createMorphAt(element1,3,3);
         content(env, morph0, context, "nameRedHat");
-        inline(env, morph1, context, "rchi-item", [], {"srcImage": get(env, context, "imgRhev"), "isChecked": get(env, context, "isRhev"), "name": get(env, context, "nameRhev"), "cssId": "is_rhev"});
+        inline(env, morph1, context, "rchi-item", [], {"srcImage": get(env, context, "imgOvirt"), "isChecked": get(env, context, "isOvirt"), "name": get(env, context, "nameOvirt"), "cssId": "is_ovirt"});
         inline(env, morph2, context, "rchi-item", [], {"srcImage": get(env, context, "imgOpenStack"), "isChecked": get(env, context, "isOpenStack"), "name": get(env, context, "nameOpenStack"), "cssId": "is_openstack"});
         inline(env, morph3, context, "rchi-item", [], {"srcImage": get(env, context, "imgCloudForms"), "isChecked": get(env, context, "isCloudForms"), "name": get(env, context, "nameCloudForms"), "cssId": "is_cloudforms"});
         block(env, morph4, context, "unless", [get(env, context, "isUpstream")], {}, child0, null);
@@ -8398,7 +8398,7 @@ define('fusor-ember-cli/templates/components/rhci-wizard', ['exports'], function
             fragment = this.build(dom);
           }
           var morph0 = dom.createMorphAt(fragment,1,1,contextualElement);
-          inline(env, morph0, context, "wizard-item", [], {"num": get(env, context, "stepNumberRhev"), "name": get(env, context, "nameRhev"), "routeName": "rhev", "isDisabled": get(env, context, "isDisabledRhev")});
+          inline(env, morph0, context, "wizard-item", [], {"num": get(env, context, "stepNumberOvirt"), "name": get(env, context, "nameOvirt"), "routeName": "ovirt", "isDisabled": get(env, context, "isDisabledOvirt")});
           return fragment;
         }
       };
@@ -8618,7 +8618,7 @@ define('fusor-ember-cli/templates/components/rhci-wizard', ['exports'], function
         var morph4 = dom.createMorphAt(element0,9,9);
         var morph5 = dom.createMorphAt(element0,11,11);
         inline(env, morph0, context, "wizard-item", [], {"num": 1, "name": get(env, context, "nameSatellite"), "routeName": "satellite", "isDisabled": false});
-        block(env, morph1, context, "if", [get(env, context, "isRhev")], {}, child0, null);
+        block(env, morph1, context, "if", [get(env, context, "isOvirt")], {}, child0, null);
         block(env, morph2, context, "if", [get(env, context, "isOpenStack")], {}, child1, null);
         block(env, morph3, context, "if", [get(env, context, "isCloudForms")], {}, child2, null);
         block(env, morph4, context, "if", [get(env, context, "isSubscriptions")], {}, child3, null);
@@ -9651,7 +9651,7 @@ define('fusor-ember-cli/templates/components/tr-engine', ['exports'], function (
         var morph2 = dom.createMorphAt(dom.childAt(fragment, [4]),1,1);
         var morph3 = dom.createMorphAt(dom.childAt(fragment, [6]),1,1);
         var morph4 = dom.createMorphAt(dom.childAt(fragment, [8]),1,1);
-        inline(env, morph0, context, "radio-button", [], {"value": get(env, context, "host.model"), "groupValue": get(env, context, "selectedRhevEngineHost"), "changed": "engineHostChanged", "id": get(env, context, "host.cssIdHostId")});
+        inline(env, morph0, context, "radio-button", [], {"value": get(env, context, "host.model"), "groupValue": get(env, context, "selectedOvirtEngineHost"), "changed": "engineHostChanged", "id": get(env, context, "host.cssIdHostId")});
         block(env, morph1, context, "if", [get(env, context, "host.isSelectedAsEngine")], {}, child0, null);
         content(env, morph2, context, "host.mac");
         content(env, morph3, context, "host.cpus");
@@ -11627,7 +11627,7 @@ define('fusor-ember-cli/templates/debug-deployment', ['exports'], function (expo
         dom.appendChild(el0, el1);
         var el1 = dom.createElement("br");
         dom.appendChild(el0, el1);
-        var el1 = dom.createTextNode("\nisDisabledRhev: ");
+        var el1 = dom.createTextNode("\nisDisabledOvirt: ");
         dom.appendChild(el0, el1);
         var el1 = dom.createComment("");
         dom.appendChild(el0, el1);
@@ -11667,7 +11667,7 @@ define('fusor-ember-cli/templates/debug-deployment', ['exports'], function (expo
         dom.appendChild(el0, el1);
         var el1 = dom.createElement("br");
         dom.appendChild(el0, el1);
-        var el1 = dom.createTextNode("\ndeploy_rhev: ");
+        var el1 = dom.createTextNode("\ndeploy_ovirt: ");
         dom.appendChild(el0, el1);
         var el1 = dom.createComment("");
         dom.appendChild(el0, el1);
@@ -11759,12 +11759,12 @@ define('fusor-ember-cli/templates/debug-deployment', ['exports'], function (expo
         content(env, morph15, context, "disableNextOnDeploymentName");
         content(env, morph16, context, "disableNextOnConfigureOrganization");
         content(env, morph17, context, "disableNextOnLifecycleEnvironment");
-        content(env, morph18, context, "isDisabledRhev");
+        content(env, morph18, context, "isDisabledOvirt");
         content(env, morph19, context, "isDisabledOpenstack");
         content(env, morph20, context, "isDisabledCloudForms");
         content(env, morph21, context, "isDisabledSubscriptions");
         content(env, morph22, context, "isDisabledReview");
-        content(env, morph23, context, "deploy_rhev");
+        content(env, morph23, context, "deploy_ovirt");
         content(env, morph24, context, "deploy_openstack");
         content(env, morph25, context, "deploy_cfme");
         return fragment;
@@ -12401,7 +12401,7 @@ define('fusor-ember-cli/templates/deployment', ['exports'], function (exports) {
           content(env, morph0, context, "nameRHCI");
           content(env, morph1, context, "name");
           block(env, morph2, context, "unless", [get(env, context, "isNew")], {}, child0, null);
-          inline(env, morph3, context, "rhci-wizard", [], {"nameSatellite": get(env, context, "nameSatellite"), "nameRhev": get(env, context, "nameRhev"), "nameOpenStack": get(env, context, "nameOpenStack"), "nameCloudForms": get(env, context, "nameCloudForms"), "stepNumberRhev": get(env, context, "stepNumberRhev"), "stepNumberOpenstack": get(env, context, "stepNumberOpenstack"), "stepNumberCloudForms": get(env, context, "stepNumberCloudForms"), "stepNumberSubscriptions": get(env, context, "stepNumberSubscriptions"), "stepNumberReview": get(env, context, "stepNumberReview"), "isDisabledRhev": get(env, context, "isDisabledRhev"), "isDisabledOpenstack": get(env, context, "isDisabledOpenstack"), "isDisabledCloudForms": get(env, context, "isDisabledCloudForms"), "isDisabledSubscriptions": get(env, context, "isDisabledSubscriptions"), "isDisabledReview": get(env, context, "isDisabledReview"), "isRhev": get(env, context, "isRhev"), "isOpenStack": get(env, context, "isOpenStack"), "isCloudForms": get(env, context, "isCloudForms"), "isSubscriptions": get(env, context, "isSubscriptions")});
+          inline(env, morph3, context, "rhci-wizard", [], {"nameSatellite": get(env, context, "nameSatellite"), "nameOvirt": get(env, context, "nameOvirt"), "nameOpenStack": get(env, context, "nameOpenStack"), "nameCloudForms": get(env, context, "nameCloudForms"), "stepNumberOvirt": get(env, context, "stepNumberOvirt"), "stepNumberOpenstack": get(env, context, "stepNumberOpenstack"), "stepNumberCloudForms": get(env, context, "stepNumberCloudForms"), "stepNumberSubscriptions": get(env, context, "stepNumberSubscriptions"), "stepNumberReview": get(env, context, "stepNumberReview"), "isDisabledOvirt": get(env, context, "isDisabledOvirt"), "isDisabledOpenstack": get(env, context, "isDisabledOpenstack"), "isDisabledCloudForms": get(env, context, "isDisabledCloudForms"), "isDisabledSubscriptions": get(env, context, "isDisabledSubscriptions"), "isDisabledReview": get(env, context, "isDisabledReview"), "isOvirt": get(env, context, "isOvirt"), "isOpenStack": get(env, context, "isOpenStack"), "isCloudForms": get(env, context, "isCloudForms"), "isSubscriptions": get(env, context, "isSubscriptions")});
           return fragment;
         }
       };
@@ -12497,7 +12497,7 @@ define('fusor-ember-cli/templates/deployment/start', ['exports'], function (expo
         }
         var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
         dom.insertBoundary(fragment, 0);
-        inline(env, morph0, context, "rhci-start", [], {"isRhev": get(env, context, "isRhev"), "isOpenStack": get(env, context, "isOpenStack"), "isCloudForms": get(env, context, "isCloudForms"), "nameRedHat": get(env, context, "nameRedHat"), "nameRhev": get(env, context, "nameRhev"), "nameOpenStack": get(env, context, "nameOpenStack"), "nameCloudForms": get(env, context, "nameCloudForms"), "imgRhev": get(env, context, "imgRhev"), "imgOpenStack": get(env, context, "imgOpenStack"), "imgCloudForms": get(env, context, "imgCloudForms"), "isUpstream": get(env, context, "isUpstream"), "satelliteTabRouteName": get(env, context, "satelliteTabRouteName"), "disableNextOnStart": get(env, context, "disableNextOnStart")});
+        inline(env, morph0, context, "rhci-start", [], {"isOvirt": get(env, context, "isOvirt"), "isOpenStack": get(env, context, "isOpenStack"), "isCloudForms": get(env, context, "isCloudForms"), "nameRedHat": get(env, context, "nameRedHat"), "nameOvirt": get(env, context, "nameOvirt"), "nameOpenStack": get(env, context, "nameOpenStack"), "nameCloudForms": get(env, context, "nameCloudForms"), "imgOvirt": get(env, context, "imgOvirt"), "imgOpenStack": get(env, context, "imgOpenStack"), "imgCloudForms": get(env, context, "imgCloudForms"), "isUpstream": get(env, context, "isUpstream"), "satelliteTabRouteName": get(env, context, "satelliteTabRouteName"), "disableNextOnStart": get(env, context, "disableNextOnStart")});
         return fragment;
       }
     };
@@ -13344,7 +13344,7 @@ define('fusor-ember-cli/templates/engine/discovered-host', ['exports'], function
             fragment = this.build(dom);
           }
           var morph0 = dom.createMorphAt(fragment,1,1,contextualElement);
-          inline(env, morph0, context, "tr-engine", [], {"host": get(env, context, "host"), "selectedRhevEngineHost": get(env, context, "selectedRhevEngineHost")});
+          inline(env, morph0, context, "tr-engine", [], {"host": get(env, context, "host"), "selectedOvirtEngineHost": get(env, context, "selectedOvirtEngineHost")});
           return fragment;
         }
       };
@@ -14342,7 +14342,7 @@ define('fusor-ember-cli/templates/hypervisor/discovered-host', ['exports'], func
         content(env, morph2, context, "idsChecked");
         block(env, morph3, context, "each", [get(env, context, "availableHosts")], {"itemController": "discovered-host", "keyword": "host"}, child0, null);
         block(env, morph4, context, "link-to", ["deployments"], {"class": "btn btn-default"}, child1, null);
-        element(env, element1, context, "action", ["saveHyperVisors", "rhev-options"], {});
+        element(env, element1, context, "action", ["saveHyperVisors", "ovirt-options"], {});
         return fragment;
       }
     };
@@ -17332,7 +17332,7 @@ define('fusor-ember-cli/templates/review/installation', ['exports'], function (e
                 fragment = this.build(dom);
               }
               var morph0 = dom.createMorphAt(fragment,1,1,contextualElement);
-              content(env, morph0, context, "controllers.rhev-setup.rhevSetupTitle");
+              content(env, morph0, context, "controllers.ovirt-setup.ovirtSetupTitle");
               return fragment;
             }
           };
@@ -17375,7 +17375,7 @@ define('fusor-ember-cli/templates/review/installation', ['exports'], function (e
                 fragment = this.build(dom);
               }
               var morph0 = dom.createMorphAt(fragment,1,1,contextualElement);
-              inline(env, morph0, context, "review-link", [], {"label": "Hypervisor/Engine", "routeName": "engine.discovered-host", "isRequired": true, "value": get(env, context, "selectedRhevEngine.name")});
+              inline(env, morph0, context, "review-link", [], {"label": "Hypervisor/Engine", "routeName": "engine.discovered-host", "isRequired": true, "value": get(env, context, "selectedOvirtEngine.name")});
               return fragment;
             }
           };
@@ -17556,7 +17556,7 @@ define('fusor-ember-cli/templates/review/installation', ['exports'], function (e
               var morph0 = dom.createMorphAt(fragment,1,1,contextualElement);
               var morph1 = dom.createMorphAt(fragment,3,3,contextualElement);
               dom.insertBoundary(fragment, null);
-              inline(env, morph0, context, "review-link", [], {"label": "Engine", "routeName": "engine.discovered-host", "isRequired": true, "value": get(env, context, "selectedRhevEngine.name")});
+              inline(env, morph0, context, "review-link", [], {"label": "Engine", "routeName": "engine.discovered-host", "isRequired": true, "value": get(env, context, "selectedOvirtEngine.name")});
               block(env, morph1, context, "review-link", [], {"label": "Hypervisor(s)", "routeName": "hypervisor.discovered-host", "isRequired": true, "value": get(env, context, "selectedHypervisorHosts"), "useYieldInstead": true}, child0, null);
               return fragment;
             }
@@ -17656,16 +17656,16 @@ define('fusor-ember-cli/templates/review/installation', ['exports'], function (e
             var morph7 = dom.createMorphAt(fragment,19,19,contextualElement);
             var morph8 = dom.createMorphAt(fragment,21,21,contextualElement);
             var morph9 = dom.createMorphAt(fragment,23,23,contextualElement);
-            block(env, morph0, context, "link-to", ["rhev-setup"], {}, child0, null);
+            block(env, morph0, context, "link-to", ["ovirt-setup"], {}, child0, null);
             block(env, morph1, context, "if", [get(env, context, "isSelfHosted")], {}, child1, child2);
-            inline(env, morph2, context, "review-link", [], {"label": "Engine admin password", "routeName": "rhev-options", "isRequired": true, "isPassword": true, "value": get(env, context, "controllers.deployment.rhev_engine_admin_password")});
-            inline(env, morph3, context, "review-link", [], {"label": "Datacenter Name", "routeName": "rhev-options", "isDefault": true, "value": get(env, context, "controllers.deployment.rhev_database_name")});
-            inline(env, morph4, context, "review-link", [], {"label": "Cluster Name", "routeName": "rhev-options", "isDefault": true, "value": get(env, context, "controllers.deployment.rhev_cluster_name")});
-            inline(env, morph5, context, "review-link", [], {"label": "Storage Name", "routeName": "rhev-options", "isDefault": true, "value": get(env, context, "controllers.deployment.rhev_storage_name")});
-            inline(env, morph6, context, "review-link", [], {"label": "CPU Type", "routeName": "rhev-options", "isDefault": true, "value": get(env, context, "controllers.deployment.rhev_cpu_type")});
-            inline(env, morph7, context, "review-link", [], {"label": "Storage Type", "routeName": "storage", "isRequired": true, "value": get(env, context, "controllers.deployment.rhev_storage_type")});
-            inline(env, morph8, context, "review-link", [], {"label": "Storage Address", "routeName": "storage", "isDefault": true, "value": get(env, context, "controllers.deployment.rhev_storage_address")});
-            inline(env, morph9, context, "review-link", [], {"label": "Storage Path", "routeName": "storage", "isDefault": true, "value": get(env, context, "controllers.deployment.rhev_share_path")});
+            inline(env, morph2, context, "review-link", [], {"label": "Engine admin password", "routeName": "ovirt-options", "isRequired": true, "isPassword": true, "value": get(env, context, "controllers.deployment.ovirt_engine_admin_password")});
+            inline(env, morph3, context, "review-link", [], {"label": "Datacenter Name", "routeName": "ovirt-options", "isDefault": true, "value": get(env, context, "controllers.deployment.ovirt_database_name")});
+            inline(env, morph4, context, "review-link", [], {"label": "Cluster Name", "routeName": "ovirt-options", "isDefault": true, "value": get(env, context, "controllers.deployment.ovirt_cluster_name")});
+            inline(env, morph5, context, "review-link", [], {"label": "Storage Name", "routeName": "ovirt-options", "isDefault": true, "value": get(env, context, "controllers.deployment.ovirt_storage_name")});
+            inline(env, morph6, context, "review-link", [], {"label": "CPU Type", "routeName": "ovirt-options", "isDefault": true, "value": get(env, context, "controllers.deployment.ovirt_cpu_type")});
+            inline(env, morph7, context, "review-link", [], {"label": "Storage Type", "routeName": "storage", "isRequired": true, "value": get(env, context, "controllers.deployment.ovirt_storage_type")});
+            inline(env, morph8, context, "review-link", [], {"label": "Storage Address", "routeName": "storage", "isDefault": true, "value": get(env, context, "controllers.deployment.ovirt_storage_address")});
+            inline(env, morph9, context, "review-link", [], {"label": "Storage Path", "routeName": "storage", "isDefault": true, "value": get(env, context, "controllers.deployment.ovirt_share_path")});
             return fragment;
           }
         };
@@ -17705,7 +17705,7 @@ define('fusor-ember-cli/templates/review/installation', ['exports'], function (e
           var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
           dom.insertBoundary(fragment, null);
           dom.insertBoundary(fragment, 0);
-          block(env, morph0, context, "accordion-item", [], {"name": get(env, context, "controllers.deployment.nameRhev"), "isOpen": get(env, context, "isRhevOpen")}, child0, null);
+          block(env, morph0, context, "accordion-item", [], {"name": get(env, context, "controllers.deployment.nameOvirt"), "isOpen": get(env, context, "isOvirtOpen")}, child0, null);
           return fragment;
         }
       };
@@ -18036,7 +18036,7 @@ define('fusor-ember-cli/templates/review/installation', ['exports'], function (e
         dom.insertBoundary(fragment, 0);
         block(env, morph0, context, "if", [get(env, context, "showErrorMessage")], {}, child0, null);
         block(env, morph1, context, "accordion-item", [], {"name": get(env, context, "controllers.deployment.nameSatellite"), "isOpen": true}, child1, null);
-        block(env, morph2, context, "if", [get(env, context, "isRhev")], {}, child2, null);
+        block(env, morph2, context, "if", [get(env, context, "isOvirt")], {}, child2, null);
         block(env, morph3, context, "if", [get(env, context, "isOpenStack")], {}, child3, null);
         block(env, morph4, context, "if", [get(env, context, "isCloudForms")], {}, child4, null);
         element(env, element2, context, "action", ["showModal", "cancelDeploymentModal"], {});
@@ -19807,7 +19807,7 @@ define('fusor-ember-cli/templates/review/progress/overview', ['exports'], functi
         dom.appendChild(el1, el2);
         var el2 = dom.createElement("div");
         dom.setAttribute(el2,"class","col-md-1");
-        var el3 = dom.createTextNode("\n    RHEV\n  ");
+        var el3 = dom.createTextNode("\n    oVirt\n  ");
         dom.appendChild(el2, el3);
         dom.appendChild(el1, el2);
         var el2 = dom.createTextNode("\n\n  ");
@@ -19979,7 +19979,7 @@ define('fusor-ember-cli/templates/rhci', ['exports'], function (exports) {
   }()));
 
 });
-define('fusor-ember-cli/templates/rhev-options', ['exports'], function (exports) {
+define('fusor-ember-cli/templates/ovirt-options', ['exports'], function (exports) {
 
   'use strict';
 
@@ -20165,11 +20165,11 @@ define('fusor-ember-cli/templates/rhev-options', ['exports'], function (exports)
         var morph4 = dom.createMorphAt(element0,9,9);
         var morph5 = dom.createMorphAt(element1,3,3);
         var morph6 = dom.createMorphAt(element1,5,5);
-        inline(env, morph0, context, "text-f", [], {"label": "Engine admin password", "type": "password", "value": get(env, context, "rhev_engine_admin_password"), "cssId": "rhev_engine_admin_password"});
-        inline(env, morph1, context, "text-f", [], {"label": "Datacenter Name", "value": get(env, context, "rhev_database_name"), "placeholder": "Leave blank for default", "cssId": "rhev_database_name"});
-        inline(env, morph2, context, "text-f", [], {"label": "Cluster Name", "value": get(env, context, "rhev_cluster_name"), "placeholder": "Leave blank for default", "cssId": "rhev_cluster_name"});
-        inline(env, morph3, context, "text-f", [], {"label": "Storage name", "value": get(env, context, "rhev_storage_name"), "placeholder": "Leave blank for default", "cssId": "rhev_storage_name"});
-        inline(env, morph4, context, "text-f", [], {"label": "CPU Type", "value": get(env, context, "rhev_cpu_type"), "placeholder": "Leave blank for default", "help-inline": "", "cssId": "rhev_cpu_type"});
+        inline(env, morph0, context, "text-f", [], {"label": "Engine admin password", "type": "password", "value": get(env, context, "ovirt_engine_admin_password"), "cssId": "ovirt_engine_admin_password"});
+        inline(env, morph1, context, "text-f", [], {"label": "Datacenter Name", "value": get(env, context, "ovirt_database_name"), "placeholder": "Leave blank for default", "cssId": "ovirt_database_name"});
+        inline(env, morph2, context, "text-f", [], {"label": "Cluster Name", "value": get(env, context, "ovirt_cluster_name"), "placeholder": "Leave blank for default", "cssId": "ovirt_cluster_name"});
+        inline(env, morph3, context, "text-f", [], {"label": "Storage name", "value": get(env, context, "ovirt_storage_name"), "placeholder": "Leave blank for default", "cssId": "ovirt_storage_name"});
+        inline(env, morph4, context, "text-f", [], {"label": "CPU Type", "value": get(env, context, "ovirt_cpu_type"), "placeholder": "Leave blank for default", "help-inline": "", "cssId": "ovirt_cpu_type"});
         block(env, morph5, context, "link-to", ["deployments"], {"class": "btn btn-default"}, child0, null);
         block(env, morph6, context, "link-to", ["storage"], {"class": "btn btn-primary"}, child1, null);
         return fragment;
@@ -20178,7 +20178,7 @@ define('fusor-ember-cli/templates/rhev-options', ['exports'], function (exports)
   }()));
 
 });
-define('fusor-ember-cli/templates/rhev-setup', ['exports'], function (exports) {
+define('fusor-ember-cli/templates/ovirt-setup', ['exports'], function (exports) {
 
   'use strict';
 
@@ -20449,8 +20449,8 @@ define('fusor-ember-cli/templates/rhev-setup', ['exports'], function (exports) {
         var morph2 = dom.createMorphAt(element1,1,1);
         var morph3 = dom.createMorphAt(element1,3,3);
         var morph4 = dom.createMorphAt(fragment,8,8,contextualElement);
-        block(env, morph0, context, "radio-button", [], {"value": "selfhost", "groupValue": get(env, context, "rhevSetup"), "changed": "rhevSetupChanged", "id": "selfhost"}, child0, null);
-        block(env, morph1, context, "radio-button", [], {"value": "rhevhost", "groupValue": get(env, context, "rhevSetup"), "changed": "rhevSetupChanged", "id": "rhevhost"}, child1, null);
+        block(env, morph0, context, "radio-button", [], {"value": "selfhost", "groupValue": get(env, context, "ovirtSetup"), "changed": "ovirtSetupChanged", "id": "selfhost"}, child0, null);
+        block(env, morph1, context, "radio-button", [], {"value": "ovirthost", "groupValue": get(env, context, "ovirtSetup"), "changed": "ovirtSetupChanged", "id": "ovirthost"}, child1, null);
         block(env, morph2, context, "link-to", ["deployments"], {"class": "btn btn-default"}, child2, null);
         block(env, morph3, context, "link-to", ["engine.discovered-host"], {"class": "btn btn-primary"}, child3, null);
         inline(env, morph4, context, "partial", ["cancel-deployment-modal"], {});
@@ -20460,7 +20460,7 @@ define('fusor-ember-cli/templates/rhev-setup', ['exports'], function (exports) {
   }()));
 
 });
-define('fusor-ember-cli/templates/rhev', ['exports'], function (exports) {
+define('fusor-ember-cli/templates/ovirt', ['exports'], function (exports) {
 
   'use strict';
 
@@ -20804,10 +20804,10 @@ define('fusor-ember-cli/templates/rhev', ['exports'], function (exports) {
         var morph3 = dom.createMorphAt(element1,7,7);
         var morph4 = dom.createMorphAt(element1,9,9);
         var morph5 = dom.createMorphAt(dom.childAt(element0, [3]),1,1);
-        block(env, morph0, context, "link-to", ["rhev-setup"], {"tagName": "li"}, child0, null);
+        block(env, morph0, context, "link-to", ["ovirt-setup"], {"tagName": "li"}, child0, null);
         block(env, morph1, context, "link-to", ["engine"], {"tagName": "li"}, child1, null);
         block(env, morph2, context, "unless", [get(env, context, "isSelfHost")], {}, child2, null);
-        block(env, morph3, context, "link-to", ["rhev-options"], {"tagName": "li"}, child3, null);
+        block(env, morph3, context, "link-to", ["ovirt-options"], {"tagName": "li"}, child3, null);
         block(env, morph4, context, "link-to", ["storage"], {"tagName": "li"}, child4, null);
         content(env, morph5, context, "outlet");
         return fragment;
@@ -21737,9 +21737,9 @@ define('fusor-ember-cli/templates/storage', ['exports'], function (exports) {
           var morph1 = dom.createMorphAt(fragment,3,3,contextualElement);
           var morph2 = dom.createMorphAt(fragment,5,5,contextualElement);
           dom.insertBoundary(fragment, null);
-          block(env, morph0, context, "radio-button", [], {"value": "NFS", "groupValue": get(env, context, "rhev_storage_type"), "id": "nfs"}, child0, null);
-          block(env, morph1, context, "radio-button", [], {"value": "Local", "groupValue": get(env, context, "rhev_storage_type"), "id": "local"}, child1, null);
-          block(env, morph2, context, "radio-button", [], {"value": "Gluster", "groupValue": get(env, context, "rhev_storage_type"), "id": "gluster"}, child2, null);
+          block(env, morph0, context, "radio-button", [], {"value": "NFS", "groupValue": get(env, context, "ovirt_storage_type"), "id": "nfs"}, child0, null);
+          block(env, morph1, context, "radio-button", [], {"value": "Local", "groupValue": get(env, context, "ovirt_storage_type"), "id": "local"}, child1, null);
+          block(env, morph2, context, "radio-button", [], {"value": "Gluster", "groupValue": get(env, context, "ovirt_storage_type"), "id": "gluster"}, child2, null);
           return fragment;
         }
       };
@@ -21910,8 +21910,8 @@ define('fusor-ember-cli/templates/storage', ['exports'], function (exports) {
         var morph3 = dom.createMorphAt(element1,3,3);
         var morph4 = dom.createMorphAt(element1,5,5);
         block(env, morph0, context, "base-f", [], {"label": "Storage Type"}, child0, null);
-        inline(env, morph1, context, "text-f", [], {"label": "Storage Address", "value": get(env, context, "rhev_storage_address"), "placeholder": "Leave blank for default", "cssId": "rhev_storage_address"});
-        inline(env, morph2, context, "text-f", [], {"label": "Share Path", "value": get(env, context, "rhev_share_path"), "placeholder": "Leave blank for default", "cssId": "rhev_share_path"});
+        inline(env, morph1, context, "text-f", [], {"label": "Storage Address", "value": get(env, context, "ovirt_storage_address"), "placeholder": "Leave blank for default", "cssId": "ovirt_storage_address"});
+        inline(env, morph2, context, "text-f", [], {"label": "Share Path", "value": get(env, context, "ovirt_share_path"), "placeholder": "Leave blank for default", "cssId": "ovirt_share_path"});
         block(env, morph3, context, "link-to", ["deployments"], {"class": "btn btn-default"}, child1, null);
         block(env, morph4, context, "link-to", [get(env, context, "step3RouteName")], {"class": "btn btn-primary"}, child2, null);
         return fragment;
@@ -23339,7 +23339,7 @@ define('fusor-ember-cli/templates/where-install', ['exports'], function (exports
           var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
           dom.insertBoundary(fragment, null);
           dom.insertBoundary(fragment, 0);
-          block(env, morph0, context, "radio-button", [], {"value": "RHEV", "groupValue": get(env, context, "cfme_install_loc"), "changed": "cfmeLocationChanged", "id": "install_on_rhev"}, child0, null);
+          block(env, morph0, context, "radio-button", [], {"value": "oVirt", "groupValue": get(env, context, "cfme_install_loc"), "changed": "cfmeLocationChanged", "id": "install_on_ovirt"}, child0, null);
           return fragment;
         }
       };
@@ -23598,7 +23598,7 @@ define('fusor-ember-cli/templates/where-install', ['exports'], function (exports
         var morph1 = dom.createMorphAt(dom.childAt(element0, [3, 1]),1,1);
         var morph2 = dom.createMorphAt(element1,3,3);
         var morph3 = dom.createMorphAt(element1,5,5);
-        block(env, morph0, context, "unless", [get(env, context, "disableRHEV")], {}, child0, null);
+        block(env, morph0, context, "unless", [get(env, context, "disableoVirt")], {}, child0, null);
         block(env, morph1, context, "unless", [get(env, context, "disableOpenStack")], {}, child1, null);
         block(env, morph2, context, "link-to", ["deployments"], {"class": "btn btn-default"}, child2, null);
         block(env, morph3, context, "link-to", ["subscriptions.credentials"], {"class": "btn btn-primary"}, child3, null);
@@ -24308,33 +24308,33 @@ define('fusor-ember-cli/tests/controllers/rhci.jshint', function () {
   });
 
 });
-define('fusor-ember-cli/tests/controllers/rhev-options.jshint', function () {
+define('fusor-ember-cli/tests/controllers/ovirt-options.jshint', function () {
 
   'use strict';
 
   module('JSHint - controllers');
-  test('controllers/rhev-options.js should pass jshint', function() { 
-    ok(true, 'controllers/rhev-options.js should pass jshint.'); 
+  test('controllers/ovirt-options.js should pass jshint', function() { 
+    ok(true, 'controllers/ovirt-options.js should pass jshint.'); 
   });
 
 });
-define('fusor-ember-cli/tests/controllers/rhev-setup.jshint', function () {
+define('fusor-ember-cli/tests/controllers/ovirt-setup.jshint', function () {
 
   'use strict';
 
   module('JSHint - controllers');
-  test('controllers/rhev-setup.js should pass jshint', function() { 
-    ok(false, 'controllers/rhev-setup.js should pass jshint.\ncontrollers/rhev-setup.js: line 10, col 71, Missing semicolon.\ncontrollers/rhev-setup.js: line 14, col 79, Missing semicolon.\ncontrollers/rhev-setup.js: line 18, col 50, Missing semicolon.\ncontrollers/rhev-setup.js: line 22, col 32, \'value\' is defined but never used.\n\n4 errors'); 
+  test('controllers/ovirt-setup.js should pass jshint', function() { 
+    ok(false, 'controllers/ovirt-setup.js should pass jshint.\ncontrollers/ovirt-setup.js: line 10, col 71, Missing semicolon.\ncontrollers/ovirt-setup.js: line 14, col 79, Missing semicolon.\ncontrollers/ovirt-setup.js: line 18, col 50, Missing semicolon.\ncontrollers/ovirt-setup.js: line 22, col 32, \'value\' is defined but never used.\n\n4 errors'); 
   });
 
 });
-define('fusor-ember-cli/tests/controllers/rhev.jshint', function () {
+define('fusor-ember-cli/tests/controllers/ovirt.jshint', function () {
 
   'use strict';
 
   module('JSHint - controllers');
-  test('controllers/rhev.js should pass jshint', function() { 
-    ok(true, 'controllers/rhev.js should pass jshint.'); 
+  test('controllers/ovirt.js should pass jshint', function() { 
+    ok(true, 'controllers/ovirt.js should pass jshint.'); 
   });
 
 });
@@ -25315,43 +25315,43 @@ define('fusor-ember-cli/tests/routes/rhci.jshint', function () {
   });
 
 });
-define('fusor-ember-cli/tests/routes/rhev-options.jshint', function () {
+define('fusor-ember-cli/tests/routes/ovirt-options.jshint', function () {
 
   'use strict';
 
   module('JSHint - routes');
-  test('routes/rhev-options.js should pass jshint', function() { 
-    ok(true, 'routes/rhev-options.js should pass jshint.'); 
+  test('routes/ovirt-options.js should pass jshint', function() { 
+    ok(true, 'routes/ovirt-options.js should pass jshint.'); 
   });
 
 });
-define('fusor-ember-cli/tests/routes/rhev-setup.jshint', function () {
+define('fusor-ember-cli/tests/routes/ovirt-setup.jshint', function () {
 
   'use strict';
 
   module('JSHint - routes');
-  test('routes/rhev-setup.js should pass jshint', function() { 
-    ok(true, 'routes/rhev-setup.js should pass jshint.'); 
+  test('routes/ovirt-setup.js should pass jshint', function() { 
+    ok(true, 'routes/ovirt-setup.js should pass jshint.'); 
   });
 
 });
-define('fusor-ember-cli/tests/routes/rhev.jshint', function () {
+define('fusor-ember-cli/tests/routes/ovirt.jshint', function () {
 
   'use strict';
 
   module('JSHint - routes');
-  test('routes/rhev.js should pass jshint', function() { 
-    ok(true, 'routes/rhev.js should pass jshint.'); 
+  test('routes/ovirt.js should pass jshint', function() { 
+    ok(true, 'routes/ovirt.js should pass jshint.'); 
   });
 
 });
-define('fusor-ember-cli/tests/routes/rhev/index.jshint', function () {
+define('fusor-ember-cli/tests/routes/ovirt/index.jshint', function () {
 
   'use strict';
 
-  module('JSHint - routes/rhev');
-  test('routes/rhev/index.js should pass jshint', function() { 
-    ok(true, 'routes/rhev/index.js should pass jshint.'); 
+  module('JSHint - routes/ovirt');
+  test('routes/ovirt/index.js should pass jshint', function() { 
+    ok(true, 'routes/ovirt/index.js should pass jshint.'); 
   });
 
 });
@@ -27608,11 +27608,11 @@ define('fusor-ember-cli/tests/unit/controllers/rhci-test.jshint', function () {
   });
 
 });
-define('fusor-ember-cli/tests/unit/controllers/rhev-options-test', ['ember-qunit'], function (ember_qunit) {
+define('fusor-ember-cli/tests/unit/controllers/ovirt-options-test', ['ember-qunit'], function (ember_qunit) {
 
   'use strict';
 
-  ember_qunit.moduleFor('controller:rhev-options', 'RhevOptionsController', {});
+  ember_qunit.moduleFor('controller:ovirt-options', 'OvirtOptionsController', {});
 
   // Replace this with your real tests.
   ember_qunit.test('it exists', function () {
@@ -27624,21 +27624,21 @@ define('fusor-ember-cli/tests/unit/controllers/rhev-options-test', ['ember-qunit
   // needs: ['controller:foo']
 
 });
-define('fusor-ember-cli/tests/unit/controllers/rhev-options-test.jshint', function () {
+define('fusor-ember-cli/tests/unit/controllers/ovirt-options-test.jshint', function () {
 
   'use strict';
 
   module('JSHint - unit/controllers');
-  test('unit/controllers/rhev-options-test.js should pass jshint', function() { 
-    ok(false, 'unit/controllers/rhev-options-test.js should pass jshint.\nunit/controllers/rhev-options-test.js: line 14, col 3, \'ok\' is not defined.\n\n1 error'); 
+  test('unit/controllers/ovirt-options-test.js should pass jshint', function() { 
+    ok(false, 'unit/controllers/ovirt-options-test.js should pass jshint.\nunit/controllers/ovirt-options-test.js: line 14, col 3, \'ok\' is not defined.\n\n1 error'); 
   });
 
 });
-define('fusor-ember-cli/tests/unit/controllers/rhev-setup-test', ['ember-qunit'], function (ember_qunit) {
+define('fusor-ember-cli/tests/unit/controllers/ovirt-setup-test', ['ember-qunit'], function (ember_qunit) {
 
   'use strict';
 
-  ember_qunit.moduleFor('controller:rhev-setup', 'RhevSetupController', {});
+  ember_qunit.moduleFor('controller:ovirt-setup', 'OvirtSetupController', {});
 
   // Replace this with your real tests.
   ember_qunit.test('it exists', function () {
@@ -27650,21 +27650,21 @@ define('fusor-ember-cli/tests/unit/controllers/rhev-setup-test', ['ember-qunit']
   // needs: ['controller:foo']
 
 });
-define('fusor-ember-cli/tests/unit/controllers/rhev-setup-test.jshint', function () {
+define('fusor-ember-cli/tests/unit/controllers/ovirt-setup-test.jshint', function () {
 
   'use strict';
 
   module('JSHint - unit/controllers');
-  test('unit/controllers/rhev-setup-test.js should pass jshint', function() { 
-    ok(false, 'unit/controllers/rhev-setup-test.js should pass jshint.\nunit/controllers/rhev-setup-test.js: line 14, col 3, \'ok\' is not defined.\n\n1 error'); 
+  test('unit/controllers/ovirt-setup-test.js should pass jshint', function() { 
+    ok(false, 'unit/controllers/ovirt-setup-test.js should pass jshint.\nunit/controllers/ovirt-setup-test.js: line 14, col 3, \'ok\' is not defined.\n\n1 error'); 
   });
 
 });
-define('fusor-ember-cli/tests/unit/controllers/rhev-test', ['ember-qunit'], function (ember_qunit) {
+define('fusor-ember-cli/tests/unit/controllers/ovirt-test', ['ember-qunit'], function (ember_qunit) {
 
   'use strict';
 
-  ember_qunit.moduleFor('controller:rhev', 'RhevController', {});
+  ember_qunit.moduleFor('controller:ovirt', 'OvirtController', {});
 
   // Replace this with your real tests.
   ember_qunit.test('it exists', function () {
@@ -27676,21 +27676,21 @@ define('fusor-ember-cli/tests/unit/controllers/rhev-test', ['ember-qunit'], func
   // needs: ['controller:foo']
 
 });
-define('fusor-ember-cli/tests/unit/controllers/rhev-test.jshint', function () {
+define('fusor-ember-cli/tests/unit/controllers/ovirt-test.jshint', function () {
 
   'use strict';
 
   module('JSHint - unit/controllers');
-  test('unit/controllers/rhev-test.js should pass jshint', function() { 
-    ok(false, 'unit/controllers/rhev-test.js should pass jshint.\nunit/controllers/rhev-test.js: line 14, col 3, \'ok\' is not defined.\n\n1 error'); 
+  test('unit/controllers/ovirt-test.js should pass jshint', function() { 
+    ok(false, 'unit/controllers/ovirt-test.js should pass jshint.\nunit/controllers/ovirt-test.js: line 14, col 3, \'ok\' is not defined.\n\n1 error'); 
   });
 
 });
-define('fusor-ember-cli/tests/unit/controllers/rhev/index-test', ['ember-qunit'], function (ember_qunit) {
+define('fusor-ember-cli/tests/unit/controllers/ovirt/index-test', ['ember-qunit'], function (ember_qunit) {
 
   'use strict';
 
-  ember_qunit.moduleFor('controller:rhev/index', 'RhevIndexController', {});
+  ember_qunit.moduleFor('controller:ovirt/index', 'OvirtIndexController', {});
 
   // Replace this with your real tests.
   ember_qunit.test('it exists', function () {
@@ -27702,13 +27702,13 @@ define('fusor-ember-cli/tests/unit/controllers/rhev/index-test', ['ember-qunit']
   // needs: ['controller:foo']
 
 });
-define('fusor-ember-cli/tests/unit/controllers/rhev/index-test.jshint', function () {
+define('fusor-ember-cli/tests/unit/controllers/ovirt/index-test.jshint', function () {
 
   'use strict';
 
-  module('JSHint - unit/controllers/rhev');
-  test('unit/controllers/rhev/index-test.js should pass jshint', function() { 
-    ok(false, 'unit/controllers/rhev/index-test.js should pass jshint.\nunit/controllers/rhev/index-test.js: line 14, col 3, \'ok\' is not defined.\n\n1 error'); 
+  module('JSHint - unit/controllers/ovirt');
+  test('unit/controllers/ovirt/index-test.js should pass jshint', function() { 
+    ok(false, 'unit/controllers/ovirt/index-test.js should pass jshint.\nunit/controllers/ovirt/index-test.js: line 14, col 3, \'ok\' is not defined.\n\n1 error'); 
   });
 
 });
@@ -28599,11 +28599,11 @@ define('fusor-ember-cli/tests/unit/models/product-test.jshint', function () {
   });
 
 });
-define('fusor-ember-cli/tests/unit/models/rhev-setup-test', ['ember-qunit'], function (ember_qunit) {
+define('fusor-ember-cli/tests/unit/models/ovirt-setup-test', ['ember-qunit'], function (ember_qunit) {
 
   'use strict';
 
-  ember_qunit.moduleForModel('rhev-setup', 'RhevSetup', {
+  ember_qunit.moduleForModel('ovirt-setup', 'OvirtSetup', {
     // Specify the other units that are required for this test.
     needs: []
   });
@@ -28615,13 +28615,13 @@ define('fusor-ember-cli/tests/unit/models/rhev-setup-test', ['ember-qunit'], fun
   });
 
 });
-define('fusor-ember-cli/tests/unit/models/rhev-setup-test.jshint', function () {
+define('fusor-ember-cli/tests/unit/models/ovirt-setup-test.jshint', function () {
 
   'use strict';
 
   module('JSHint - unit/models');
-  test('unit/models/rhev-setup-test.js should pass jshint', function() { 
-    ok(false, 'unit/models/rhev-setup-test.js should pass jshint.\nunit/models/rhev-setup-test.js: line 14, col 3, \'ok\' is not defined.\n\n1 error'); 
+  test('unit/models/ovirt-setup-test.js should pass jshint', function() { 
+    ok(false, 'unit/models/ovirt-setup-test.js should pass jshint.\nunit/models/ovirt-setup-test.js: line 14, col 3, \'ok\' is not defined.\n\n1 error'); 
   });
 
 });
@@ -30154,11 +30154,11 @@ define('fusor-ember-cli/tests/unit/routes/rhci-test.jshint', function () {
   });
 
 });
-define('fusor-ember-cli/tests/unit/routes/rhev-options-test', ['ember-qunit'], function (ember_qunit) {
+define('fusor-ember-cli/tests/unit/routes/ovirt-options-test', ['ember-qunit'], function (ember_qunit) {
 
   'use strict';
 
-  ember_qunit.moduleFor('route:rhev-options', 'RhevOptionsRoute', {});
+  ember_qunit.moduleFor('route:ovirt-options', 'OvirtOptionsRoute', {});
 
   ember_qunit.test('it exists', function () {
     var route = this.subject();
@@ -30169,21 +30169,21 @@ define('fusor-ember-cli/tests/unit/routes/rhev-options-test', ['ember-qunit'], f
   // needs: ['controller:foo']
 
 });
-define('fusor-ember-cli/tests/unit/routes/rhev-options-test.jshint', function () {
+define('fusor-ember-cli/tests/unit/routes/ovirt-options-test.jshint', function () {
 
   'use strict';
 
   module('JSHint - unit/routes');
-  test('unit/routes/rhev-options-test.js should pass jshint', function() { 
-    ok(false, 'unit/routes/rhev-options-test.js should pass jshint.\nunit/routes/rhev-options-test.js: line 13, col 3, \'ok\' is not defined.\n\n1 error'); 
+  test('unit/routes/ovirt-options-test.js should pass jshint', function() { 
+    ok(false, 'unit/routes/ovirt-options-test.js should pass jshint.\nunit/routes/ovirt-options-test.js: line 13, col 3, \'ok\' is not defined.\n\n1 error'); 
   });
 
 });
-define('fusor-ember-cli/tests/unit/routes/rhev-setup-test', ['ember-qunit'], function (ember_qunit) {
+define('fusor-ember-cli/tests/unit/routes/ovirt-setup-test', ['ember-qunit'], function (ember_qunit) {
 
   'use strict';
 
-  ember_qunit.moduleFor('route:rhev-setup', 'RhevSetupRoute', {});
+  ember_qunit.moduleFor('route:ovirt-setup', 'OvirtSetupRoute', {});
 
   ember_qunit.test('it exists', function () {
     var route = this.subject();
@@ -30194,21 +30194,21 @@ define('fusor-ember-cli/tests/unit/routes/rhev-setup-test', ['ember-qunit'], fun
   // needs: ['controller:foo']
 
 });
-define('fusor-ember-cli/tests/unit/routes/rhev-setup-test.jshint', function () {
+define('fusor-ember-cli/tests/unit/routes/ovirt-setup-test.jshint', function () {
 
   'use strict';
 
   module('JSHint - unit/routes');
-  test('unit/routes/rhev-setup-test.js should pass jshint', function() { 
-    ok(false, 'unit/routes/rhev-setup-test.js should pass jshint.\nunit/routes/rhev-setup-test.js: line 13, col 3, \'ok\' is not defined.\n\n1 error'); 
+  test('unit/routes/ovirt-setup-test.js should pass jshint', function() { 
+    ok(false, 'unit/routes/ovirt-setup-test.js should pass jshint.\nunit/routes/ovirt-setup-test.js: line 13, col 3, \'ok\' is not defined.\n\n1 error'); 
   });
 
 });
-define('fusor-ember-cli/tests/unit/routes/rhev-test', ['ember-qunit'], function (ember_qunit) {
+define('fusor-ember-cli/tests/unit/routes/ovirt-test', ['ember-qunit'], function (ember_qunit) {
 
   'use strict';
 
-  ember_qunit.moduleFor('route:rhev', 'RhevRoute', {});
+  ember_qunit.moduleFor('route:ovirt', 'OvirtRoute', {});
 
   ember_qunit.test('it exists', function () {
     var route = this.subject();
@@ -30219,21 +30219,21 @@ define('fusor-ember-cli/tests/unit/routes/rhev-test', ['ember-qunit'], function 
   // needs: ['controller:foo']
 
 });
-define('fusor-ember-cli/tests/unit/routes/rhev-test.jshint', function () {
+define('fusor-ember-cli/tests/unit/routes/ovirt-test.jshint', function () {
 
   'use strict';
 
   module('JSHint - unit/routes');
-  test('unit/routes/rhev-test.js should pass jshint', function() { 
-    ok(false, 'unit/routes/rhev-test.js should pass jshint.\nunit/routes/rhev-test.js: line 13, col 3, \'ok\' is not defined.\n\n1 error'); 
+  test('unit/routes/ovirt-test.js should pass jshint', function() { 
+    ok(false, 'unit/routes/ovirt-test.js should pass jshint.\nunit/routes/ovirt-test.js: line 13, col 3, \'ok\' is not defined.\n\n1 error'); 
   });
 
 });
-define('fusor-ember-cli/tests/unit/routes/rhev/engine-test', ['ember-qunit'], function (ember_qunit) {
+define('fusor-ember-cli/tests/unit/routes/ovirt/engine-test', ['ember-qunit'], function (ember_qunit) {
 
   'use strict';
 
-  ember_qunit.moduleFor('route:rhev/engine', 'RhevEngineRoute', {});
+  ember_qunit.moduleFor('route:ovirt/engine', 'OvirtEngineRoute', {});
 
   ember_qunit.test('it exists', function () {
     var route = this.subject();
@@ -30244,21 +30244,21 @@ define('fusor-ember-cli/tests/unit/routes/rhev/engine-test', ['ember-qunit'], fu
   // needs: ['controller:foo']
 
 });
-define('fusor-ember-cli/tests/unit/routes/rhev/engine-test.jshint', function () {
+define('fusor-ember-cli/tests/unit/routes/ovirt/engine-test.jshint', function () {
 
   'use strict';
 
-  module('JSHint - unit/routes/rhev');
-  test('unit/routes/rhev/engine-test.js should pass jshint', function() { 
-    ok(false, 'unit/routes/rhev/engine-test.js should pass jshint.\nunit/routes/rhev/engine-test.js: line 13, col 3, \'ok\' is not defined.\n\n1 error'); 
+  module('JSHint - unit/routes/ovirt');
+  test('unit/routes/ovirt/engine-test.js should pass jshint', function() { 
+    ok(false, 'unit/routes/ovirt/engine-test.js should pass jshint.\nunit/routes/ovirt/engine-test.js: line 13, col 3, \'ok\' is not defined.\n\n1 error'); 
   });
 
 });
-define('fusor-ember-cli/tests/unit/routes/rhev/index-test', ['ember-qunit'], function (ember_qunit) {
+define('fusor-ember-cli/tests/unit/routes/ovirt/index-test', ['ember-qunit'], function (ember_qunit) {
 
   'use strict';
 
-  ember_qunit.moduleFor('route:rhev/index', 'RhevIndexRoute', {});
+  ember_qunit.moduleFor('route:ovirt/index', 'OvirtIndexRoute', {});
 
   ember_qunit.test('it exists', function () {
     var route = this.subject();
@@ -30269,13 +30269,13 @@ define('fusor-ember-cli/tests/unit/routes/rhev/index-test', ['ember-qunit'], fun
   // needs: ['controller:foo']
 
 });
-define('fusor-ember-cli/tests/unit/routes/rhev/index-test.jshint', function () {
+define('fusor-ember-cli/tests/unit/routes/ovirt/index-test.jshint', function () {
 
   'use strict';
 
-  module('JSHint - unit/routes/rhev');
-  test('unit/routes/rhev/index-test.js should pass jshint', function() { 
-    ok(false, 'unit/routes/rhev/index-test.js should pass jshint.\nunit/routes/rhev/index-test.js: line 13, col 3, \'ok\' is not defined.\n\n1 error'); 
+  module('JSHint - unit/routes/ovirt');
+  test('unit/routes/ovirt/index-test.js should pass jshint', function() { 
+    ok(false, 'unit/routes/ovirt/index-test.js should pass jshint.\nunit/routes/ovirt/index-test.js: line 13, col 3, \'ok\' is not defined.\n\n1 error'); 
   });
 
 });

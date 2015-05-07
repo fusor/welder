@@ -4,7 +4,7 @@ export default Ember.Controller.extend({
 
   needs: ['deployment'],
 
-  isRhevOpen: true,
+  isOvirtOpen: true,
   isOpenStackOpen: false,
   isCloudFormsOpen: false,
   foremanTasksURL: null,

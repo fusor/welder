@@ -6,7 +6,7 @@ export default Ember.ObjectController.extend({
 
   cfme_install_loc: Ember.computed.alias("controllers.deployment.cfme_install_loc"),
 
-  disableRHEV: false,
+  disableOvirt: false,
   disableOpenStack: false,
 
   actions: {

@@ -158,18 +158,18 @@ module Actions
       def apply_deployment_parameter_overrides(hostgroup, deployment, puppet_environment)
         # TODO: ISSUE: the following attributes exist on the deployment object, but I do not know
         # if they should be mapping to puppet class parameters and if so, which class & parameter?
-        # :name => , :value => deployment.rhev_database_name,
+        # :name => , :value => deployment.ovirt_database_name,
         # :name => , :value => deployment.cfme_install_loc,
-        # :name => , :value => deployment.rhev_is_self_hosted,
+        # :name => , :value => deployment.ovirt_is_self_hosted,
 
         # TODO: ISSUE: the following attribute exists on both ovirt::engine::config & ovirt::engine::setup; however,
         # unclear which one the deployment attribute is associated with
-        # :name => , :value => deployment.rhev_storage_type,
+        # :name => , :value => deployment.ovirt_storage_type,
 
         deployment_overrides =
           [
             {
-              :hostgroup_name => "RHEV-Engine",
+              :hostgroup_name => "oVirt-Engine",
               :puppet_classes =>
               [
                 {
@@ -177,20 +177,20 @@ module Actions
                   :parameters =>
                   [
                     #{ :name => "hosts_addresses", :value => host_addresses(deployment, hostgroup) },
-                    { :name => "cluster_name", :value => deployment.rhev_cluster_name },
-                    { :name => "storage_name", :value => deployment.rhev_storage_name },
-                    { :name => "storage_address", :value => deployment.rhev_storage_address },
-                    { :name => "storage_type", :value => deployment.rhev_storage_type },
-                    { :name => "storage_path", :value => deployment.rhev_share_path },
-                    { :name => "cpu_type", :value => deployment.rhev_cpu_type }
+                    { :name => "cluster_name", :value => deployment.ovirt_cluster_name },
+                    { :name => "storage_name", :value => deployment.ovirt_storage_name },
+                    { :name => "storage_address", :value => deployment.ovirt_storage_address },
+                    { :name => "storage_type", :value => deployment.ovirt_storage_type },
+                    { :name => "storage_path", :value => deployment.ovirt_share_path },
+                    { :name => "cpu_type", :value => deployment.ovirt_cpu_type }
                   ]
                 },
                 {
                   :name => "ovirt::engine::setup",
                   :parameters =>
                   [
-                    { :name => "storage_type", :value => deployment.rhev_storage_type },
-                    { :name => "admin_password", :value => deployment.rhev_engine_admin_password }
+                    { :name => "storage_type", :value => deployment.ovirt_storage_type },
+                    { :name => "admin_password", :value => deployment.ovirt_engine_admin_password }
                   ]
                 }
               ]

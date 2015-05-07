@@ -24,12 +24,12 @@ module Actions
         fail _("Unable to locate host group settings in config/settings.plugins.d/fusor.yaml") unless SETTINGS[:fusor][:host_groups]
 
         sequence do
-          products_enabled = [deployment.deploy_rhev, deployment.deploy_cfme, deployment.deploy_openstack]
+          products_enabled = [deployment.deploy_ovirt, deployment.deploy_cfme, deployment.deploy_openstack]
 
           content = SETTINGS[:fusor][:content]
-          products_content = [content[:rhev], content[:cloudforms], content[:openstack]]
+          products_content = [content[:ovirt], content[:cloudforms], content[:openstack]]
           host_groups = SETTINGS[:fusor][:host_groups]
-          products_host_groups = [host_groups[:rhev], host_groups[:cloudforms], host_groups[:openstack]]
+          products_host_groups = [host_groups[:ovirt], host_groups[:cloudforms], host_groups[:openstack]]
 
           products_enabled.each_with_index do |product_enabled, index|
             if product_enabled && products_content[index] && products_host_groups[index]
@@ -62,9 +62,9 @@ module Actions
             end
           end
 
-          if deployment.deploy_rhev
-            Rails.logger.debug "XXX RHEV is enabled, planning deployment of rhev"
-            plan_action(::Actions::Fusor::Deployment::DeployRhev, deployment)
+          if deployment.deploy_ovirt
+            Rails.logger.debug "XXX oVirt is enabled, planning deployment of ovirt"
+            plan_action(::Actions::Fusor::Deployment::DeployoVirt, deployment)
             Rails.logger.debug"XXX Deployment action planned"
           end
         end

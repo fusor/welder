@@ -14,9 +14,9 @@ export default Ember.ObjectController.extend({
 
   allDiscoveredHosts: Ember.computed.alias("controllers.hypervisor/discovered-host.allDiscoveredHosts"),
   // same as controllers.deployment.discovered_hosts
-  selectedRhevHypervisorHosts: Ember.computed.alias("controllers.hypervisor/discovered-host.model"),
+  selectedOvirtHypervisorHosts: Ember.computed.alias("controllers.hypervisor/discovered-host.model"),
   // same as controllers.deployment.discovered_host
-  selectedRhevEngineHost: Ember.computed.alias("controllers.engine/discovered-host.model"),
+  selectedOvirtEngineHost: Ember.computed.alias("controllers.engine/discovered-host.model"),
 
   isAllChecked: Ember.computed.alias("controllers.hypervisor/discovered-host.isAllChecked"),
   allChecked: Ember.computed.alias("controllers.hypervisor/discovered-host.allChecked"),
@@ -30,17 +30,17 @@ export default Ember.ObjectController.extend({
   }.observes('isSelectedAsHypervisor'),
 
   isSelectedAsHypervisor: function () {
-    if (this.get('selectedRhevHypervisorHosts')) {
-      var selectedIds = this.get('selectedRhevHypervisorHosts').getEach("id")
+    if (this.get('selectedOvirtHypervisorHosts')) {
+      var selectedIds = this.get('selectedOvirtHypervisorHosts').getEach("id")
       return selectedIds.contains(this.get('id'))
     } else {
       return false
     }
-  }.property('selectedRhevHypervisorHosts.[]'),
+  }.property('selectedOvirtHypervisorHosts.[]'),
 
   isSelectedAsEngine: function () {
-    return (this.get('selectedRhevEngineHost.id') === this.get('id'));
-  }.property('selectedRhevEngineHost'),
+    return (this.get('selectedOvirtEngineHost.id') === this.get('id'));
+  }.property('selectedOvirtEngineHost'),
 
   actions: {
     engineHostChanged: function(host) {

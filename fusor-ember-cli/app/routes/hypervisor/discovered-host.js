@@ -36,7 +36,7 @@ export default Ember.Route.extend({
             success: function(response) {
               resolve(response);
               if (redirectPath) {
-                self.transitionTo('rhev-options');
+                self.transitionTo('ovirt-options');
               }
             },
 

@@ -5,18 +5,18 @@ export default Ember.Route.extend({
   setupController: function(controller, model) {
     controller.set('model', model);
 
-    var isRhev = this.controllerFor('deployment').get('isRhev');
+    var isOvirt = this.controllerFor('deployment').get('isOvirt');
     var isOpenStack = this.controllerFor('deployment').get('isOpenStack');
-    if (isRhev && !(isOpenStack)) {
-      this.controllerFor('where-install').set('disableRHEV', false);
+    if (isOvirt && !(isOpenStack)) {
+      this.controllerFor('where-install').set('disableOvirt', false);
       this.controllerFor('where-install').set('disableOpenStack', true);
-      return this.controllerFor('deployment').set('cfme_install_loc', 'RHEV');
-    } else if (!(isRhev) && isOpenStack) {
-      this.controllerFor('where-install').set('disableRHEV', true);
+      return this.controllerFor('deployment').set('cfme_install_loc', 'Ovirt');
+    } else if (!(isOvirt) && isOpenStack) {
+      this.controllerFor('where-install').set('disableOvirt', true);
       this.controllerFor('where-install').set('disableOpenStack', false);
       return this.controllerFor('deployment').set('cfme_install_loc', 'OpenStack');
     } else {
-      this.controllerFor('where-install').set('disableRHEV', false);
+      this.controllerFor('where-install').set('disableOvirt', false);
       this.controllerFor('where-install').set('disableOpenStack', false);
     }
   },

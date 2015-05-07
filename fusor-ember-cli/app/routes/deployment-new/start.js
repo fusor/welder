@@ -9,7 +9,7 @@ export default Ember.Route.extend({
 
   activate: function() {
     this.controllerFor('deployment-new').set('isHideWizard', true);
-    this.controllerFor('deployment-new').set('deploy_rhev', true);
+    this.controllerFor('deployment-new').set('deploy_ovirt', true);
     this.controllerFor('deployment-new').set('deploy_openstack', false);
     this.controllerFor('deployment-new').set('deploy_cfme', false);
   },

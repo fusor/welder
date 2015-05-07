@@ -5,7 +5,7 @@ export default Ember.Mixin.create({
   isUpstream: false,
 
   // declared in controllers, and not in mixin
-  // isRhev
+  // isOvirt
   // isOpenStack
   // isCloudForms
 
@@ -14,8 +14,8 @@ export default Ember.Mixin.create({
 
   // disable Next button if none selected
   disableNextOnStart: function () {
-    return (!(this.get('isRhev') || this.get('isOpenStack') || this.get('isCloudForms')));
-  }.property('isRhev', 'isOpenStack', 'isCloudForms'),
+    return (!(this.get('isOvirt') || this.get('isOpenStack') || this.get('isCloudForms')));
+  }.property('isOvirt', 'isOpenStack', 'isCloudForms'),
 
   // names
   nameRHCI: function() {
@@ -30,8 +30,8 @@ export default Ember.Mixin.create({
     if (this.get('isUpstream')) { return "Foreman"; } else { return "Satellite"; }
   }.property('isUpstream'),
 
-  nameRhev: function() {
-    if (this.get('isUpstream')) { return "oVirt"; } else { return "RHEV"; }
+  nameOvirt: function() {
+    if (this.get('isUpstream')) { return "Ovirt"; } else { return "Ovirt"; }
   }.property('isUpstream'),
 
   nameOpenStack: function() {
@@ -43,8 +43,8 @@ export default Ember.Mixin.create({
   }.property('isUpstream'),
 
   // images
-  imgRhev: function() {
-    if (this.get('isUpstream')) { return "/assets/r/ovirt-640-210.png"; } else { return "/assets/r/rhci-rhev-640-210.png"; }
+  imgOvirt: function() {
+    if (this.get('isUpstream')) { return "/assets/r/ovirt-640-210.png"; } else { return "/assets/r/rhci-ovirt-640-210.png"; }
   }.property('isUpstream'),
 
   imgOpenStack: function() {

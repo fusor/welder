@@ -5,7 +5,7 @@
       :rpm_component_view_name: "Fusor RPM Content"
       :puppet_component_view_name: "Fusor Puppet Content"
 
-    :rhev:
+    :ovirt:
       - :product_name: "Red Hat Enterprise Linux Server"
         :repository_set_name: "Red Hat Enterprise Linux 6 Server (RPMs)"
         :basearch: "x86_64"
@@ -47,18 +47,18 @@
         :releasever: "6Server"
 
   :host_groups:
-    :rhev:
+    :ovirt:
      :root_name: "Fusor Base" # seeded by the fusor-installer
      :host_groups:
        - :parent: "Fusor Base"
 
-       - :name: "RHEV-Engine"
+       - :name: "oVirt-Engine"
          :parent: :root_deployment
          :puppet_classes:
            - :name: "ovirt"
              :parameters:
              - :name: "product"
-               :override: "RHEV"
+               :override: "oVirt"
            - :name: "ovirt::engine::config"
              :parameters:
              - :name: "username"
@@ -95,13 +95,13 @@
              - :name: "url"
              - :name: "username"
 
-       - :name: "RHEV-Hypervisor"
+       - :name: "oVirt-Hypervisor"
          :parent: :root_deployment
          :puppet_classes:
            - :name: "ovirt"
              :parameters:
              - :name: "product"
-               :override: "RHEV"
+               :override: "oVirt"
            - :name: "ovirt::hypervisor::packages"
 
   :activation_key:

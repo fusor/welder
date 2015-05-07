@@ -18,16 +18,16 @@ module Fusor
     validates :name, :presence => true, :uniqueness => {:scope => :organization_id}
     validates :organization_id, :presence => true
 
-    belongs_to :rhev_engine_host, :class_name => "::Host::Base", :foreign_key => :rhev_engine_host_id
-    has_many :rhev_hypervisor_hosts, :class_name => "::Host::Base", :through => :deployment_hosts
+    belongs_to :ovirt_engine_host, :class_name => "::Host::Base", :foreign_key => :ovirt_engine_host_id
+    has_many :ovirt_hypervisor_hosts, :class_name => "::Host::Base", :through => :deployment_hosts
     validates_with ::Katello::Validators::KatelloNameFormatValidator, :attributes => :name
 
 
-    belongs_to :discovered_host, :class_name => "::Host::Base", :foreign_key => :rhev_engine_host_id
+    belongs_to :discovered_host, :class_name => "::Host::Base", :foreign_key => :ovirt_engine_host_id
     has_many :deployment_hosts, :class_name => "Fusor::DeploymentHost", :foreign_key => :deployment_id
     has_many :discovered_hosts, :through => :deployment_hosts, :foreign_key => :discovered_host_id, :source => :discovered_host
-    has_many :rhev_hypervisor_hosts, :through => :deployment_hosts, :class_name => "::Host::Base"
-    alias_attribute :discovered_host_id, :rhev_engine_host_id
+    has_many :ovirt_hypervisor_hosts, :through => :deployment_hosts, :class_name => "::Host::Base"
+    alias_attribute :discovered_host_id, :ovirt_engine_host_id
 
   end
 end

@@ -39,8 +39,8 @@ export default Router.map(function() {
       this.resource('configure-environment');
     });
 
-    this.resource('rhev', function() {
-      this.resource('rhev-setup', { path: 'setup' });
+    this.resource('ovirt', function() {
+      this.resource('ovirt-setup', { path: 'setup' });
       this.resource('hypervisor', function() {
         this.route('discovered-host');
         this.route('existing-host');
@@ -52,7 +52,7 @@ export default Router.map(function() {
         this.route('existing-host');
         this.route('new-host');
       });
-      this.resource('rhev-options', { path: 'configuration' });
+      this.resource('ovirt-options', { path: 'configuration' });
       this.resource('storage');
       this.resource('networking');
     });

@@ -5,7 +5,7 @@ import DisableTabMixin from "../mixins/disable-tab-mixin";
 export default Ember.ObjectController.extend(DeploymentControllerMixin, DisableTabMixin, {
 
   // these tabs will always be disabled within deployment-new
-  isDisabledRhev: true,
+  isDisabledOvirt: true,
   isDisabledOpenstack: true,
   isDisabledCloudForms: true,
   isDisabledSubscriptions: true,

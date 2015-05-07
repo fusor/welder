@@ -5,21 +5,21 @@
 
       {{#base-f label="Storage Type"}}
 
-        {{#radio-button value="NFS" groupValue=rhev_storage_type id='nfs'}}
+        {{#radio-button value="NFS" groupValue=ovirt_storage_type id='nfs'}}
           NFS
         {{/radio-button}}
         &nbsp;&nbsp;&nbsp;&nbsp;
-        {{#radio-button value="Local" groupValue=rhev_storage_type id='local'}}
+        {{#radio-button value="Local" groupValue=ovirt_storage_type id='local'}}
           Local
         {{/radio-button}}
         &nbsp;&nbsp;&nbsp;&nbsp;
-        {{#radio-button value="Gluster" groupValue=rhev_storage_type id='gluster'}}
+        {{#radio-button value="Gluster" groupValue=ovirt_storage_type id='gluster'}}
           Gluster
         {{/radio-button}}
       {{/base-f}}
 
-      {{text-f label="Storage Address" value=rhev_storage_address placeholder='Leave blank for default' cssId='rhev_storage_address'}}
-      {{text-f label="Share Path" value=rhev_share_path placeholder='Leave blank for default' cssId='rhev_share_path'}}
+      {{text-f label="Storage Address" value=ovirt_storage_address placeholder='Leave blank for default' cssId='ovirt_storage_address'}}
+      {{text-f label="Share Path" value=ovirt_share_path placeholder='Leave blank for default' cssId='ovirt_share_path'}}
 
     </form>
   </div>

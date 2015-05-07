@@ -2,9 +2,9 @@ import Ember from 'ember';
 
 export default Ember.Controller.extend({
   needs: ['application','rhci', 'deployment', 'satellite', 'configure-organization',
-          'configure-environment', 'rhev-setup', 'hypervisor', 'hypervisor/discovered-host',
+          'configure-environment', 'ovirt-setup', 'hypervisor', 'hypervisor/discovered-host',
           'engine/discovered-host', 'storage',
-          'networking', 'rhev-options', 'where-install',
+          'networking', 'ovirt-options', 'where-install',
           'cloudforms-storage-domain', 'cloudforms-vm', 'review'],
 
   // TODO - DRY and update while deployment is finished and button should say "Deployed"
@@ -16,17 +16,17 @@ export default Ember.Controller.extend({
     }
   }.property('controllers.deployment.isStarted'),
 
-  rhevValidated: function() {
-    if (this.get('isRhev')) {
-      return Ember.isPresent(this.get('controllers.deployment.rhev_engine_admin_password')) &&
-             Ember.isPresent(this.get('selectedRhevEngine')) &&
+  ovirtValidated: function() {
+    if (this.get('isOvirt')) {
+      return Ember.isPresent(this.get('controllers.deployment.ovirt_engine_admin_password')) &&
+             Ember.isPresent(this.get('selectedOvirtEngine')) &&
              Ember.isPresent(this.get('selectedHypervisorHosts')) &&
-             Ember.isPresent(this.get('controllers.deployment.rhev_storage_type'));
+             Ember.isPresent(this.get('controllers.deployment.ovirt_storage_type'));
     } else {
       return true;
     }
-  }.property('controllers.deployment.rhev_engine_admin_password', 'controllers.deployment.rhev_storage_type',
-             'selectedRhevEngine', 'selectedHypervisorHosts'),
+  }.property('controllers.deployment.ovirt_engine_admin_password', 'controllers.deployment.ovirt_storage_type',
+             'selectedOvirtEngine', 'selectedHypervisorHosts'),
 
   cfmeValidated: function() {
     if (this.get('isCloudForms')) {
@@ -37,39 +37,39 @@ export default Ember.Controller.extend({
   }.property('controllers.deployment.cfme_install_loc'),
 
   buttonDeployDisabled: function() {
-    return (this.get('controllers.deployment.isStarted') || !(this.get('rhevValidated')) || !(this.get('cfmeValidated')));
-  }.property('controllers.deployment.isStarted', 'rhevValidated', 'cfmeValidated'),
+    return (this.get('controllers.deployment.isStarted') || !(this.get('ovirtValidated')) || !(this.get('cfmeValidated')));
+  }.property('controllers.deployment.isStarted', 'ovirtValidated', 'cfmeValidated'),
 
   showErrorMessage: false,
   errorMsg: null,
   foremanTasksURL: null,
   skipContent: Ember.computed.alias("controllers.deployment.skipContent"),
 
-  isRhevOpen: true,
+  isOvirtOpen: true,
   isOpenStackOpen: false,
   isCloudFormsOpen: false,
 
   engineHostAddressDefault: 'ovirt-hypervisor.rhci.redhat.com',
-  hostAddress: Ember.computed.alias("controllers.rhev-options.hostAddress"),
-  engineHostName: Ember.computed.alias("controllers.rhev-options.engineHostName"),
+  hostAddress: Ember.computed.alias("controllers.ovirt-options.hostAddress"),
+  engineHostName: Ember.computed.alias("controllers.ovirt-options.engineHostName"),
 
   nameDeployment: Ember.computed.alias("controllers.deployment.name"),
   selectedOrganization: Ember.computed.alias("controllers.deployment.selectedOrganzation"),
   selectedEnvironment: Ember.computed.alias("controllers.deployment.selectedEnvironment"),
-  rhevSetup: Ember.computed.alias("controllers.deployment.rhevSetup"),
+  ovirtSetup: Ember.computed.alias("controllers.deployment.ovirtSetup"),
 
-  isRhev: Ember.computed.alias("controllers.deployment.isRhev"),
+  isOvirt: Ember.computed.alias("controllers.deployment.isOvirt"),
   isOpenStack: Ember.computed.alias("controllers.deployment.isOpenStack"),
   isCloudForms: Ember.computed.alias("controllers.deployment.isCloudForms"),
 
-  isSelfHosted: Ember.computed.alias("controllers.deployment.rhev_is_self_hosted"),
+  isSelfHosted: Ember.computed.alias("controllers.deployment.ovirt_is_self_hosted"),
   selectedHypervisorHosts: Ember.computed.alias("controllers.deployment.discovered_hosts"),
 
-  rhev_engine_host: Ember.computed.alias("controllers.deployment.discovered_host"),
-  selectedRhevEngine: Ember.computed.alias("controllers.deployment.discovered_host"),
+  ovirt_engine_host: Ember.computed.alias("controllers.deployment.discovered_host"),
+  selectedOvirtEngine: Ember.computed.alias("controllers.deployment.discovered_host"),
 
   nameRHCI: Ember.computed.alias("controllers.rhci.nameRHCI"),
-  nameRhev: Ember.computed.alias("controllers.rhci.nameRhev"),
+  nameOvirt: Ember.computed.alias("controllers.rhci.nameOvirt"),
   nameOpenStack: Ember.computed.alias("controllers.rhci.nameOpenStack"),
   nameCloudForms: Ember.computed.alias("controllers.rhci.nameCloudForms"),
   nameSatellite: Ember.computed.alias("controllers.rhci.nameSatellite"),

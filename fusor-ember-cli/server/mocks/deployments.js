@@ -5,15 +5,15 @@ module.exports = function(app) {
   var deployments = [
         {
           id: 1,
-          name: 'My first RHEV'
+          name: 'My first Ovirt'
        },
        {
           id: 2,
-          name: 'My second RHEV and CloudForms'
+          name: 'My second Ovirt and CloudForms'
        },
        {
           id: 3,
-          name: 'Going Live RHEV and CloudForms'
+          name: 'Going Live Ovirt and CloudForms'
        }
   ];
 

@@ -1,13 +1,13 @@
 import Ember from 'ember';
 
 export default Ember.Controller.extend({
-  needs: ['application', 'rhev-setup', 'side-menu'],
+  needs: ['application', 'ovirt-setup', 'side-menu'],
 
-  rhevSetup: Ember.computed.alias("controllers.rhev-setup.rhevSetup"),
+  ovirtSetup: Ember.computed.alias("controllers.ovirt-setup.ovirtSetup"),
 
   isSelfHost: function() {
-    return (this.get('rhevSetup') === 'selfhost');
-  }.property('rhevSetup'),
+    return (this.get('ovirtSetup') === 'selfhost');
+  }.property('ovirtSetup'),
 
   engineTabName: function() {
     if (this.get('isSelfHost')) {

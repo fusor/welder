@@ -1,8 +1,8 @@
 import Ember from 'ember';
 
 export default Ember.Controller.extend({
-  needs: ['rhev'],
-  engineTabName: Ember.computed.alias("controllers.rhev.engineTabName"),
+  needs: ['ovirt'],
+  engineTabName: Ember.computed.alias("controllers.ovirt.engineTabName"),
   engineTabNameLowercase: function () {
     return this.get('engineTabName').toLowerCase();
   }.property('engineTabName')

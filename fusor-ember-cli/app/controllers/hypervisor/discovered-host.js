@@ -5,21 +5,21 @@ export default Ember.ArrayController.extend({
 
   itemController: ['discovered-host'],
 
-  selectedRhevEngine: Ember.computed.alias("controllers.deployment.discovered_host"),
+  selectedOvirtEngine: Ember.computed.alias("controllers.deployment.discovered_host"),
 
   // Filter out hosts selected as Hypervisor
   availableHosts: Ember.computed.filter('allDiscoveredHosts', function(host, index, array) {
-    return (host.get('id') != this.get('selectedRhevEngine.id'));
-  }).property('allDiscoveredHosts', 'selectedRhevEngine'),
+    return (host.get('id') != this.get('selectedOvirtEngine.id'));
+  }).property('allDiscoveredHosts', 'selectedOvirtEngine'),
 
   hypervisorModelIds: function() {
     if (this.get('model')) {
       var allIds = this.get('model').getEach('id');
-      return allIds.removeObject(this.get('selectedRhevEngine').get('id'));
+      return allIds.removeObject(this.get('selectedOvirtEngine').get('id'));
     } else {
       return [];
     }
-  }.property('model.[]', 'selectedRhevEngine'),
+  }.property('model.[]', 'selectedOvirtEngine'),
 
   cntSelectedHypervisorHosts: Ember.computed.alias('hypervisorModelIds.length'),
 

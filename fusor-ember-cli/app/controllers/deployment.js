@@ -5,7 +5,7 @@ import DisableTabMixin from "../mixins/disable-tab-mixin";
 export default Ember.ObjectController.extend(DeploymentControllerMixin, DisableTabMixin, {
 
   // disable Steps 2, 3, 4, etc on wizard
-  isDisabledRhev: Ember.computed.alias("satelliteInvalid"),
+  isDisabledOvirt: Ember.computed.alias("satelliteInvalid"),
   isDisabledOpenstack: Ember.computed.alias("satelliteInvalid"),
   isDisabledCloudForms: Ember.computed.alias("satelliteInvalid"),
   isDisabledSubscriptions: Ember.computed.alias("satelliteInvalid"),
@@ -23,7 +23,7 @@ export default Ember.ObjectController.extend(DeploymentControllerMixin, DisableT
     },
   },
 
-  selectedRhevEngine: null,
+  selectedOvirtEngine: null,
 
   satelliteInvalid: Ember.computed.or('hasNoName', 'hasNoOrganization', 'hasNoLifecycleEnvironment'),
 

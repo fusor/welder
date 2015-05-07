@@ -4,7 +4,7 @@ export default Ember.Controller.extend({
 
   needs: ['deployment', 'hypervisor/discovered-host'],
 
-  selectedRhevEngineHost: Ember.computed.alias("model"),
+  selectedOvirtEngineHost: Ember.computed.alias("model"),
   hypervisorModelIds: Ember.computed.alias("controllers.hypervisor/discovered-host.hypervisorModelIds"),
 
   // Set by route's setupController. Needed since hypervisorModelIds is

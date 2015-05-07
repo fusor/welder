@@ -30,7 +30,7 @@ then
     cp ./dist/assets/fusor-ember-cli.map     ../ui/app/assets/javascripts/fusor_ui/;
 fi
 
-cp ./dist/assets/rhci-rhev-640-210.png            ../ui/app/assets/images/r/;
+cp ./dist/assets/rhci-ovirt-640-210.png            ../ui/app/assets/images/r/;
 cp ./dist/assets/rhci-openstack-640-210.png       ../ui/app/assets/images/r/;
 cp ./dist/assets/rhci-cloudforms-640-210.png      ../ui/app/assets/images/r/;
 

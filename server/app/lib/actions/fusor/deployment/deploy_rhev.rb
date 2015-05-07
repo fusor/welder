@@ -13,38 +13,38 @@
 module Actions
   module Fusor
     module Deployment
-      class DeployRhev < Actions::Base
+      class DeployoVirt < Actions::Base
         def humanized_name
           _("Deploy Red Hat Enterprise Virtualization")
         end
 
         def plan(deployment)
-          Rails.logger.warn "XXX ================ Planning RHEV Deployment ===================="
+          Rails.logger.warn "XXX ================ Planning oVirt Deployment ===================="
 
           # VERIFY PARAMS HERE
-          if deployment.deploy_rhev
-            fail _("Unable to locate a RHEV Engine Host") unless deployment.rhev_engine_host
+          if deployment.deploy_ovirt
+            fail _("Unable to locate a oVirt Engine Host") unless deployment.ovirt_engine_host
           end
 
           plan_self deployment_id: deployment.id
         end
 
         def finalize
-          Rails.logger.warn "XXX ================ Deploy RHEV finalize method ===================="
+          Rails.logger.warn "XXX ================ Deploy oVirt finalize method ===================="
 
           deployment_id = input.fetch(:deployment_id)
 
           deployment = ::Fusor::Deployment.find(deployment_id)
 
-          if deployment.rhev_engine_host.nil?
-            Rails.logger.warn "XXX finalize: WE DO NOT HAVE A RHEV ENGINE HOST."
+          if deployment.ovirt_engine_host.nil?
+            Rails.logger.warn "XXX finalize: WE DO NOT HAVE A oVirt ENGINE HOST."
           else
-            Rails.logger.warn "XXX finalize: managed host? #{deployment.rhev_engine_host.managed?}"
+            Rails.logger.warn "XXX finalize: managed host? #{deployment.ovirt_engine_host.managed?}"
           end
           Rails.logger.warn "XXX finalize: deployment name is: #{deployment.name}"
           Rails.logger.warn "XXX finalize: deployment org is: #{deployment.organization.id}"
 
-          Rails.logger.warn "XXX ================ RHEV Hypervisor piece ===================="
+          Rails.logger.warn "XXX ================ oVirt Hypervisor piece ===================="
 
           # let's find the proper hostgroup and associate it with the
           # hypervisors
@@ -64,14 +64,14 @@ module Actions
             end
           end
 
-          Rails.logger.warn "XXX ================ RHEV Engine piece ===================="
+          Rails.logger.warn "XXX ================ oVirt Engine piece ===================="
 
           # let's find the proper hostgroup and associate it with the engine
           engine_group = find_engine_hostgroup(deployment)
 
           Rails.logger.warn "XXX finalize: calling assign_host_to_hostgroup (engine)"
 
-          success, host = assign_host_to_hostgroup(deployment.rhev_engine_host, engine_group)
+          success, host = assign_host_to_hostgroup(deployment.ovirt_engine_host, engine_group)
 
           Rails.logger.warn "XXX returned from assign_host_to_hostgroup. #{success}"
           if host
@@ -85,11 +85,11 @@ module Actions
         end
 
         def find_engine_hostgroup(deployment)
-          find_hostgroup(deployment, "RHEV-Engine")
+          find_hostgroup(deployment, "oVirt-Engine")
         end
 
         def find_hypervisor_hostgroup(deployment)
-          find_hostgroup(deployment, "RHEV-Hypervisor")
+          find_hostgroup(deployment, "oVirt-Hypervisor")
         end
 
         #

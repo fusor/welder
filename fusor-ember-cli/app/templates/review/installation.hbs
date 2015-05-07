@@ -22,17 +22,17 @@
 
     {{/accordion-item}}
 
-  {{#if isRhev}}
-    {{#accordion-item name=controllers.deployment.nameRhev isOpen=isRhevOpen}}
+  {{#if isOvirt}}
+    {{#accordion-item name=controllers.deployment.nameOvirt isOpen=isOvirtOpen}}
 
-      Setup Type: {{#link-to 'rhev-setup'}} {{controllers.rhev-setup.rhevSetupTitle}} {{/link-to}}
+      Setup Type: {{#link-to 'ovirt-setup'}} {{controllers.ovirt-setup.ovirtSetupTitle}} {{/link-to}}
       <br />
       {{#if isSelfHosted}}
           {{review-link label='Hypervisor/Engine' routeName='engine.discovered-host' isRequired=true
-                        value=selectedRhevEngine.name}}
+                        value=selectedOvirtEngine.name}}
       {{else}}
           {{review-link label='Engine' routeName='engine.discovered-host' isRequired=true
-                        value=selectedRhevEngine.name}}
+                        value=selectedOvirtEngine.name}}
 
           {{#review-link label='Hypervisor(s)' routeName='hypervisor.discovered-host' isRequired=true
                          value=selectedHypervisorHosts useYieldInstead=true}}
@@ -44,29 +44,29 @@
       {{/if}}
 
       <br />
-      {{review-link label='Engine admin password' routeName='rhev-options' isRequired=true isPassword=true
-                    value=controllers.deployment.rhev_engine_admin_password }}
+      {{review-link label='Engine admin password' routeName='ovirt-options' isRequired=true isPassword=true
+                    value=controllers.deployment.ovirt_engine_admin_password }}
 
-      {{review-link label='Datacenter Name' routeName='rhev-options' isDefault=true
-                    value=controllers.deployment.rhev_database_name}}
+      {{review-link label='Datacenter Name' routeName='ovirt-options' isDefault=true
+                    value=controllers.deployment.ovirt_database_name}}
 
-      {{review-link label='Cluster Name' routeName='rhev-options' isDefault=true
-                    value=controllers.deployment.rhev_cluster_name}}
+      {{review-link label='Cluster Name' routeName='ovirt-options' isDefault=true
+                    value=controllers.deployment.ovirt_cluster_name}}
 
-      {{review-link label='Storage Name' routeName='rhev-options' isDefault=true
-                    value=controllers.deployment.rhev_storage_name}}
+      {{review-link label='Storage Name' routeName='ovirt-options' isDefault=true
+                    value=controllers.deployment.ovirt_storage_name}}
 
-      {{review-link label='CPU Type' routeName='rhev-options' isDefault=true
-                    value=controllers.deployment.rhev_cpu_type}}
+      {{review-link label='CPU Type' routeName='ovirt-options' isDefault=true
+                    value=controllers.deployment.ovirt_cpu_type}}
 
       {{review-link label='Storage Type' routeName='storage' isRequired=true
-                    value=controllers.deployment.rhev_storage_type}}
+                    value=controllers.deployment.ovirt_storage_type}}
 
       {{review-link label='Storage Address' routeName='storage' isDefault=true
-                    value=controllers.deployment.rhev_storage_address}}
+                    value=controllers.deployment.ovirt_storage_address}}
 
       {{review-link label='Storage Path' routeName='storage' isDefault=true
-                    value=controllers.deployment.rhev_share_path}}
+                    value=controllers.deployment.ovirt_share_path}}
 
       <br />
     {{/accordion-item}}
