@@ -66,6 +66,7 @@ export default Ember.Component.extend({
       var plan = this.get('plan');
       var data = { 'role_name': role.get('name'), 'count': nodeCount };
 
+      // use ember-data adapter again
       Ember.$.ajax({
         url: '/fusor/api/openstack/deployment_plans/' + plan.get('id') + '/update_role_count',
         type: 'PUT',

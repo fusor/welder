@@ -8,6 +8,7 @@ export default Ember.Controller.extend(DeploymentControllerMixin, {
   getParamValue: function(paramName, params) {
     var paramValue = null;
     var numParams = params.get('length');
+    // can you do forEach here?
     for (var i=0; i<numParams; i++) {
       var param = params.objectAt(i);
       if (param.get('id') === paramName) {
@@ -23,6 +24,7 @@ export default Ember.Controller.extend(DeploymentControllerMixin, {
     var params = this.get('model.plan.parameters');
     var self = this;
     this.get('model.plan.roles').forEach(function(role, index) {
+      // use Empty.isBlank or Empty.isEmpty
       if ( self.getParamValue(role.get('flavorParameterName'), params) == null ) {
         unassignedRoles.pushObject(role);
       }
@@ -40,6 +42,7 @@ export default Ember.Controller.extend(DeploymentControllerMixin, {
 
   profiles: function() {
     return this.get('model.profiles');
+  // why model.profiles.length?  use model.profiles.[] if this needs to compute if a record is added/removed
   }.property('model.profiles', 'model.profiles.length'),
 
   numProfiles: function() {
@@ -47,6 +50,7 @@ export default Ember.Controller.extend(DeploymentControllerMixin, {
     return profiles.length;
   }.property('model.profiles', 'model.profiles.length'),
 
+  // not needed if in setupController
   nodes: function() {
     return this.get('model.nodes');
   }.property('model.nodes'),
@@ -84,6 +88,7 @@ export default Ember.Controller.extend(DeploymentControllerMixin, {
       data = { 'role_name': role.get('name'), 'flavor_name': profile.get('name') };
     }
 
+    // I would use an ember-data adapter here
     Ember.$.ajax({
       url: '/fusor/api/openstack/deployment_plans/' + plan.get('id') + '/update_role_flavor',
       type: 'PUT',
@@ -121,6 +126,7 @@ export default Ember.Controller.extend(DeploymentControllerMixin, {
       this.set('showSettings', false);
     },
 
+    // I would use an ember-data adapter here
     deployPlan: function() {
       var plan = this.get('model.plan');
       Ember.$.ajax({
@@ -138,6 +144,7 @@ export default Ember.Controller.extend(DeploymentControllerMixin, {
     },
   },
 
+  /// always false???
   disableAssignNodesNext: function() {
     return false;
   }.property('profiles'),

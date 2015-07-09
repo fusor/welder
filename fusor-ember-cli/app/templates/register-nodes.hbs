@@ -69,7 +69,8 @@
       </div>
   </div>
 
-  {{#each profile in model.profiles}}
+  <!-- if profiles is setup in setupController -->
+  {{#each profile in profiles}}
       <div class="row">
           <div class='col-md-7'>
             {{#if model.nodes}}

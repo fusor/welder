@@ -10,6 +10,8 @@ export default Ember.Component.extend({
   getParamValue: function(paramName, params) {
     var paramValue = null;
     var numParams = params.get('length');
+
+    // refactor - can you use forEach() here
     for (var i=0; i<numParams; i++) {
       var param = params.objectAt(i);
       if (param.get('id') === paramName) {
@@ -38,6 +40,7 @@ export default Ember.Component.extend({
     var assignedRoles = this.get('assignedRoles');
     this.get('plan.roles').forEach(function(role, index) {
       var unassignedRole = true;
+      // refactor
       for (var i=0; i<assignedRoles.length; i++) {
         if ( role.get('name') === assignedRoles[i].get('name') ) {
           unassignedRole = false;

@@ -5,6 +5,14 @@ export default Ember.Controller.extend(DeploymentControllerMixin, {
 
   needs: ['deployment'],
 
+  // I usually don't override init on a controller
+  // if so, I think it's }.on('init') at the end of the function like this
+  // doThisOnInit: function() {
+  //
+  //}.on('init')
+  //
+  //Not sure of the purpose of this. If you want to create a new node think you are created a new node, I would create
+  //an object using ember-data this.store.createRecord('node') in the route ????
   init: function() {
     this._super();
     this.Node = Ember.Object.extend({
@@ -92,12 +100,15 @@ export default Ember.Controller.extend(DeploymentControllerMixin, {
 
   preRegistered: 0,
   nodeRegComplete: function() {
+    // I doubt this works. Use this.get('model.nodes.length')
     return  this.get('model.nodes').length + this.get('errorNodes').length - this.get('preRegistered');
   }.property('model.nodes.length', 'errorNodes.length', 'preRegistered'),
 
   nodeRegTotal: function() {
+    // same here - Use this.get('newNodes.length')
     var total = this.get('nodeRegComplete') + this.get('newNodes').length;
     if (this.get('registrationInProgress') && !this.get('registrationPaused')) {
+      // use this.incrementProperty('total') if total is an attribute
       total++;
     }
     return total;
@@ -110,6 +121,7 @@ export default Ember.Controller.extend(DeploymentControllerMixin, {
   }.property('nodeRegComplete', 'nodeRegTotal'),
 
   noRegisteredNodes: function() {
+      // put .length inside ())
       return (this.get('model.nodes').length < 1);
   }.property('model.nodes', 'model.nodes.length'),
 
@@ -155,6 +167,7 @@ export default Ember.Controller.extend(DeploymentControllerMixin, {
   doCancelUpload: function(fileInput) {
     if (fileInput)
     {
+      // .set('value', null)
       fileInput.value = null;
     }
     this.set('isUploadVisible', false);
@@ -172,6 +185,7 @@ export default Ember.Controller.extend(DeploymentControllerMixin, {
       });
 
       // Always start with at least one profile
+      // this much work without .get('length') since you have it alot
       if (edittedNodes.length === 0) {
         var newNode = this.Node.create({});
         newNode.isDefault = true;
@@ -202,6 +216,7 @@ export default Ember.Controller.extend(DeploymentControllerMixin, {
 
     cancelRegisterNodes: function() {
       this.closeRegDialog();
+      // I tried this to remove all objects from an association and had problems. Is it working for you?
       this.set('edittedNodes', []);
       // Unpause if necessary
       if (this.get('registrationPaused'))
@@ -267,6 +282,8 @@ export default Ember.Controller.extend(DeploymentControllerMixin, {
               var ipmi_password = node_data[7].trim();
               var mac_address = node_data[8].trim();
 
+              // so this is the Node created in init, right?
+              // I think an ember-data belongsTo assocation would be cleaner
               var newNode = me.Node.create({
                 driver: driver,
                 ipAddress: ipmi_address,
@@ -319,6 +336,7 @@ export default Ember.Controller.extend(DeploymentControllerMixin, {
   },
 
   doNextNodeRegistration: function() {
+    // === true is not needed
     if (this.get('modalOpen') === true) {
       this.set('registrationPaused', true);
     }
@@ -343,9 +361,12 @@ export default Ember.Controller.extend(DeploymentControllerMixin, {
   },
 
   getImage: function(imageName) {
+    // this may be fine if the image doesn't need to be bound to anything in the DOM
     return Ember.$.getJSON('/fusor/api/openstack/images/show_by_name/' + imageName);
   },
 
+  // it seems this function should be in an actions hash { }
+  // also seems you can have your separate promises as separate actions (I think)
   registerNode: function(node) {
     var me = this;
     var bmDeployKernelImage = null;
