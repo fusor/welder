@@ -107,8 +107,13 @@ export default Ember.Controller.extend(DeploymentControllerMixin, {
   nodeRegPercentComplete: function() {
     var nodeRegComplete = this.get('nodeRegComplete');
     var nodeRegTotal = this.get('nodeRegTotal');
-    return Math.round(nodeRegComplete / nodeRegTotal * 100);
-  }.property('nodeRegComplete', 'nodeRegTotal'),
+    var numSteps = nodeRegTotal * 2;
+    var stepsComplete = nodeRegComplete * 2;
+    if (this.get('currentNodeInitRegComplete')) {
+      stepsComplete++;
+    }
+    return Math.round(stepsComplete / numSteps * 100);
+  }.property('nodeRegComplete', 'nodeRegTotal', 'currentNodeInitRegComplete'),
 
   noRegisteredNodes: function() {
       return (this.get('model').nodes.get('length') < 1);
@@ -310,6 +315,7 @@ export default Ember.Controller.extend(DeploymentControllerMixin, {
     if (newNodes && newNodes.length > 0) {
       if (!this.get('registrationInProgress'))
       {
+        this.set('totalProgressCount', newNodes.length * 2);
         this.set('preRegistered', this.get('model').nodes.get('length'));
         this.doNextNodeRegistration();
       }
@@ -382,28 +388,105 @@ export default Ember.Controller.extend(DeploymentControllerMixin, {
     });
 
     var handleSuccess = function(node) {
-      me.get('model').nodes.pushObject(node);
-      me.doNextNodeRegistration();
+      this.set('currentNodeInitRegComplete', true);
+      me.checkForNodeRegistrationComplete(node);
+
     };
-
     var handleFailure = function(reason) {
-      me.get('model').nodes.get('content').removeObject(createdNode);
-      try {
-        var displayMessage = reason.responseJSON.displayMessage;
-        displayMessage = displayMessage.substring(displayMessage.indexOf('{'),displayMessage.indexOf('}') + 1) + "}";
-        displayMessage = displayMessage.replace(/\\/g, "");
-        displayMessage = displayMessage.replace(/\"\{/g, "{");
+      me.set('currentNodeInitRegComplete', true);
+      // TODO: Remove this, should not continue if initial save fails
+      me.checkForNodeRegistrationComplete(node, reason);
 
-        var errorObj = JSON.parse(displayMessage);
-        node.errorMessage = node.ipAddress + ": " + errorObj.error_message.faultstring;
-      }
-      catch (e) {
-        node.errorMessage = node.ipAddress + ": " + reason.statusText;
-     }
+      // TODO: Uncomment this
+      /*
+      me.get('model').nodes.get('content').removeObject(createdNode);
+      node.errorMessage = node.ipAddress + ": " + me.getErrorMessageFromReason(reason);
       me.get('errorNodes').pushObject(node);
       me.doNextNodeRegistration();
+      */
     };
 
+    this.set('currentNodeInitRegComplete', false);
     createdNode.save().then(handleSuccess).catch(handleFailure);
+  },
+
+  getErrorMessageFromReason: function(reason) {
+    try {
+      var displayMessage = reason.responseJSON.displayMessage;
+      displayMessage = displayMessage.substring(displayMessage.indexOf('{'),displayMessage.indexOf('}') + 1) + "}";
+      displayMessage = displayMessage.replace(/\\/g, "");
+      displayMessage = displayMessage.replace(/"\{/g, "{");
+
+      var errorObj = JSON.parse(displayMessage);
+      return errorObj.error_message.faultstring;
+    }
+    catch (e) {
+      return reason.statusText;
+    }
+  },
+
+  // TODO: remove failed param
+  checkForNodeRegistrationComplete: function(node, reason) {
+    var me = this;
+    var iterationCount = 0;
+
+    var promiseFunction = function(resolve) {
+      var checkForDone = function() {
+        /* TODO: Update this code to make approprate call and check results appropriately
+        Ember.$.ajax({
+          url: '/fusor/api/openstack/deployment_plans/' + plan.get('id') + '/update_parameters',
+          type: 'PUT',
+          contentType: 'application/json',
+          data: JSON.stringify({ 'parameters': params }),
+          success: function() {
+            // check if return status indicates the node registration completed and was successful
+            if (status === SUCCESS) {
+              resolve(true);
+            }
+            else if (status === PENDING) {
+              resolve(false)
+            }
+            else if (status === FAILURE) {
+              resolve(true, reason);
+            }
+          },
+          error: function(error) {
+            resolve(true, error);
+          }
+        });
+        ***************************************************************/
+        if (iterationCount === 5) {
+          resolve(true, reason);
+        }
+        else {
+          resolve(false);
+        }
+      };
+
+      Ember.run.later(checkForDone, 3000);
+    };
+
+    var fulfill = function(isDone, failReason) {
+      if (isDone)
+      {
+        if (failReason) {
+          me.get('model').nodes.get('content').removeObject(node);
+          node.errorMessage = node.ipAddress + ": " + me.getErrorMessageFromReason(reason);
+          me.get('errorNodes').pushObject(node);
+        }
+        else {
+          me.get('model').nodes.pushObject(node);
+        }
+        me.doNextNodeRegistration();
+      }
+      else {
+        iterationCount++;
+        var promise = new Ember.RSVP.Promise(promiseFunction);
+        promise.then(fulfill);
+      }
+    };
+
+    var promise = new Ember.RSVP.Promise(promiseFunction);
+    promise.then(fulfill);
   }
 });
