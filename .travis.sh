@@ -3,12 +3,6 @@
 if [ $1 == "install" ]; then 
   cd ..
   gem install bundler
-  # I don't think these are needed in Travis Ci environment, will have to test though
-  #sudo su -c 'echo "local all all trust" > /etc/postgresql/9.1/main/pg_hba.conf'
-  #sudo su -c 'echo "host all all 127.0.0.1/32 trust" >> /etc/postgresql/9.1/main/pg_hba.conf'
-  #sudo su -c 'echo "host all all ::1/128 trust" >> /etc/postgresql/9.1/main/pg_hba.conf'
-  #sudo service postgresql restart
-  #sudo -u postgres createuser katello --superuser
 
   # Our db migrations don't apply to foreman 1.8-stable and katello-2.2, but we don't want our tests breaking everytime develop and master branches are unstable either. There may be a better way to do this, but for now let's get develop / master branches and then checkout out a known working state.
   git clone -b develop https://github.com/theforeman/foreman.git
@@ -43,7 +37,7 @@ if [ $1 == "install" ]; then
   # katello / fusor fixtures in to forman so they all will be loaded
   cd test/fixtures
   ln -s ../../../fusor/server/test/fixtures/* .
-  ln -s ln -s ../../../katello/test/fixtures/models/* .
+  ln -s ../../../katello/test/fixtures/models/* .
 else
   cd ../foreman
   rake db:create
