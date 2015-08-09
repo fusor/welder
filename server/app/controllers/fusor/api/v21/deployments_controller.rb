@@ -38,9 +38,7 @@ module Fusor
     def update
       # update_attribute does not call validation, which is desired, while
       # update_attributes does. Horay consistency!
-      for name, value in params[:deployment]
-        @deployment.update_attribute(name, value)
-      end
+      @deployment.update_attributes(params[:deployment])
       render :json => @deployment, :serializer => Fusor::DeploymentSerializer
     end
 
