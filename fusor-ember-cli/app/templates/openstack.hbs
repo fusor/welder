@@ -1,11 +1,15 @@
 {{#wizard-step outlet=outlet minHeightStyle=minHeightStyle}}
 
+      {{#link-to 'undercloud-deploy' tagName='li'}}
+        <a>{{stepNumberOpenstack}}A. Deploying Undercloud</a>
+      {{/link-to}}
+
       {{#link-to 'register-nodes' tagName='li'}}
-        <a>{{stepNumberOpenstack}}A. Registering Nodes</a>
+        <a>{{stepNumberOpenstack}}B. Registering Nodes</a>
       {{/link-to}}
 
       {{#link-to 'assign-nodes' tagName='li'}}
-        <a>{{stepNumberOpenstack}}B. Assigning Nodes</a>
+        <a>{{stepNumberOpenstack}}C. Assigning Nodes</a>
       {{/link-to}}
 
 {{/wizard-step}}

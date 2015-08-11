@@ -295,3 +295,31 @@ table.fusor-table {
 .rhci-review-product-name {
   white-space: nowrap;
 }
+
+.modal-overlay {
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  width:100%;
+  height:100%;
+  text-align:center;
+  z-index: 1000;
+  background-color: #000000;
+}
+
+.loading-spinner {
+  display: inline-block;
+  position: fixed;
+  left: 40%;
+  top: 40%;
+}
+
+.loading-spinner-content {
+  display: inline-block;
+  padding: 5px;
+  font-size: 16px;
+}
+
+.spinner-text {
+  font-size: 20px;
+}

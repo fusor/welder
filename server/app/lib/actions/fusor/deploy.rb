@@ -26,6 +26,7 @@ module Actions
           unless skip_content
             plan_action(::Actions::Fusor::Content::ManageContentAsSubPlan,
                         deployment)
+
           end
 
           if deployment.deploy_rhev

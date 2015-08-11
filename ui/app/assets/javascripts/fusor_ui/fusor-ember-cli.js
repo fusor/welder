@@ -15,6 +15,24 @@ define('fusor-ember-cli/adapters/application', ['exports', 'ember-data', 'ember'
     });
 
 });
+define('fusor-ember-cli/adapters/deployment-plan', ['exports', 'ember-data'], function (exports, DS) {
+
+    'use strict';
+
+    exports['default'] = DS['default'].ActiveModelAdapter.extend({
+        namespace: 'fusor/api/openstack'
+    });
+
+});
+define('fusor-ember-cli/adapters/deployment-role', ['exports', 'ember-data'], function (exports, DS) {
+
+    'use strict';
+
+    exports['default'] = DS['default'].ActiveModelAdapter.extend({
+        namespace: 'fusor/api/openstack'
+    });
+
+});
 define('fusor-ember-cli/adapters/deployment', ['exports', 'ember-data', 'ember'], function (exports, DS, Ember) {
 
     'use strict';
@@ -54,6 +72,15 @@ define('fusor-ember-cli/adapters/entitlement', ['exports', 'ember-data'], functi
     });
 
 });
+define('fusor-ember-cli/adapters/flavor', ['exports', 'ember-data'], function (exports, DS) {
+
+    'use strict';
+
+    exports['default'] = DS['default'].ActiveModelAdapter.extend({
+        namespace: 'fusor/api/openstack'
+    });
+
+});
 define('fusor-ember-cli/adapters/foreman-task', ['exports', 'ember-data', 'ember'], function (exports, DS, Ember) {
 
     'use strict';
@@ -64,6 +91,15 @@ define('fusor-ember-cli/adapters/foreman-task', ['exports', 'ember-data', 'ember
         headers: {
             'X-CSRF-Token': token
         }
+    });
+
+});
+define('fusor-ember-cli/adapters/image', ['exports', 'ember-data'], function (exports, DS) {
+
+    'use strict';
+
+    exports['default'] = DS['default'].ActiveModelAdapter.extend({
+        namespace: 'fusor/api/openstack'
     });
 
 });
@@ -89,6 +125,24 @@ define('fusor-ember-cli/adapters/management-application', ['exports', 'ember-dat
             return this.ajax(this.buildURL(type, query), 'GET');
         }
 
+    });
+
+});
+define('fusor-ember-cli/adapters/node', ['exports', 'ember-data'], function (exports, DS) {
+
+    'use strict';
+
+    exports['default'] = DS['default'].ActiveModelAdapter.extend({
+        namespace: 'fusor/api/openstack'
+    });
+
+});
+define('fusor-ember-cli/adapters/openstack-deployment', ['exports', 'ember-data'], function (exports, DS) {
+
+    'use strict';
+
+    exports['default'] = DS['default'].ActiveModelAdapter.extend({
+        namespace: 'fusor/api/openstack'
     });
 
 });
@@ -191,12 +245,28 @@ define('fusor-ember-cli/components/base-f', ['exports', 'ember'], function (expo
     }).property(),
 
     showUnits: (function () {
-      return Ember['default'].isBlank(this.get('unitsLabel'));
+      return !Ember['default'].isBlank(this.get('unitsLabel'));
     }).property('unitsLabel'),
+
+    showHelpPopover: (function () {
+      return !Ember['default'].isBlank(this.get('helpText'));
+    }).property('showHelpIndicator'),
 
     unitsClassSize: (function () {
       return this.getWithDefault('unitsSize', 'col-md-2');
     }).property()
+  });
+
+});
+define('fusor-ember-cli/components/base-popover', ['exports', 'ember'], function (exports, Ember) {
+
+  'use strict';
+
+  exports['default'] = Ember['default'].Component.extend({
+    dataToggleId: 'popover',
+    didInsertElement: function didInsertElement() {
+      PatternFly.popovers('[data-toggle=' + this.get('dataToggleId') + ']');
+    }
   });
 
 });
@@ -259,90 +329,86 @@ define('fusor-ember-cli/components/deployment-role', ['exports', 'ember'], funct
   'use strict';
 
   exports['default'] = Ember['default'].Component.extend({
+    role: null,
+    profile: null,
+    plan: null,
+    nodeCount: 0,
+
+    getParamValue: function getParamValue(paramName, params) {
+      var paramValue = null;
+      var numParams = params.get('length');
+      for (var i = 0; i < numParams; i++) {
+        var param = params.objectAt(i);
+        if (param.get('id') === paramName) {
+          paramValue = param.get('value');
+          break;
+        }
+      }
+      return paramValue;
+    },
+
+    roleAssigned: (function () {
+      return this.get('profile') !== null;
+    }).property('profile'),
+
     assignedClass: (function () {
-      if (this.get('role-assigned')) {
+      if (this.get('roleAssigned')) {
         return 'role-assigned';
       } else {
-        return '';
+        return 'role-unassigned';
       }
     }).property('role-assigned'),
 
-    roleLabel: (function () {
-      var roleLabel = this.get('role-label');
-      var roleType = this.get('role-type');
-      if (roleType === 'controller' && this.get('assignedNodes') > 1) {
-        roleLabel += ' (HA)';
-      }
-      return roleLabel;
-    }).property('role-label', 'role-type', 'assignedNodes'),
+    roleNodeCount: (function () {
+      var role = this.get('role');
+      var params = this.get('plan.parameters');
+      return this.getParamValue(role.get('countParameterName'), params);
+    }).property('role', 'plan.parameters'),
 
-    assignedNodes: (function () {
-      var roleType = this.get('role-type');
-      var profile = this.get('profile');
-      if (!this.get('role-assigned')) {
-        return 0;
-      }
+    hasAssignedNodes: (function () {
+      return this.get('roleNodeCount') >= 1;
+    }).property('roleNodeCount'),
 
-      if (roleType === 'controller') {
-        return profile.get('controllerNodes');
-      } else if (roleType === 'compute') {
-        return profile.get('computeNodes');
-      } else if (roleType === 'block') {
-        return profile.get('blockNodes');
-      } else if (roleType === 'object') {
-        return profile.get('objectNodes');
-      }
-    }).property('profile', 'profile.controllerNodes', 'profile.computeNodes', 'profile.blockNodes', 'profile.objectNodes'),
+    multipleAssignedNodes: (function () {
+      return this.get('roleNodeCount') >= 2;
+    }).property('roleNodeCount'),
 
-    maxToAssign: (function () {
-      var numNodes = this.get('assignedNodes');
-      var freeNodes = this.get('profile').get('freeNodes');
-      return freeNodes + numNodes;
-    }).property('profile', 'profile.freeNodes', 'assignedNodes'),
+    profileNodes: (function () {
+      var totalNodes = 10;
+      return totalNodes;
+    }).property('totalNodes'),
 
     availableOptions: (function () {
       var avail = [];
-      var assignedNodes = this.get('assignedNodes');
-      var roleType = this.get('role-type');
       var increment = 1;
-      if (roleType == 'controller') {
-        increment = 2;
-      }
+      var maxNodes = Math.max(this.get('nodeCount'), this.get('roleNodeCount'));
 
-      for (var i = 1; i <= this.get('maxToAssign'); i = i + increment) {
+      for (var i = 0; i <= maxNodes; i = i + increment) {
         var nextOption = Ember['default'].Object.create({
           label: '' + i,
           value: i,
-          selected: i === assignedNodes
+          /* jshint ignore:start */
+          selected: i == this.get('roleNodeCount')
+          /* jshint ignore:end */
         });
         avail.pushObject(nextOption);
       }
 
       return avail;
-    }).property('maxToAssign', 'assignedNodes', 'profile.freeNodes'),
+    }).property('roleNodeCount'),
 
     actions: {
-      assignNodes: function assignNodes() {
-        var newCount = parseInt(this.$('select').val());
-        var roleType = this.get('role-type');
-        var profile = this.get('profile');
-        if (roleType === 'controller') {
-          profile.set('controllerNodes', newCount);
-        } else if (roleType === 'compute') {
-          profile.set('computeNodes', newCount);
-        } else if (roleType === 'block') {
-          profile.set('blockNodes', newCount);
-        } else if (roleType === 'object') {
-          profile.set('objectNodes', newCount);
-        }
+      updateNodeCount: function updateNodeCount() {
+        var nodeCount = parseInt(this.$('select').val());
+        this.sendAction('setRoleCount', this.get('role'), nodeCount);
       },
 
-      editRole: function editRole(roleType) {
-        this.sendAction('edit', roleType);
+      editRole: function editRole() {
+        this.sendAction('edit', this.get('role'));
       },
 
-      removeRole: function removeRole(roleType) {
-        this.sendAction('remove', roleType);
+      removeRole: function removeRole() {
+        this.sendAction('remove', this.get('role'));
       }
     }
   });
@@ -611,6 +677,43 @@ define('fusor-ember-cli/components/error-message', ['exports', 'ember'], functio
   });
 
 });
+define('fusor-ember-cli/components/file-upload-form', ['exports', 'ember'], function (exports, Ember) {
+
+  'use strict';
+
+  exports['default'] = Ember['default'].Component.extend({
+    selectedFile: null,
+
+    formId: (function () {
+      return this.getWithDefault('fileChooserFormId', 'fileChooserForm');
+    }).property(),
+    inputId: (function () {
+      return this.getWithDefault('fileChooserFormId', 'fileChooserInput');
+    }).property(),
+    acceptValue: (function () {
+      return this.getWithDefault('accept', '*');
+    }).property(),
+    getFileInput: function getFileInput() {
+      var idValue = this.get('inputId');
+      return this.$('#' + idValue)[0];
+    },
+    actions: {
+      fileChosen: function fileChosen() {
+        var fileInput = this.getFileInput();
+        this.set('selectedFile', fileInput.files[0]);
+      },
+      doUpload: function doUpload() {
+        var fileInput = this.getFileInput();
+        this.sendAction('doUpload', this.get('selectedFile'), fileInput);
+      },
+      doCancel: function doCancel() {
+        var fileInput = this.getFileInput();
+        this.sendAction('doCancel', fileInput);
+      }
+    }
+  });
+
+});
 define('fusor-ember-cli/components/hypervisor-name', ['exports', 'ember'], function (exports, Ember) {
 
   'use strict';
@@ -653,145 +756,127 @@ define('fusor-ember-cli/components/node-profile', ['exports', 'ember'], function
     assignMenuOpenClass: '',
 
     profile: null,
-    nodeProfiles: null,
+    plan: null,
+    nodes: [],
+
+    getParamValue: function getParamValue(paramName, params) {
+      var paramValue = null;
+      var numParams = params.get('length');
+      for (var i = 0; i < numParams; i++) {
+        var param = params.objectAt(i);
+        if (param.get('id') === paramName) {
+          paramValue = param.get('value');
+          break;
+        }
+      }
+      return paramValue;
+    },
 
     assignedRoles: (function () {
-      var roles = [];
+      var assignedRoles = [];
       var profile = this.get('profile');
-      var me = this;
+      var params = this.get('plan.parameters');
+      var self = this;
+      this.get('plan.roles').forEach(function (role) {
+        if (self.getParamValue(role.get('flavorParameterName'), params) === profile.get('name')) {
+          assignedRoles.pushObject(role);
+        }
+      });
+      return assignedRoles;
+    }).property('profile', 'plan', 'plan.roles', 'plan.parameters'),
 
-      var Role = Ember['default'].Object.extend({
-        roleType: '',
-        roleLabel: '',
-        profile: profile,
-        isDraggingObject: false,
-        watchForDrag: (function () {
-
-          if (this.get('isDraggingObject')) {
-            me.sendAction('startDrag', this);
-          } else {
-            me.sendAction('stopDrag', this);
+    unassignedRoles: (function () {
+      var unassignedRoles = [];
+      var assignedRoles = this.get('assignedRoles');
+      this.get('plan.roles').forEach(function (role) {
+        var unassignedRole = true;
+        for (var i = 0; i < assignedRoles.length; i++) {
+          if (role.get('name') === assignedRoles[i].get('name')) {
+            unassignedRole = false;
+            break;
           }
-        }).observes('isDraggingObject')
-      });
-
-      if (profile.get('isControl')) {
-        roles.pushObject(Role.create({
-          roleType: 'controller',
-          roleLabel: 'Controller'
-        }));
-      }
-      if (profile.get('isCompute')) {
-        roles.pushObject(Role.create({
-          roleType: 'compute',
-          roleLabel: 'Compute'
-        }));
-      }
-      if (profile.get('isBlockStorage')) {
-        roles.pushObject(Role.create({
-          roleType: 'block',
-          roleLabel: 'Block Storage'
-        }));
-      }
-      if (profile.get('isObjectStorage')) {
-        roles.pushObject(Role.create({
-          roleType: 'object',
-          roleLabel: 'Object Storage'
-        }));
-      }
-      return roles;
-    }).property('profile.isCompute', 'profile.isControl', 'profile.isBlockStorage', 'profile.isObjectStorage'),
-
-    controllerAssigned: (function () {
-      var profiles = this.get('nodeProfiles');
-      if (!profiles) {
-        return false;
-      }
-      var retVal = false;
-      profiles.forEach(function (item, index) {
-        if (item.get('isControl')) {
-          retVal = true;
+        }
+        if (unassignedRole) {
+          unassignedRoles.pushObject(role);
         }
       });
-      return retVal;
-    }).property('nodeProfiles', 'nodeProfiles.@each.isControl'),
+      return unassignedRoles;
+    }).property('assignedRoles', 'plan', 'plan.roles'),
 
-    computeAssigned: (function () {
-      var profiles = this.get('nodeProfiles');
-      if (!profiles) {
-        return false;
-      }
-      var retVal = false;
-      profiles.forEach(function (item, index) {
-        if (item.get('isCompute')) {
-          retVal = true;
-        }
-      });
-      return retVal;
-    }).property('nodeProfiles.@each.isCompute'),
+    allRolesAssigned: (function () {
+      return this.get('unassignedRoles').length === 0;
+    }).property('unassignedRoles'),
 
-    blockAssigned: (function () {
-      var profiles = this.get('nodeProfiles');
-      if (!profiles) {
-        return false;
-      }
-      var retVal = false;
-      profiles.forEach(function (item, index) {
-        if (item.get('isBlockStorage')) {
-          retVal = true;
-        }
-      });
-      return retVal;
-    }).property('nodeProfiles.@each.isBlockStorage'),
+    /* jshint ignore:start */
+    nodeMatchesProfile: function nodeMatchesProfile(node, profile) {
+      var nodeMemory = node.get('properties.memory_mb');
+      var nodeCPUs = node.get('properties.cpus');
+      var nodeDisk = node.get('properties.local_gb');
+      var nodeCPUArch = node.get('properties.cpu_arch');
+      var profileMemory = profile.get('ram');
+      var profileCPUs = profile.get('vcpus');
+      var profileDisk = profile.get('disk');
+      var profileCPUArch = profile.get('extra_specs.cpu_arch');
+      return nodeMemory == profileMemory && nodeCPUs == profileCPUs && nodeDisk == profileDisk && nodeCPUArch == profileCPUArch;
+    },
+    /* jshint ignore:end */
 
-    objectAssigned: (function () {
-      var profiles = this.get('nodeProfiles');
-      if (!profiles) {
-        return false;
-      }
-      var retVal = false;
-      profiles.forEach(function (item, index) {
-        if (item.get('isObjectStorage')) {
-          retVal = true;
-        }
-      });
-      return retVal;
-    }).property('nodeProfiles.@each.isObjectStorage'),
-
-    freeNodes: (function () {
+    matchingNodeCount: (function () {
+      var nodeCount = 0;
       var profile = this.get('profile');
-      return profile.get('totalNodes') - profile.get('controllerNodes') - profile.get('computeNodes') - profile.get('blockNodes') - profile.get('objectNodes');
-    }).property('profile.totalNodes', 'profile.controllerNodes', 'profile.computeNodes', 'profile.blockNodes', 'profile.objectNodes'),
-
-    allAssigned: (function () {
-      return this.get('controllerAssigned') && this.get('computeAssigned') && this.get('blockAssigned') && this.get('objectAssigned');
-    }).property('controllerAssigned', 'computeAssigned', 'blockAssigned', 'objectAssigned'),
+      var self = this;
+      this.get('nodes').forEach(function (node) {
+        if (self.nodeMatchesProfile(node, profile)) {
+          nodeCount++;
+        }
+      });
+      return nodeCount;
+    }).property('profile', 'nodes'),
 
     hideAssignMenu: function hideAssignMenu() {
       this.set('assignMenuOpenClass', '');
     },
 
+    assignClass: (function () {
+      if (this.doAssign) {
+        return '';
+      } else {
+        return 'nodes-coalescing';
+      }
+    }).property('doAssign'),
+
     actions: {
-      showAssignMenu: function showAssignMenu(profile) {
-        if (this.get('freeNodes') > 0) {
+      showAssignMenu: function showAssignMenu() {
+        if (this.get('unassignedRoles').length > 0) {
           this.set('assignMenuOpenClass', 'open');
         }
       },
-      assignRole: function assignRole(roleType) {
-        this.set('assignMenuOpenClass', '');
-        this.sendAction('assignRole', this.get('profile'), roleType);
+
+      assignRole: function assignRole(role) {
+        var profile = this.get('profile');
+        var plan = this.get('plan');
+        this.sendAction('assignRole', plan, role, profile);
       },
+
       assignDroppedRole: function assignDroppedRole(role) {
         role.set('isDraggingObject', false);
-        if (role.profile !== this.get('profile')) {
-          if (role.profile) {
-            this.sendAction('removeRole', role.profile, role.roleType);
-          }
-          this.sendAction('assignRole', this.get('profile'), role.roleType);
+        var profile = this.get('profile');
+        var plan = this.get('plan');
+        if (this.getParamValue(role.get('flavorParameterName'), plan.get('parameters')) !== profile.get('name')) {
+          this.sendAction('assignRole', plan, role, profile);
         }
       },
-      removeRole: function removeRole(roleType) {
-        this.sendAction('removeRole', this.get('profile'), roleType);
+      editRole: function editRole(role) {
+        this.sendAction('editRole', role);
+      },
+
+      setRoleCount: function setRoleCount(role, count) {
+        this.sendAction('setRoleCount', role, count);
+      },
+
+      removeRole: function removeRole(role) {
+        var profile = this.get('profile');
+        this.sendAction('removeRole', profile, role);
       }
     },
     didInsertElement: function didInsertElement() {
@@ -991,6 +1076,25 @@ define('fusor-ember-cli/components/radio-button', ['exports', 'ember-radio-butto
 	'use strict';
 
 	exports['default'] = RadioButton['default'];
+
+});
+define('fusor-ember-cli/components/range-text-f', ['exports', 'ember'], function (exports, Ember) {
+
+  'use strict';
+
+  exports['default'] = Ember['default'].Component.extend({
+
+    typeInput: (function () {
+      return this.get('type') ? this.get('type') : 'text';
+    }).property('type'),
+
+    actions: {
+      showErrors: function showErrors() {
+        this.set('showError', true);
+      }
+    }
+
+  });
 
 });
 define('fusor-ember-cli/components/review-link', ['exports', 'ember'], function (exports, Ember) {
@@ -1595,179 +1699,363 @@ define('fusor-ember-cli/controllers/assign-nodes', ['exports', 'ember', 'fusor-e
   exports['default'] = Ember['default'].Controller.extend(DeploymentControllerMixin['default'], {
 
     needs: ['deployment', 'register-nodes'],
-    register: Ember['default'].computed.alias('controllers.register-nodes'),
 
-    availableRoles: (function () {
-      var roles = [];
-      if (!this.get('controllerAssigned')) {
-        roles.pushObject(Ember['default'].Object.create({
-          roleType: 'controller',
-          roleLabel: 'Controller'
-        }));
+    getParamValue: function getParamValue(paramName, params) {
+      var paramValue = null;
+      var numParams = params.get('length');
+      for (var i = 0; i < numParams; i++) {
+        var param = params.objectAt(i);
+        if (param.get('id') === paramName) {
+          paramValue = param.get('value');
+          break;
+        }
       }
-      if (!this.get('computeAssigned')) {
-        roles.pushObject(Ember['default'].Object.create({
-          roleType: 'compute',
-          roleLabel: 'Compute'
-        }));
-      }
-      if (!this.get('blockAssigned')) {
-        roles.pushObject(Ember['default'].Object.create({
-          roleType: 'block',
-          roleLabel: 'Block Storage'
-        }));
-      }
-      if (!this.get('objectAssigned')) {
-        roles.pushObject(Ember['default'].Object.create({
-          roleType: 'object',
-          roleLabel: 'Object Storage'
-        }));
-      }
-      return roles;
-    }).property('controllerAssigned', 'computeAssigned', 'blockAssigned', 'objectAssigned'),
+      return paramValue;
+    },
 
-    isDraggingRole: false,
+    images: (function () {
+      return this.get('model.images');
+    }).property('model.images'),
+
+    unassignedRoles: (function () {
+      var unassignedRoles = [];
+      var params = this.get('model.plan.parameters');
+      var self = this;
+      this.get('model.plan.roles').forEach(function (role) {
+        if (self.getParamValue(role.get('flavorParameterName'), params) == null) {
+          unassignedRoles.pushObject(role);
+        }
+      });
+      return unassignedRoles;
+    }).property('model.plan.roles', 'model.plan.parameters'),
+
+    allRolesAssigned: (function () {
+      return this.get('unassignedRoles').length === 0;
+    }).property('unassignedRoles'),
+
+    noRolesAssigned: (function () {
+      return this.get('unassignedRoles').length === this.get('model.plan.roles').length;
+    }).property('unassignedRoles'),
+
+    profiles: (function () {
+      return this.get('model.profiles');
+    }).property('model.profiles', 'model.profiles.length'),
+
+    numProfiles: (function () {
+      var profiles = this.get('model.profiles');
+      return profiles.length;
+    }).property('model.profiles', 'model.profiles.length'),
+
+    nodes: (function () {
+      return this.get('model.nodes');
+    }).property('model.nodes'),
+
+    nodeCount: (function () {
+      return this.get('model.nodes').length;
+    }).property('model.nodes'),
+
+    assignedNodeCount: (function () {
+      var count = 0;
+      var params = this.get('model.plan.parameters');
+      var self = this;
+      this.get('model.plan.roles').forEach(function (role) {
+        count += parseInt(self.getParamValue(role.get('countParameterName'), params), 10);
+      });
+      return count;
+    }).property('model.plan.roles', 'model.plan.parameters'),
+
+    isDraggingRole: (function () {
+      var isDragging = false;
+      this.get('model.plan.roles').forEach(function (role) {
+        if (role.get('isDraggingObject') === true) {
+          isDragging = true;
+        }
+      });
+      return isDragging;
+    }).property('model.plan.roles', 'model.plan.roles.@each.isDraggingObject'),
 
     droppableClass: (function () {
-      if (this.isDraggingRole) {
+      if (this.get('isDraggingRole')) {
         return 'deployment-roles-active';
       } else {
         return '';
       }
     }).property('isDraggingRole'),
 
-    controllerAssigned: (function () {
-      var profiles = this.get('nodeProfiles');
-      if (!profiles) {
-        return false;
+    showLoadingSpinner: false,
+    loadingSpinnerText: 'Loading...',
+
+    doAssignRole: function doAssignRole(plan, role, profile) {
+      var data;
+      var me = this;
+
+      if (profile == null) {
+        data = { 'role_name': role.get('name'), 'flavor_name': null };
+      } else {
+        data = { 'role_name': role.get('name'), 'flavor_name': profile.get('name') };
       }
-      var retVal = false;
-      profiles.forEach(function (item) {
-        if (item.get('isControl')) {
-          retVal = true;
+
+      me.set('loadingSpinnerText', 'Loading...');
+      me.set('showLoadingSpinner', true);
+
+      Ember['default'].$.ajax({
+        url: '/fusor/api/openstack/deployment_plans/' + plan.get('id') + '/update_role_flavor',
+        type: 'PUT',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function success() {
+          me.set('showLoadingSpinner', false);
+          console.log('SUCCESS');
+        },
+        error: function error(_error) {
+          console.log('ERROR');
+          console.log(_error);
+          // TODO: Remove the reload call once we determine how to get around the failure
+          //       that appears to be due to port forwarding. But make sure to leave the show spinner setting.
+          me.get('model').plan.reload().then(function () {
+            me.set('showLoadingSpinner', false);
+          });
         }
       });
-      return retVal;
-    }).property('nodeProfiles', 'nodeProfiles.@each.isControl'),
-
-    computeAssigned: (function () {
-      var profiles = this.get('nodeProfiles');
-      if (!profiles) {
-        return false;
-      }
-      var retVal = false;
-      profiles.forEach(function (item) {
-        if (item.get('isCompute')) {
-          retVal = true;
-        }
-      });
-      return retVal;
-    }).property('nodeProfiles.@each.isCompute'),
-
-    blockAssigned: (function () {
-      var profiles = this.get('nodeProfiles');
-      if (!profiles) {
-        return false;
-      }
-      var retVal = false;
-      profiles.forEach(function (item) {
-        if (item.get('isBlockStorage')) {
-          retVal = true;
-        }
-      });
-      return retVal;
-    }).property('nodeProfiles.@each.isBlockStorage'),
-
-    objectAssigned: (function () {
-      var profiles = this.get('nodeProfiles');
-      if (!profiles) {
-        return false;
-      }
-      var retVal = false;
-      profiles.forEach(function (item) {
-        if (item.get('isObjectStorage')) {
-          retVal = true;
-        }
-      });
-      return retVal;
-    }).property('nodeProfiles.@each.isObjectStorage'),
-
-    allAssigned: (function () {
-      return this.get('controllerAssigned') && this.get('computeAssigned') && this.get('blockAssigned') && this.get('objectAssigned');
-    }).property('controllerAssigned', 'computeAssigned', 'blockAssigned', 'objectAssigned'),
-
-    noneAssigned: (function () {
-      return !this.get('controllerAssigned') && !this.get('computeAssigned') && !this.get('blockAssigned') && !this.get('objectAssigned');
-    }).property('controllerAssigned', 'computeAssigned', 'blockAssigned', 'objectAssigned'),
-
-    nodeProfiles: (function () {
-      return this.get('register').get('model.nodeProfiles');
-    }).property('register.model.nodeProfiles', 'register.model.nodeProfiles.length'),
-
-    numProfiles: (function () {
-      var profiles = this.get('register.model.nodeProfiles');
-      return profiles.length;
-    }).property('model.nodeProfiles', 'model.nodeProfiles.length'),
-
-    removeRoleFromProfile: function removeRoleFromProfile(profile, roleType) {
-      if (roleType === 'controller') {
-        profile.set('controllerNodes', 0);
-      } else if (roleType === 'compute') {
-        profile.set('computeNodes', 0);
-      } else if (roleType === 'block') {
-        profile.set('blockNodes', 0);
-      } else if (roleType === 'object') {
-        profile.set('objectNodes', 0);
-      }
     },
 
-    actions: {
-      editRole: function editRole(roleType) {},
+    edittedRole: null,
+    edittedRoleImage: null,
+    edittedRoleNodeCount: null,
+    edittedRoleProfile: null,
+    edittedRoleParameters: null,
+    showSettings: true,
 
-      assignRole: function assignRole(profile, roleType) {
-        if (roleType === 'controller') {
-          profile.set('controllerNodes', 1);
-        } else if (roleType === 'compute') {
-          profile.set('computeNodes', 1);
-        } else if (roleType === 'block') {
-          profile.set('blockNodes', 1);
-        } else if (roleType === 'object') {
-          profile.set('objectNodes', 1);
-        }
+    openEditDialog: function openEditDialog() {
+      this.set('editRoleModalOpened', true);
+      this.set('editRoleModalClosed', false);
+    },
+
+    closeEditDialog: function closeEditDialog() {
+      this.set('editRoleModalOpened', false);
+      this.set('editRoleModalClosed', true);
+    },
+
+    openGlobalServiceConfigDialog: function openGlobalServiceConfigDialog() {
+      this.set('editGlobalServiceConfigModalOpened', true);
+      this.set('editGlobalServiceConfigModalClosed', false);
+    },
+
+    closeGlobalServiceConfigDialog: function closeGlobalServiceConfigDialog() {
+      this.set('editGlobalServiceConfigModalOpened', false);
+      this.set('editGlobalServiceConfigModalClosed', true);
+    },
+
+    settingsTabActiveClass: (function () {
+      if (this.get('showSettings')) {
+        return 'active';
+      } else {
+        return 'inactive';
+      }
+    }).property('showSettings'),
+
+    configTabActiveClass: (function () {
+      if (this.get('showSettings')) {
+        return 'inactive';
+      } else {
+        return 'active';
+      }
+    }).property('showSettings'),
+
+    actions: {
+      editRole: function editRole(role) {
+        this.set('showSettings', true);
+        var roleParams = [];
+        var advancedParams = [];
+        this.get('model.plan.parameters').forEach(function (param) {
+          var paramId = param.get('id');
+          if (paramId.indexOf(role.get('parameterPrefix')) === 0) {
+            param.displayId = paramId.substring(role.get('parameterPrefix').length);
+            param.displayId = param.displayId.replace(/([a-z])([A-Z])/g, '$1 $2');
+
+            /* Using boolean breaks saving...
+                      if (param.get('parameter_type') === 'boolean') {
+                        param.set('isBoolean', true);
+                      }
+            */
+            if (param.get('hidden')) {
+              param.set('inputType', 'password');
+            } else {
+              param.set('inputType', param.get('parameter_type'));
+            }
+
+            if (paramId === role.get('imageParameterName') || paramId === role.get('countParameterName') || paramId === role.get('flavorParameterName')) {
+              roleParams.pushObject(param);
+            } else if (param.get('parameter_type') !== 'json') {
+              advancedParams.pushObject(param);
+            }
+          }
+        });
+
+        this.set('edittedRole', role);
+        this.set('edittedRoleImage', this.getParamValue(role.get('imageParameterName'), roleParams));
+        this.set('edittedRoleNodeCount', this.getParamValue(role.get('countParameterName'), roleParams));
+        this.set('edittedRoleProfile', this.getParamValue(role.get('flavorParameterName'), roleParams));
+        this.set('edittedRoleParameters', advancedParams);
+
+        this.openEditDialog();
       },
 
-      removeRole: function removeRole(profile, roleType) {
-        this.removeRoleFromProfile(profile, roleType);
+      saveRole: function saveRole() {
+        var me = this;
+        var plan = this.get('model.plan');
+        var role = this.get('edittedRole');
+
+        var params = [{ 'name': role.get('imageParameterName'), 'value': this.get('edittedRoleImage') }, { 'name': role.get('countParameterName'), 'value': this.get('edittedRoleNodeCount') }, { 'name': role.get('flavorParameterName'), 'value': this.get('edittedRoleProfile') }];
+
+        this.get('edittedRoleParameters').forEach(function (param) {
+          params.push({ 'name': param.get('id'), 'value': param.get('value') });
+        });
+
+        me.set('loadingSpinnerText', 'Saving...');
+        me.set('showLoadingSpinner', true);
+        Ember['default'].$.ajax({
+          url: '/fusor/api/openstack/deployment_plans/' + plan.get('id') + '/update_parameters',
+          type: 'PUT',
+          contentType: 'application/json',
+          data: JSON.stringify({ 'parameters': params }),
+          success: function success() {
+            console.log('SUCCESS');
+            me.set('showLoadingSpinner', false);
+          },
+          error: function error(_error2) {
+            console.log('ERROR');
+            console.log(_error2);
+            me.set('showLoadingSpinner', false);
+          }
+        });
+
+        this.closeEditDialog();
+      },
+
+      setRoleCount: function setRoleCount(role, count) {
+        var me = this;
+        var plan = this.get('model.plan');
+        var data = { 'role_name': role.get('name'), 'count': count };
+
+        me.set('loadingSpinnerText', 'Saving...');
+        me.set('showLoadingSpinner', true);
+
+        Ember['default'].$.ajax({
+          url: '/fusor/api/openstack/deployment_plans/' + plan.get('id') + '/update_role_count',
+          type: 'PUT',
+          contentType: 'application/json',
+          data: JSON.stringify(data),
+          success: function success() {
+            console.log('SUCCESS');
+            me.set('showLoadingSpinner', false);
+          },
+          error: function error(_error3) {
+            console.log('ERROR');
+            console.log(_error3);
+            me.set('showLoadingSpinner', false);
+          }
+        });
+      },
+
+      cancelEditRole: function cancelEditRole() {
+        this.closeEditDialog();
+      },
+
+      assignRoleType: function assignRoleType(profile, roleType) {
+        var role = this.getRoleByType(roleType);
+        this.doAssignRole(profile, role);
+      },
+
+      assignRole: function assignRole(plan, role, profile) {
+        this.doAssignRole(plan, role, profile);
+      },
+
+      removeRole: function removeRole(profile, role) {
+        var plan = this.get('model.plan');
+        this.doAssignRole(plan, role, null);
       },
 
       unassignRole: function unassignRole(role) {
-        role.set('isDraggingObject', false);
-        this.removeRoleFromProfile(role.profile, role.roleType);
+        var plan = this.get('model.plan');
+        this.doAssignRole(plan, role, null);
       },
 
-      startDrag: function startDrag() {
-        this.set('isDraggingRole', true);
+      doShowSettings: function doShowSettings() {
+        this.set('showSettings', true);
       },
 
-      stopDrag: function stopDrag() {
-        this.set('isDraggingRole', false);
+      doShowConfig: function doShowConfig() {
+        this.set('showSettings', false);
+      },
+
+      editGlobalServiceConfig: function editGlobalServiceConfig() {
+        var planParams = [];
+        this.get('model.plan.parameters').forEach(function (param) {
+          if (param.get('id').indexOf('::') === -1) {
+            param.displayId = param.get('id').replace(/([a-z])([A-Z])/g, '$1 $2');
+            /* Using boolean breaks saving...
+                      if (param.get('parameter_type') === 'boolean') {
+                        param.set('isBoolean', true);
+                      }
+            */
+            if (param.get('hidden')) {
+              param.set('inputType', 'password');
+            } else {
+              param.set('inputType', param.get('parameter_type'));
+            }
+            if (param.get('parameter_type') !== 'json') {
+              planParams.pushObject(param);
+            }
+          }
+        });
+        this.set('edittedPlanParameters', planParams);
+
+        this.openGlobalServiceConfigDialog();
+      },
+
+      saveGlobalServiceConfig: function saveGlobalServiceConfig() {
+        var me = this;
+        var plan = this.get('model.plan');
+
+        var params = [];
+        this.get('edittedPlanParameters').forEach(function (param) {
+          params.push({ 'name': param.get('id'), 'value': param.get('value') });
+        });
+
+        me.set('loadingSpinnerText', 'Saving...');
+        me.set('showLoadingSpinner', true);
+        Ember['default'].$.ajax({
+          url: '/fusor/api/openstack/deployment_plans/' + plan.get('id') + '/update_parameters',
+          type: 'PUT',
+          contentType: 'application/json',
+          data: JSON.stringify({ 'parameters': params }),
+          success: function success() {
+            console.log('SUCCESS');
+            me.set('showLoadingSpinner', false);
+          },
+          error: function error(_error4) {
+            console.log('ERROR');
+            console.log(_error4);
+            me.set('showLoadingSpinner', false);
+          }
+        });
+
+        this.closeGlobalServiceConfigDialog();
+      },
+
+      cancelGlobalServiceConfig: function cancelGlobalServiceConfig() {
+        this.closeGlobalServiceConfigDialog();
       }
     },
 
     disableAssignNodesNext: (function () {
-      var freeNodeCount = 0;
-      var profiles = this.get('nodeProfiles');
-      if (profiles) {
-        for (var i = 0; i < profiles.length; i++) {
-          freeNodeCount += profiles[i].freeNodes;
-        }
-      }
-      return freeNodeCount < 4;
-    }).property('nodeProfiles'),
+      return false;
+    }).property('profiles'),
 
     nextStepRouteName: (function () {
-      return '';
-    }).property('step2RoutName', 'step3RouteName')
+      return 'review';
+    }).property('step2RouteName', 'step3RouteName')
   });
 
 });
@@ -2083,6 +2371,20 @@ define('fusor-ember-cli/controllers/deployment-new/start', ['exports', 'ember', 
   });
 
 });
+define('fusor-ember-cli/controllers/deployment-plan', ['exports', 'ember'], function (exports, Ember) {
+
+	'use strict';
+
+	exports['default'] = Ember['default'].Controller.extend({});
+
+});
+define('fusor-ember-cli/controllers/deployment-role', ['exports', 'ember'], function (exports, Ember) {
+
+	'use strict';
+
+	exports['default'] = Ember['default'].Controller.extend({});
+
+});
 define('fusor-ember-cli/controllers/deployment', ['exports', 'ember', 'fusor-ember-cli/mixins/deployment-controller-mixin', 'fusor-ember-cli/mixins/disable-tab-mixin'], function (exports, Ember, DeploymentControllerMixin, DisableTabMixin) {
 
   'use strict';
@@ -2348,6 +2650,13 @@ define('fusor-ember-cli/controllers/entitlements', ['exports', 'ember'], functio
   });
 
 });
+define('fusor-ember-cli/controllers/flavor', ['exports', 'ember'], function (exports, Ember) {
+
+	'use strict';
+
+	exports['default'] = Ember['default'].Controller.extend({});
+
+});
 define('fusor-ember-cli/controllers/host', ['exports', 'ember'], function (exports, Ember) {
 
 	'use strict';
@@ -2489,6 +2798,13 @@ define('fusor-ember-cli/controllers/hypervisor/discovered-host', ['exports', 'em
   });
 
 });
+define('fusor-ember-cli/controllers/image', ['exports', 'ember'], function (exports, Ember) {
+
+	'use strict';
+
+	exports['default'] = Ember['default'].Controller.extend({});
+
+});
 define('fusor-ember-cli/controllers/new-environment', ['exports', 'ember'], function (exports, Ember) {
 
 	'use strict';
@@ -2497,6 +2813,20 @@ define('fusor-ember-cli/controllers/new-environment', ['exports', 'ember'], func
 
 });
 define('fusor-ember-cli/controllers/new-organization', ['exports', 'ember'], function (exports, Ember) {
+
+	'use strict';
+
+	exports['default'] = Ember['default'].Controller.extend({});
+
+});
+define('fusor-ember-cli/controllers/node', ['exports', 'ember'], function (exports, Ember) {
+
+	'use strict';
+
+	exports['default'] = Ember['default'].Controller.extend({});
+
+});
+define('fusor-ember-cli/controllers/openstack-deployment', ['exports', 'ember'], function (exports, Ember) {
 
 	'use strict';
 
@@ -2522,69 +2852,61 @@ define('fusor-ember-cli/controllers/register-nodes', ['exports', 'ember', 'fusor
     needs: ['deployment'],
 
     init: function init() {
-      this.Profile = Ember['default'].Object.extend({
-        name: null,
+      this._super();
+      this.Node = Ember['default'].Object.extend({
+        name: (function () {
+          var ipAddress = this.get('ipAddress');
+          if (!Ember['default'].isEmpty(ipAddress)) {
+            return ipAddress;
+          } else {
+            return 'Undefined node';
+          }
+        }).property('ipAddress'),
         driver: null,
         ipAddress: null,
         ipmiUsername: '',
         ipmiPassword: '',
         nicMacAddress: '',
         architecture: null,
-        cpu: null,
-        ram: null,
-        disk: null,
-        totalNodes: 0,
+        cpu: 0,
+        ram: 0,
+        disk: 0,
 
-        controllerNodes: 0,
-        computeNodes: 0,
-        blockNodes: 0,
-        objectNodes: 0,
-
-        freeNodes: (function () {
-          return this.get('totalNodes') - this.get('controllerNodes') - this.get('computeNodes') - this.get('blockNodes') - this.get('objectNodes');
-        }).property('totalNodes', 'controllerNodes', 'computeNodes', 'blockNodes', 'objectNodes'),
-
-        isControl: (function () {
-          return this.get('controllerNodes') > 0;
-        }).property('controllerNodes'),
-
-        isCompute: (function () {
-          return this.get('computeNodes') > 0;
-        }).property('computeNodes'),
-
-        isBlockStorage: (function () {
-          return this.get('blockNodes') > 0;
-        }).property('blockNodes'),
-
-        isObjectStorage: (function () {
-          return this.get('objectNodes') > 0;
-        }).property('objectNodes'),
-
-        isActiveClass: 'inactive',
+        isSelected: false,
+        isActiveClass: (function () {
+          if (this.get('isSelected') === true) {
+            return 'active';
+          } else {
+            return 'inactive';
+          }
+        }).property('isSelected'),
         isError: false,
         errorMessage: ''
       });
     },
 
-    newProfiles: [],
-    errorProfiles: [],
-    edittedProfiles: [],
+    newNodes: [],
+    errorNodes: [],
+    edittedNodes: [],
+    introspectionNodes: [],
 
-    drivers: ['IPMI Driver', 'PXE + SSH'],
+    drivers: ['pxe_ipmitool', 'pxe_ssh'],
     architectures: ['amd64', 'x86', 'x86_64'],
-    selectedProfile: null,
+    selectedNode: null,
 
     registrationInProgress: false,
+    initRegInProcess: false,
+    introspectionInProgress: false,
     registerNodesModalOpened: false,
     registerNodesModalClosed: true,
     modalOpen: false,
 
     registrationError: (function () {
-      return this.get('errorProfiles').length > 0;
-    }).property('errorProfiles', 'errorProfiles.length'),
+      return this.get('errorNodes').length > 0;
+    }).property('errorNodes', 'errorNodes.length'),
 
     registrationErrorMessage: (function () {
-      var count = this.get('errorProfiles').length;
+      var count = this.get('errorNodes').length;
       if (count === 1) {
         return '1 node not registered';
       } else if (count > 1) {
@@ -2592,67 +2914,86 @@ define('fusor-ember-cli/controllers/register-nodes', ['exports', 'ember', 'fusor
       } else {
         return '';
       }
-    }).property('errorProfiles.length'),
+    }).property('errorNodes.length'),
 
     registrationErrorTip: (function () {
       var tip = '';
-      var errorProfiles = this.get('errorProfiles');
+      var errorNodes = this.get('errorNodes');
 
-      errorProfiles.forEach(function (item, index) {
+      errorNodes.forEach(function (item, index) {
         if (index > 0) {
           tip += '\n';
         }
         tip += item.errorMessage;
       });
       return tip;
-    }).property('errorProfiles', 'errorProfiles.length'),
+    }).property('errorNodes', 'errorNodes.length'),
 
     preRegistered: 0,
+
+    successNodesLength: (function () {
+      if (this.get('introspectionInProgress') !== true) {
+        return 0;
+      }
+      // Nodes in introspection are in the model so we have to un-count them as well as any pre-registered nodes
+      return this.get('model').nodes.get('length') - this.get('introspectionNodes').length - this.get('preRegistered');
+    }).property('model.nodes.length', 'introspectionNodes.length', 'preRegistered', 'introspectionInProgress'),
+
     nodeRegComplete: (function () {
-      return this.get('model.nodeProfiles').length + this.get('errorProfiles').length - this.get('preRegistered');
-    }).property('model.nodeProfiles.length', 'errorProfiles.length', 'preRegistered'),
+      return this.get('successNodesLength') + this.get('errorNodes').length;
+    }).property('successNodesLength', 'errorNodes.length'),
 
     nodeRegTotal: (function () {
-      var total = this.get('nodeRegComplete') + this.get('newProfiles').length;
-      if (this.get('registrationInProgress') && !this.get('registrationPaused')) {
+      var total = this.get('nodeRegComplete') + this.get('newNodes').length + this.get('introspectionNodes').length;
+
+      // During the initial registration process there is a node in limbo...
+      if (this.get('initRegInProcess') === true) {
         total++;
       }
+
       return total;
-    }).property('nodeRegComplete', 'newProfiles.length', 'registrationInProgress', 'registrationPaused'),
+    }).property('nodeRegComplete', 'newNodes.length', 'introspectionNodes.length', 'registrationInProgress', 'introspectionInProgress'),
 
     nodeRegPercentComplete: (function () {
-      var nodeRegComplete = this.get('nodeRegComplete');
       var nodeRegTotal = this.get('nodeRegTotal');
-      return Math.round(nodeRegComplete / nodeRegTotal * 100);
-    }).property('nodeRegComplete', 'nodeRegTotal'),
+      var nodeRegComplete = this.get('nodeRegComplete');
+      var nodesIntrospection = this.get('introspectionNodes').length;
+
+      var numSteps = nodeRegTotal * 4;
+      var stepsComplete = nodeRegComplete * 4 + nodesIntrospection * 1;
+
+      return Math.round(stepsComplete / numSteps * 100);
+    }).property('nodeRegComplete', 'nodeRegTotal', 'newNodes', 'introspectionNodes'),
 
     noRegisteredNodes: (function () {
-      return this.get('model.nodeProfiles').length < 1;
-    }).property('model.nodeProfiles', 'model.nodeProfiles.length'),
+      return this.get('model').nodes.get('length') < 1;
+    }).property('model.nodes', 'model.nodes.length'),
 
-    hasSelectedProfile: (function () {
-      return this.get('selectedProfile') != null;
-    }).property('selectedProfile'),
+    hasSelectedNode: (function () {
+      return this.get('selectedNode') != null;
+    }).property('selectedNode'),
 
     nodeFormStyle: (function () {
-      if (this.get('edittedProfiles').length > 0 && this.get('hasSelectedProfile') === true) {
+      if (this.get('edittedNodes').length > 0 && this.get('hasSelectedNode') === true) {
         return 'visibility:visible;';
       } else {
         return 'visibility:hidden;';
       }
-    }).property('edittedProfiles.length', 'hasSelectedProfile'),
+    }).property('edittedNodes.length', 'hasSelectedNode'),
 
-    updateProfileSelection: function updateProfileSelection(profile) {
-      var oldSelection = this.get('selectedProfile');
+    updateNodeSelection: function updateNodeSelection(node) {
+      var oldSelection = this.get('selectedNode');
       if (oldSelection) {
-        oldSelection.set('isActiveClass', 'inactive');
+        oldSelection.set('isSelected', false);
       }
 
-      if (profile) {
-        profile.set('isActiveClass', 'active');
+      if (node) {
+        node.set('isSelected', true);
       }
-      this.set('selectedProfile', profile);
+      this.set('selectedNode', node);
     },
+
+    handleOutsideClick: function handleOutsideClick() {},
 
     openRegDialog: function openRegDialog() {
       this.set('registerNodesModalOpened', true);
@@ -2666,154 +3007,352 @@ define('fusor-ember-cli/controllers/register-nodes', ['exports', 'ember', 'fusor
       this.set('modalOpen', false);
     },
 
+    getCSVFileInput: function getCSVFileInput() {
+      return $('#regNodesUploadFileInput')[0];
+    },
+
     actions: {
       showNodeRegistrationModal: function showNodeRegistrationModal() {
-        var newProfiles = this.get('newProfiles');
-        var errorProfiles = this.get('errorProfiles');
-        var edittedProfiles = this.get('edittedProfiles');
+        var newNodes = this.get('newNodes');
+        var errorNodes = this.get('errorNodes');
+        var edittedNodes = this.get('edittedNodes');
 
-        edittedProfiles.setObjects(errorProfiles);
-        newProfiles.forEach(function (item) {
-          edittedProfiles.pushObject(item);
+        edittedNodes.setObjects(newNodes);
+        var savedErrors = [];
+        errorNodes.forEach(function (item) {
+          if (!item.isIntrospectionError) {
+            edittedNodes.pushObject(item);
+          } else {
+            savedErrors.push(item);
+          }
         });
-        this.set('edittedProfiles', edittedProfiles);
-        this.updateProfileSelection(edittedProfiles[0]);
+        this.set('errorNodes', savedErrors);
+
+        // Always start with at least one profile
+        if (edittedNodes.length === 0) {
+          var newNode = this.Node.create({});
+          newNode.isDefault = true;
+          edittedNodes.pushObject(newNode);
+        }
+
+        this.set('edittedNodes', edittedNodes);
+        this.updateNodeSelection(edittedNodes[0]);
         this.openRegDialog();
       },
 
       registerNodes: function registerNodes() {
         this.closeRegDialog();
-        var edittedProfiles = this.get('edittedProfiles');
-        var errorProfiles = this.get('errorProfiles');
-        var newProfiles = this.get('newProfiles');
-        edittedProfiles.forEach(function (item) {
+        var edittedNodes = this.get('edittedNodes');
+        var errorNodes = this.get('errorNodes');
+        var newNodes = this.get('newNodes');
+        edittedNodes.forEach(function (item) {
           item.isError = false;
           item.errorMessage = '';
-          errorProfiles.removeObject(item);
+          errorNodes.removeObject(item);
         });
-        newProfiles.setObjects(edittedProfiles);
-        this.set('edittedProfiles', []);
-        this.set('newProfiles', newProfiles);
+
+        newNodes.setObjects(edittedNodes);
+        this.set('edittedNodes', []);
+        this.set('newNodes', newNodes);
         this.registerNewNodes();
       },
 
       cancelRegisterNodes: function cancelRegisterNodes() {
         this.closeRegDialog();
-        this.set('edittedProfiles', []);
+        this.set('edittedNodes', []);
         // Unpause if necessary
         if (this.get('registrationPaused')) {
           this.doNextNodeRegistration();
         }
       },
 
-      selectProfile: function selectProfile(profile) {
-        this.updateProfileSelection(profile);
+      selectNode: function selectNode(node) {
+        this.updateNodeSelection(node);
       },
 
-      addProfile: function addProfile() {
-        var edittedProfiles = this.get('edittedProfiles');
-        var nodeCount = edittedProfiles.length + this.get('model.nodeProfiles').length + this.get('errorProfiles').length;
-        if (this.get('registrationInProgress') && !this.get('registrationPaused')) {
-          nodeCount++;
+      addNode: function addNode() {
+        var edittedNodes = this.get('edittedNodes');
+        var newNode = this.Node.create({});
+        edittedNodes.insertAt(0, newNode);
+        this.updateNodeSelection(newNode);
+      },
+
+      removeNode: function removeNode(node) {
+        var nodes = this.get('edittedNodes');
+        nodes.removeObject(node);
+        this.set('edittedNodes', nodes);
+
+        if (this.get('selectedNode') === node) {
+          this.updateNodeSelection(nodes[0]);
         }
-        var newProfile = this.Profile.create({
-          name: 'Node ' + (nodeCount + 1),
-          totalNodes: 5
-        });
-        edittedProfiles.insertAt(0, newProfile);
-        this.updateProfileSelection(newProfile);
       },
 
-      removeProfile: function removeProfile(profile) {
-        var profiles = this.get('edittedProfiles');
-        profiles.removeObject(profile);
-        this.set('edittedProfiles', profiles);
+      updloadCsvFile: function updloadCsvFile() {
+        var uploadfile = this.getCSVFileInput();
+        uploadfile.click();
+      },
 
-        if (this.get('selectedProfile') == profile) {
-          this.updateProfileSelection(profiles[0]);
+      csvFileChosen: function csvFileChosen() {
+        var fileInput = this.getCSVFileInput();
+        var file = fileInput.files[0];
+        var me = this;
+        if (file) {
+          var reader = new FileReader();
+          reader.onload = function () {
+            var text = reader.result;
+            var data = $.csv.toArrays(text);
+            var edittedNodes = me.get('edittedNodes');
+
+            // If the default added node is still listed, remove it
+            if (edittedNodes.length === 1 && edittedNodes[0].isDefault && Ember['default'].isEmpty(edittedNodes[0].get('ipAddress'))) {
+              edittedNodes.removeObject(edittedNodes[0]);
+            }
+
+            for (var row in data) {
+              var node_data = data[row];
+              if (Array.isArray(node_data) && node_data.length >= 9) {
+                var memory_mb = node_data[0].trim();
+                var local_gb = node_data[1].trim();
+                var cpus = node_data[2].trim();
+                var cpu_arch = node_data[3].trim();
+                var driver = node_data[4].trim();
+                var ipmi_address = node_data[5].trim();
+                var ipmi_username = node_data[6].trim();
+                var ipmi_password = node_data[7].trim();
+                var mac_address = node_data[8].trim();
+
+                var newNode = me.Node.create({
+                  driver: driver,
+                  ipAddress: ipmi_address,
+                  ipmiUsername: ipmi_username,
+                  ipmiPassword: ipmi_password,
+                  nicMacAddress: mac_address,
+                  architecture: cpu_arch,
+                  cpu: cpus,
+                  ram: memory_mb,
+                  disk: local_gb
+                });
+                edittedNodes.insertAt(0, newNode);
+                me.updateNodeSelection(newNode);
+              }
+            }
+          };
+          reader.onloadend = function () {
+            if (reader.error) {
+              console.log(reader.error.message);
+            }
+          };
+
+          reader.readAsText(file);
         }
       }
     },
 
     disableRegisterNodesNext: (function () {
-      var freeNodeCount = 0;
-      var profiles = this.get('model.nodeProfiles');
-      for (var i = 0; i < profiles.length; i++) {
-        freeNodeCount += profiles[i].freeNodes;
-      }
-      return freeNodeCount < 4;
-    }).property('model.nodeProfiles', 'model.nodeProfiles.length'),
+      var nodeCount = this.get('model').nodes.get('length');
+      return nodeCount < 2;
+    }).property('model.nodes.length'),
 
     registerNewNodes: function registerNewNodes() {
-      var newProfiles = this.get('newProfiles');
-      if (newProfiles && newProfiles.length > 0) {
+      var newNodes = this.get('newNodes');
+      if (newNodes && newNodes.length > 0) {
         if (!this.get('registrationInProgress')) {
-          this.set('preRegistered', this.get('model.nodeProfiles.length'));
+          this.set('introspectionNodes', []);
+          this.set('preRegistered', this.get('model').nodes.get('length'));
           this.doNextNodeRegistration();
-        } else if (this.get('registrationPaused')) {
+        } else if (this.get('registrationPaused') || this.get('introspectionInProgress')) {
           this.doNextNodeRegistration();
         }
       }
     },
 
-    doNextNodeRegistration: function doNextNodeRegistration() {
+    updateAfterRegistration: function updateAfterRegistration(resolve) {
+      var me = this;
+
+      me.get('model').nodes.store.findAll('node', { reload: true }).then(function () {
+        me.get('model').profiles.store.findAll('flavor', { reload: true }).then(function () {
+          if (resolve) {
+            resolve();
+          }
+        });
+      });
+    },
+
+    doNextNodeRegistration: function doNextNodeRegistration(lastNode) {
       if (this.get('modalOpen') === true) {
         this.set('registrationPaused', true);
       } else {
         this.set('registrationPaused', false);
 
-        var remaining = this.get('newProfiles');
+        var remaining = this.get('newNodes');
         if (remaining && remaining.length > 0) {
           this.set('registrationInProgress', true);
           var lastIndex = remaining.length - 1;
           var nextNode = remaining[lastIndex];
-          this.set('newProfiles', remaining.slice(0, lastIndex));
+          this.set('newNodes', remaining.slice(0, lastIndex));
           this.registerNode(nextNode);
         } else {
-          this.set('registrationInProgress', false);
+          var me = this;
+          this.updateAfterRegistration();
+          if (me.get('introspectionInProgress') !== true) {
+            me.startCheckingNodeIntrospection();
+          } else if (lastNode !== undefined) {
+            me.checkNodeIntrospection(lastNode);
+          }
         }
       }
     },
 
+    startCheckingNodeIntrospection: function startCheckingNodeIntrospection() {
+      var me = this;
+      var introspectionNodes = me.get('introspectionNodes');
+      if (introspectionNodes.length > 0) {
+        me.set('introspectionInProgress', true);
+        introspectionNodes.forEach(function (node) {
+          me.checkNodeIntrospection(node);
+        });
+      } else {
+        this.set('registrationInProgress', false);
+      }
+    },
+
+    getImage: function getImage(imageName) {
+      return Ember['default'].$.getJSON('/fusor/api/openstack/images/show_by_name/' + imageName);
+    },
+
+    addIntrospectionNode: function addIntrospectionNode(node) {
+      var introspectionNodes = this.get('introspectionNodes');
+      introspectionNodes.pushObject(node);
+      this.set('introspectionNodes', introspectionNodes);
+    },
+
     registerNode: function registerNode(node) {
       var me = this;
-      var iterationCount = 0;
+      var driverInfo = {};
+      if (node.driver === 'pxe_ssh') {
+        driverInfo = {
+          ssh_address: node.ipAddress,
+          ssh_username: node.ipmiUsername,
+          ssh_key_contents: node.ipmiPassword,
+          ssh_virt_type: 'virsh',
+          deploy_kernel: this.get('model').bmDeployKernelImage.image.id,
+          deploy_ramdisk: this.get('model').bmDeployRamdiskImage.image.id
+        };
+      } else if (node.driver === 'pxe_ipmitool') {
+        driverInfo = {
+          ipmi_address: node.ipAddress,
+          ipmi_username: node.ipmiUsername,
+          ipmi_password: node.ipmiPassword,
+          pxe_deploy_kernel: this.get('model').bmDeployKernelImage.image.id,
+          pxe_deploy_ramdisk: this.get('model').bmDeployRamdiskImage.image.id
+        };
+      }
+      var createdNode = {
+        driver: node.driver,
+        driver_info: driverInfo,
+        properties: {
+          memory_mb: node.ram,
+          cpus: node.cpu,
+          local_gb: node.disk,
+          cpu_arch: node.architecture,
+          capabilities: 'boot_option:local'
+        },
+        address: node.nicMacAddress
+      };
+
+      this.set('initRegInProcess', true);
+      Ember['default'].$.ajax({
+        url: '/fusor/api/openstack/nodes',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ 'node': createdNode }),
+        success: function success(registeredNode) {
+          me.set('initRegInProcess', false);
+          me.addIntrospectionNode(registeredNode);
+          me.doNextNodeRegistration(registeredNode);
+        },
+        error: function error(reason) {
+          me.set('initRegInProcess', false);
+          node.errorMessage = node.ipAddress + ': ' + me.getErrorMessageFromReason(reason);
+          me.get('errorNodes').pushObject(node);
+          me.doNextNodeRegistration();
+        }
+      });
+    },
+
+    getErrorMessageFromReason: function getErrorMessageFromReason(reason) {
+      try {
+        var displayMessage = reason.responseJSON.displayMessage;
+        if (displayMessage.indexOf('{') >= 0 && displayMessage.indexOf('}') >= 1) {
+          displayMessage = displayMessage.substring(displayMessage.indexOf('{'), displayMessage.indexOf('}') + 1) + '}';
+          displayMessage = displayMessage.replace(/\\/g, '');
+          displayMessage = displayMessage.replace(/"\{/g, '{');
+
+          var errorObj = JSON.parse(displayMessage);
+          displayMessage = errorObj.error_message.faultstring;
+        }
+
+        return displayMessage;
+      } catch (e) {
+        return reason.statusText;
+      }
+    },
+
+    checkNodeIntrospection: function checkNodeIntrospection(node) {
+      var me = this;
 
       var promiseFunction = function promiseFunction(resolve) {
         var checkForDone = function checkForDone() {
-          if (iterationCount == 1) {
-            resolve(true);
-          } else {
-            resolve(false);
-          }
+          Ember['default'].$.ajax({
+            url: '/fusor/api/openstack/nodes/' + node.uuid + '/ready',
+            type: 'GET',
+            contentType: 'application/json',
+            success: function success(results) {
+              resolve({ done: results.node.ready });
+            },
+            error: function error(results) {
+              if (results.status === 0) {
+                // Known problem during introspection, return response is empty, keep trying
+                resolve({ done: false });
+              } else if (results.status === 500) {
+                var error = me.getErrorMessageFromReason(results);
+                if (error.indexOf('timeout') >= 0) {
+                  resolve({ done: false });
+                } else {
+                  resolve({ done: true, errorResults: results });
+                }
+              } else {
+                resolve({ done: true, errorResults: results });
+              }
+            }
+          });
         };
 
-        Ember['default'].run.later(checkForDone, 3000);
+        Ember['default'].run.later(checkForDone, 15 * 1000);
       };
 
-      var fulfill = function fulfill(isDone) {
-        if (isDone) {
-          var randomPercent = Math.round(Math.random() * 100);
-          if (randomPercent <= 5) {
-            node.isError = true;
-            node.errorMessage = node.name + ' was not registered: node username/password is invalid.';
-          } else if (randomPercent <= 10) {
-            node.isError = true;
-            node.errorMessage = node.name + ' was not registered: node IP address is invalid.';
+      var fulfill = function fulfill(results) {
+        if (results.done) {
+          var introspectionNodes = me.get('introspectionNodes');
+          introspectionNodes.removeObject(node);
+          me.set('introspectionNodes', introspectionNodes);
+          if (introspectionNodes.length === 0 && me.get('newNodes').length === 0) {
+            me.set('registrationInProgress', false);
+            me.set('introspectionInProgress', false);
           }
 
-          if (node.isError) {
-            var errorProfiles = me.get('errorProfiles');
-            errorProfiles.pushObject(node);
-            me.set('errorProfiles', errorProfiles);
-          } else {
-            var nodeProfiles = me.get('model.nodeProfiles');
-            nodeProfiles.pushObject(node);
-            me.set('model.nodeProfiles', nodeProfiles);
+          if (results.errorResults) {
+            var nodeID;
+            if (node.driver === 'pxe_ssh') {
+              nodeID = node.driver_info.ssh_address;
+            } else if (node.driver === 'pxe_ipmitool') {
+              nodeID = node.driver_info.ipmi_address;
+            }
+            node.errorMessage = nodeID + ': ' + me.getErrorMessageFromReason(results.errorResults);
+            node.isIntrospectionError = true;
+            me.get('errorNodes').pushObject(node);
           }
-          me.doNextNodeRegistration();
         } else {
-          iterationCount++;
           var promise = new Ember['default'].RSVP.Promise(promiseFunction);
           promise.then(fulfill);
         }
@@ -2823,6 +3362,8 @@ define('fusor-ember-cli/controllers/register-nodes', ['exports', 'ember', 'fusor
       promise.then(fulfill);
     }
   });
+
+  // do nothing, this overrides the closing of the dialog when clicked outside of it
 
 });
 define('fusor-ember-cli/controllers/review', ['exports', 'ember'], function (exports, Ember) {
@@ -3036,7 +3577,58 @@ define('fusor-ember-cli/controllers/review/progress/overview', ['exports', 'embe
     nameRhev: Ember['default'].computed.alias('controllers.deployment.nameRhev'),
     nameOpenStack: Ember['default'].computed.alias('controllers.deployment.nameOpenStack'),
     nameCloudForms: Ember['default'].computed.alias('controllers.deployment.nameCloudForms'),
-    nameSatellite: Ember['default'].computed.alias('controllers.deployment.nameSatellite')
+    nameSatellite: Ember['default'].computed.alias('controllers.deployment.nameSatellite'),
+
+    getOpenstackParamValue: function getOpenstackParamValue(paramName, params) {
+      var paramValue = null;
+      var numParams = params.get('length');
+      for (var i = 0; i < numParams; i++) {
+        var param = params.objectAt(i);
+        if (param.get('id') === paramName) {
+          paramValue = param.get('value');
+          break;
+        }
+      }
+      return paramValue;
+    },
+
+    openstackIsFinished: (function () {
+      return this.get('model.openstackDeployment.stack_status') == 'CREATE_COMPLETE';
+    }).property('model.openstackDeployment.stack_status'),
+
+    openstackIsError: (function () {
+      return this.get('model.openstackDeployment.stack_status') == 'CREATE_FAILED';
+    }).property('model.openstackDeployment.stack_status'),
+
+    openstackProvisionedNodeCount: (function () {
+      var count = 0;
+      this.get('model.openstackNodes').forEach(function (node) {
+        if (node.get('provision_state') == 'active') {
+          count++;
+        }
+      });
+      return count;
+    }).property('model.openstackNodes'),
+
+    openstackPlannedNodeCount: (function () {
+      var count = 0;
+      var params = this.get('model.openstackPlan.parameters');
+      var self = this;
+      this.get('model.openstackPlan.roles').forEach(function (role) {
+        count += parseInt(self.getOpenstackParamValue(role.get('countParameterName'), params), 10);
+      });
+      return count;
+    }).property('model.openstackPlan'),
+
+    openstackDeploymentPercent: (function () {
+      if (this.get('openstackIsFinished')) {
+        return 100;
+      }
+      // start at 5%; allocate 75% for node provisioning;
+      // save 20% for post-provisioning setup
+      var nodePercentage = 75 * (this.get('openstackProvisionedNodeCount') / this.get('openstackPlannedNodeCount'));
+      return 5 + nodePercentage;
+    }).property('model.openstackDeployment.stack_status')
 
   });
 
@@ -3654,6 +4246,108 @@ define('fusor-ember-cli/controllers/subscriptions/select-subscriptions', ['expor
       }
     }).property('enableAccessInsights')
 
+  });
+
+});
+define('fusor-ember-cli/controllers/undercloud-deploy', ['exports', 'ember', 'fusor-ember-cli/mixins/deployment-controller-mixin'], function (exports, Ember, DeploymentControllerMixin) {
+
+  'use strict';
+
+  exports['default'] = Ember['default'].Controller.extend(DeploymentControllerMixin['default'], {
+
+    needs: ['deployment'],
+
+    deploymentModes: ['POC', 'Scale'],
+
+    deploymentModeHelp: 'Deployment mode to setup on this Undercloud.</br>Choices are POC and Scale:</br></br> POC will allow deployment of a single role to heterogenous hardware.</br></br>Scale will allow deployment of a single role only to homogenous hardware.',
+
+    imagePathHelp: 'Defines the path to the images used for deployment roles. Leave this as the default value, which sets the path to the stack user\'s current directory.',
+
+    undercloudIPHelp: 'The IP address defined for the director\'s Provisioning NIC. This is also the IP address the director uses for its DHCP and PXE boot services.</br></br>Leave this value as the default 192.0.2.1/24 unless your are using a different subnet for the Management network i.e. it conflicts with an existing IP address or subnet in your environment.',
+
+    localInterfaceHelp: 'The chosen interface for the director\'s Management NIC. This is also the device the director uses for its DHCP and PXE boot services. Change this value to your chosen device. To see which device is connected, use the ip addr.',
+
+    masquerateNetworkHelp: 'Defines the network to masquerade for external access. This is the Management network.</br></br>Leave this as the default 192.0.2.0/24 unless you are using a different subnet for the Management network.',
+
+    dhcpRangeHelp: 'The start and end of the DHCP allocation range for Overcloud nodes. Ensure this range contains enough IP addresses to allocate to your nodes',
+
+    networkCidrHelp: 'The network that the director uses to manage Overcloud instances. This is the Management network.</br></br>Leave this as the default 192.0.2.0/24 unless you are using a different subnet for the Management network.',
+
+    networkGatewayHelp: 'The gateway for the Overcloud instances. This is the discovery host, which forwards traffic to the External network.</br></br>Leave this as the default 192.0.2.1 unless you are using a different IP address for the director.',
+
+    discoveryInterfaceHelp: 'The bridge the director uses for node discovery. This is custom bridge that the director configuration creates. The LOCAL_INTERFACE attaches to this bridge.</br></br>Leave this as the default br-ctlplane.',
+
+    discoveryIpRangeHelp: 'A range of IP address that the director\'s discovery service uses during the PXE boot and provisioning process. Use comma-separated values to define the start and end of this range. For example, 192.0.2.100,192.0.2.120.</br></br>Make sure this range contains enough IP addresses for your nodes and does not conflict with the DHCP range.',
+
+    discoveryRunBenchHelp: 'Runs a set of benchmarks during node discovery. This option is necessary if you aim to perform benchmark analysis when inspecting the hardware of registered nodes in the Advanced Scenario.',
+
+    undercloudDebugHelp: 'Sets the log level of discovery services to DEBUG.',
+
+    showAdvancedSettings: 'out',
+    showAdvancedSettingsClass: (function () {
+      if (this.get('showAdvancedSettings') === 'in') {
+        return '';
+      } else {
+        return 'collapsed';
+      }
+    }).property('showAdvancedSettings'),
+
+    deployed: false,
+
+    deployDisabled: (function () {
+      return this.get('deployed') && !this.get('isDirty');
+    }).property('deployed', 'isDirty'),
+
+    disableDeployUndercloudNext: (function () {
+      return !this.get('deployed');
+    }).property('deployed'),
+
+    isDirty: false,
+
+    watchModel: (function () {
+      this.set('isDirty', true);
+    }).observes('model.deploymentMode', 'model.imagePath', 'model.undercloudIP', 'model.sshUser', 'model.sshPassword', 'model.localInterface', 'model.masqueradeNetwork', 'model.dhcpStart', 'model.dhcpEnd', 'model.networkCidr', 'model.networkGateway', 'model.discoveryInterface', 'model.discoveryIpStart', 'model.discoveryIpEnd', 'model.discoveryRunbench', 'model.undercloudDebug'),
+
+    actions: {
+      toggleShowAdvancedSettings: function toggleShowAdvancedSettings() {
+        if (this.get('showAdvancedSettings') === 'in') {
+          this.set('showAdvancedSettings', 'out');
+        } else {
+          this.set('showAdvancedSettings', 'in');
+        }
+      },
+
+      deployUndercloud: function deployUndercloud() {
+        var me = this;
+        var promiseFunction = function promiseFunction(resolve) {
+          var checkForDone = function checkForDone() {
+            resolve(true);
+          };
+
+          Ember['default'].run.later(checkForDone, 3000);
+        };
+
+        var fulfill = function fulfill(isDone) {
+          if (isDone) {
+            me.set('showLoadingSpinner', false);
+            var randomPercent = Math.round(Math.random() * 100);
+            if (randomPercent <= 5) {
+              me.set('deploymentError', 'Undercloud deployment failed. Please check your settings and try again.');
+            } else {
+              me.set('deploymentError', null);
+              me.set('deployed', true);
+              me.set('isDirty', false);
+            }
+          }
+        };
+
+        var promise = new Ember['default'].RSVP.Promise(promiseFunction);
+        me.set('loadingSpinnerText', 'Deploying Undercloud. This may take a few minutes...');
+        me.set('showLoadingSpinner', true);
+
+        promise.then(fulfill);
+      }
+    }
   });
 
 });
@@ -4626,6 +5320,73 @@ define('fusor-ember-cli/models/coordinator', ['exports', 'ember', 'fusor-ember-c
   });
 
 });
+define('fusor-ember-cli/models/deployment-plan-parameter', ['exports', 'ember-data'], function (exports, DS) {
+
+    'use strict';
+
+    exports['default'] = DS['default'].Model.extend({
+        description: DS['default'].attr('string'),
+        value: DS['default'].attr('string'),
+        hidden: DS['default'].attr('boolean'),
+        parameter_type: DS['default'].attr('string')
+    });
+
+});
+define('fusor-ember-cli/models/deployment-plan', ['exports', 'ember-data'], function (exports, DS) {
+
+    'use strict';
+
+    exports['default'] = DS['default'].Model.extend({
+        uuid: DS['default'].attr('string'),
+        roles: DS['default'].hasMany('deployment-role', { inverse: null }),
+        parameters: DS['default'].hasMany('deployment-plan-parameter', { inverse: null })
+    });
+
+});
+define('fusor-ember-cli/models/deployment-role', ['exports', 'ember-data'], function (exports, DS) {
+
+  'use strict';
+
+  exports['default'] = DS['default'].Model.extend({
+    name: DS['default'].attr('string'),
+    description: DS['default'].attr('string'),
+    version: DS['default'].attr('number'),
+
+    parameterPrefix: (function () {
+      return this.get('name') + '-' + this.get('version') + '::';
+    }).property('name', 'version'),
+
+    countParameterName: (function () {
+      return this.get('parameterPrefix') + 'count';
+    }).property('name', 'version'),
+
+    flavorParameterName: (function () {
+      return this.get('parameterPrefix') + 'Flavor';
+    }).property('name', 'version'),
+
+    imageParameterName: (function () {
+      return this.get('parameterPrefix') + 'Image';
+    }).property('name', 'version'),
+
+    roleType: (function () {
+      var name = this.get('name').toLowerCase();
+      if (name.indexOf('controller') >= 0) {
+        return 'controller';
+      } else if (name.indexOf('compute') >= 0) {
+        return 'compute';
+      } else if (name.indexOf('cinder') >= 0) {
+        return 'block';
+      } else if (name.indexOf('swift') >= 0) {
+        return 'object';
+      } else if (name.indexOf('ceph') >= 0) {
+        return 'block';
+      }
+
+      return name;
+    }).property('name')
+  });
+
+});
 define('fusor-ember-cli/models/deployment', ['exports', 'ember-data', 'ember'], function (exports, DS, Ember) {
 
   'use strict';
@@ -4804,6 +5565,19 @@ define('fusor-ember-cli/models/environment', ['exports', 'ember-data'], function
   });
 
 });
+define('fusor-ember-cli/models/flavor', ['exports', 'ember-data'], function (exports, DS) {
+
+  'use strict';
+
+  exports['default'] = DS['default'].Model.extend({
+    name: DS['default'].attr('string'),
+    ram: DS['default'].attr('number'),
+    vcpus: DS['default'].attr('number'),
+    disk: DS['default'].attr('number'),
+    extra_specs: DS['default'].attr()
+  });
+
+});
 define('fusor-ember-cli/models/foreman-task', ['exports', 'ember-data'], function (exports, DS) {
 
   'use strict';
@@ -4849,6 +5623,15 @@ define('fusor-ember-cli/models/host', ['exports', 'ember-data'], function (expor
     cpu: DS['default'].attr('string'),
     memory: DS['default'].attr('string'),
     vendor: DS['default'].attr('string')
+  });
+
+});
+define('fusor-ember-cli/models/image', ['exports', 'ember-data'], function (exports, DS) {
+
+  'use strict';
+
+  exports['default'] = DS['default'].Model.extend({
+    name: DS['default'].attr('string')
   });
 
 });
@@ -4914,6 +5697,20 @@ define('fusor-ember-cli/models/management-application', ['exports', 'ember-data'
   // "capabilities": [],
 
 });
+define('fusor-ember-cli/models/node', ['exports', 'ember-data'], function (exports, DS) {
+
+    'use strict';
+
+    exports['default'] = DS['default'].Model.extend({
+        uuid: DS['default'].attr('string'),
+        driver: DS['default'].attr('string'),
+        provision_state: DS['default'].attr('string'),
+        driver_info: DS['default'].attr(),
+        properties: DS['default'].attr(),
+        address: DS['default'].attr('string')
+    });
+
+});
 define('fusor-ember-cli/models/obj-hash', ['exports', 'ember'], function (exports, Ember) {
 
   'use strict';
@@ -4954,6 +5751,16 @@ define('fusor-ember-cli/models/obj-hash', ['exports', 'ember'], function (export
 
     lengthBinding: 'contentLength'
   });
+
+});
+define('fusor-ember-cli/models/openstack-deployment', ['exports', 'ember-data'], function (exports, DS) {
+
+    'use strict';
+
+    exports['default'] = DS['default'].Model.extend({
+        stack_status: DS['default'].attr('string'),
+        stack_status_reason: DS['default'].attr('string')
+    });
 
 });
 define('fusor-ember-cli/models/organization', ['exports', 'ember-data'], function (exports, DS) {
@@ -5111,6 +5918,7 @@ define('fusor-ember-cli/router', ['exports', 'ember', 'fusor-ember-cli/config/en
       });
 
       this.resource('openstack', function () {
+        this.resource('undercloud-deploy');
         this.resource('register-nodes');
         this.resource('assign-nodes');
       });
@@ -5174,9 +5982,24 @@ define('fusor-ember-cli/routes/application', ['exports', 'ember'], function (exp
 });
 define('fusor-ember-cli/routes/assign-nodes', ['exports', 'ember', 'fusor-ember-cli/mixins/deployment-route-mixin'], function (exports, Ember, DeploymentRouteMixin) {
 
-	'use strict';
+    'use strict';
 
-	exports['default'] = Ember['default'].Route.extend(DeploymentRouteMixin['default'], {});
+    exports['default'] = Ember['default'].Route.extend(DeploymentRouteMixin['default'], {
+
+        model: function model() {
+            return Ember['default'].RSVP.hash({
+                plan: this.store.find('deployment-plan', 'overcloud'),
+                images: this.store.find('image'),
+                nodes: this.store.find('node'),
+                profiles: this.store.find('flavor')
+            });
+        },
+
+        setupController: function setupController(controller, model) {
+            controller.set('model', model);
+        }
+
+    });
 
 });
 define('fusor-ember-cli/routes/cloudforms', ['exports', 'ember'], function (exports, Ember) {
@@ -5868,7 +6691,7 @@ define('fusor-ember-cli/routes/openstack/index', ['exports', 'ember'], function 
 
   exports['default'] = Ember['default'].Route.extend({
     beforeModel: function beforeModel() {
-      this.transitionTo('register-nodes');
+      this.transitionTo('undercloud-deploy');
     }
   });
 
@@ -5878,12 +6701,14 @@ define('fusor-ember-cli/routes/register-nodes', ['exports', 'ember'], function (
   'use strict';
 
   exports['default'] = Ember['default'].Route.extend({
-    myModel: {
-      nodeProfiles: []
-    },
-
     model: function model() {
-      return this.myModel;
+      return Ember['default'].RSVP.hash({
+        nodes: this.store.find('node'),
+        profiles: this.store.find('flavor'),
+        bmDeployKernelImage: Ember['default'].$.getJSON('/fusor/api/openstack/images/show_by_name/bm-deploy-kernel'),
+        bmDeployRamdiskImage: Ember['default'].$.getJSON('/fusor/api/openstack/images/show_by_name/bm-deploy-ramdisk')
+
+      });
     },
 
     setupController: function setupController(controller, model) {
@@ -5930,7 +6755,12 @@ define('fusor-ember-cli/routes/review/installation', ['exports', 'ember'], funct
 
   exports['default'] = Ember['default'].Route.extend({
     model: function model() {
-      return this.modelFor('deployment');
+      return Ember['default'].RSVP.hash({
+        deployment: this.modelFor('deployment'),
+        openstackPlan: this.store.find('deployment-plan', 'overcloud'),
+        openstackNodes: this.store.find('node'),
+        openstackProfiles: this.store.find('flavor')
+      });
     },
 
     setupController: function setupController(controller, model) {
@@ -6704,6 +7534,44 @@ define('fusor-ember-cli/routes/subscriptions/select-subscriptions', ['exports', 
   // return this.send('saveSubscriptions', null);
 
 });
+define('fusor-ember-cli/routes/undercloud-deploy', ['exports', 'ember'], function (exports, Ember) {
+
+  'use strict';
+
+  exports['default'] = Ember['default'].Route.extend({
+    model: function model() {
+      return {
+        deploymentMode: 'POC',
+        imagePath: '.',
+        undercloudIP: '192.0.2.1/24',
+        sshUser: '',
+        sshPassword: '',
+        localInterface: 'eth1',
+        masqueradeNetwork: '192.0.2.0/24',
+        dhcpStart: '192.0.2.5',
+        dhcpEnd: '192.0.2.24',
+        networkCidr: '192.0.2.0/24',
+        networkGateway: '192.0.2.1',
+        discoveryInterface: 'br-ctlplane',
+        discoveryIpStart: '192.0.2.100',
+        discoveryIpEnd: '192.0.2.120',
+        discoveryRunbench: false,
+        undercloudDebug: true
+      };
+    },
+
+    setupController: function setupController(controller, model) {
+      controller.set('model', model);
+      controller.set('showAlertMessage', false);
+    },
+
+    deactivate: function deactivate() {
+      return this.send('saveDeployment', null);
+    }
+
+  });
+
+});
 define('fusor-ember-cli/routes/where-install', ['exports', 'ember'], function (exports, Ember) {
 
   'use strict';
@@ -6727,6 +7595,37 @@ define('fusor-ember-cli/routes/where-install', ['exports', 'ember'], function (e
     }
 
   });
+
+});
+define('fusor-ember-cli/serializers/deployment-plan-parameter', ['exports', 'ember-data'], function (exports, DS) {
+
+    'use strict';
+
+    exports['default'] = DS['default'].RESTSerializer.extend({
+        primaryKey: 'name'
+    });
+
+});
+define('fusor-ember-cli/serializers/deployment-plan', ['exports', 'ember-data'], function (exports, DS) {
+
+    'use strict';
+
+    exports['default'] = DS['default'].RESTSerializer.extend(DS['default'].EmbeddedRecordsMixin, {
+        primaryKey: 'name',
+        attrs: {
+            parameters: { embedded: 'always' },
+            roles: { embedded: 'always' }
+        }
+    });
+
+});
+define('fusor-ember-cli/serializers/deployment-role', ['exports', 'ember-data'], function (exports, DS) {
+
+    'use strict';
+
+    exports['default'] = DS['default'].RESTSerializer.extend({
+        primaryKey: 'uuid'
+    });
 
 });
 define('fusor-ember-cli/serializers/entitlement', ['exports', 'ember-data'], function (exports, DS) {
@@ -6826,6 +7725,24 @@ define('fusor-ember-cli/serializers/management-application', ['exports', 'ember-
   // "installedProducts": [],
   // "guestIds": [],
   // "capabilities": [],
+
+});
+define('fusor-ember-cli/serializers/node', ['exports', 'ember-data'], function (exports, DS) {
+
+    'use strict';
+
+    exports['default'] = DS['default'].RESTSerializer.extend({
+        primaryKey: 'uuid'
+    });
+
+});
+define('fusor-ember-cli/serializers/openstack-deployment', ['exports', 'ember-data'], function (exports, DS) {
+
+    'use strict';
+
+    exports['default'] = DS['default'].RESTSerializer.extend(DS['default'].EmbeddedRecordsMixin, {
+        primaryKey: 'stack_name'
+    });
 
 });
 define('fusor-ember-cli/serializers/pool', ['exports', 'ember-data'], function (exports, DS) {
@@ -7020,7 +7937,7 @@ define('fusor-ember-cli/templates/assign-nodes', ['exports'], function (exports)
                 fragment = this.build(dom);
               }
               var morph0 = dom.createMorphAt(fragment,1,1,contextualElement);
-              inline(env, morph0, context, "deployment-role", [], {"role-type": get(env, context, "role.roleType"), "role-label": get(env, context, "role.roleLabel"), "role-assigned": false, "edit": "editRole"});
+              inline(env, morph0, context, "deployment-role", [], {"role": get(env, context, "role"), "edit": "editRole"});
               return fragment;
             }
           };
@@ -7066,49 +7983,6 @@ define('fusor-ember-cli/templates/assign-nodes', ['exports'], function (exports)
         };
       }());
       var child1 = (function() {
-        var child0 = (function() {
-          return {
-            isHTMLBars: true,
-            revision: "Ember@1.11.1",
-            blockParams: 0,
-            cachedFragment: null,
-            hasRendered: false,
-            build: function build(dom) {
-              var el0 = dom.createDocumentFragment();
-              var el1 = dom.createTextNode("                  ");
-              dom.appendChild(el0, el1);
-              var el1 = dom.createComment("");
-              dom.appendChild(el0, el1);
-              var el1 = dom.createTextNode("\n");
-              dom.appendChild(el0, el1);
-              return el0;
-            },
-            render: function render(context, env, contextualElement) {
-              var dom = env.dom;
-              var hooks = env.hooks, inline = hooks.inline;
-              dom.detectNamespace(contextualElement);
-              var fragment;
-              if (env.useFragmentCache && dom.canClone) {
-                if (this.cachedFragment === null) {
-                  fragment = this.build(dom);
-                  if (this.hasRendered) {
-                    this.cachedFragment = fragment;
-                  } else {
-                    this.hasRendered = true;
-                  }
-                }
-                if (this.cachedFragment) {
-                  fragment = dom.cloneNode(this.cachedFragment, true);
-                }
-              } else {
-                fragment = this.build(dom);
-              }
-              var morph0 = dom.createMorphAt(fragment,1,1,contextualElement);
-              inline(env, morph0, context, "deployment-role", [], {"role-type": "hidden", "role-assigned": false});
-              return fragment;
-            }
-          };
-        }());
         return {
           isHTMLBars: true,
           revision: "Ember@1.11.1",
@@ -7117,13 +7991,19 @@ define('fusor-ember-cli/templates/assign-nodes', ['exports'], function (exports)
           hasRendered: false,
           build: function build(dom) {
             var el0 = dom.createDocumentFragment();
-            var el1 = dom.createComment("");
+            var el1 = dom.createTextNode("                  ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createElement("span");
+            dom.setAttribute(el1,"class","deployment-roles-all-assigned");
+            var el2 = dom.createTextNode("All deployment roles have been assigned.");
+            dom.appendChild(el1, el2);
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n");
             dom.appendChild(el0, el1);
             return el0;
           },
           render: function render(context, env, contextualElement) {
             var dom = env.dom;
-            var hooks = env.hooks, get = hooks.get, block = hooks.block;
             dom.detectNamespace(contextualElement);
             var fragment;
             if (env.useFragmentCache && dom.canClone) {
@@ -7141,10 +8021,6 @@ define('fusor-ember-cli/templates/assign-nodes', ['exports'], function (exports)
             } else {
               fragment = this.build(dom);
             }
-            var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
-            dom.insertBoundary(fragment, null);
-            dom.insertBoundary(fragment, 0);
-            block(env, morph0, context, "draggable-object", [], {"content": get(env, context, "role")}, child0, null);
             return fragment;
           }
         };
@@ -7159,7 +8035,7 @@ define('fusor-ember-cli/templates/assign-nodes', ['exports'], function (exports)
           var el0 = dom.createDocumentFragment();
           var el1 = dom.createTextNode("            ");
           dom.appendChild(el0, el1);
-          var el1 = dom.createElement("ul");
+          var el1 = dom.createElement("div");
           var el2 = dom.createTextNode("\n");
           dom.appendChild(el1, el2);
           var el2 = dom.createComment("");
@@ -7197,14 +8073,100 @@ define('fusor-ember-cli/templates/assign-nodes', ['exports'], function (exports)
           var morph0 = dom.createMorphAt(element0,1,1);
           var morph1 = dom.createMorphAt(element0,2,2);
           var attrMorph0 = dom.createAttrMorph(element0, 'class');
-          attribute(env, attrMorph0, element0, "class", concat(env, ["deployment-roles deployment-roles-unassigned deployment-roles-assignable ", get(env, context, "droppableClass")]));
-          block(env, morph0, context, "each", [get(env, context, "availableRoles")], {"keyword": "role"}, child0, null);
-          block(env, morph1, context, "unless", [get(env, context, "noneAssigned")], {}, child1, null);
+          attribute(env, attrMorph0, element0, "class", concat(env, ["row col-md-12 deployment-roles deployment-roles-unassigned deployment-roles-assignable ", get(env, context, "droppableClass")]));
+          block(env, morph0, context, "each", [get(env, context, "unassignedRoles")], {"keyword": "role"}, child0, null);
+          block(env, morph1, context, "if", [get(env, context, "allRolesAssigned")], {}, child1, null);
           return fragment;
         }
       };
     }());
     var child1 = (function() {
+      var child0 = (function() {
+        return {
+          isHTMLBars: true,
+          revision: "Ember@1.11.1",
+          blockParams: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          build: function build(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createTextNode("                    ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          render: function render(context, env, contextualElement) {
+            var dom = env.dom;
+            var hooks = env.hooks, get = hooks.get, inline = hooks.inline;
+            dom.detectNamespace(contextualElement);
+            var fragment;
+            if (env.useFragmentCache && dom.canClone) {
+              if (this.cachedFragment === null) {
+                fragment = this.build(dom);
+                if (this.hasRendered) {
+                  this.cachedFragment = fragment;
+                } else {
+                  this.hasRendered = true;
+                }
+              }
+              if (this.cachedFragment) {
+                fragment = dom.cloneNode(this.cachedFragment, true);
+              }
+            } else {
+              fragment = this.build(dom);
+            }
+            var morph0 = dom.createMorphAt(fragment,1,1,contextualElement);
+            inline(env, morph0, context, "node-profile", [], {"profile": get(env, context, "profile"), "nodes": get(env, context, "nodes"), "plan": get(env, context, "model.plan"), "doAssign": true, "assignRole": "assignRole", "unassignRole": "unassignRole", "editRole": "editRole", "setRoleCount": "setRoleCount", "removeRole": "removeRole"});
+            return fragment;
+          }
+        };
+      }());
+      var child1 = (function() {
+        return {
+          isHTMLBars: true,
+          revision: "Ember@1.11.1",
+          blockParams: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          build: function build(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createTextNode("                    ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          render: function render(context, env, contextualElement) {
+            var dom = env.dom;
+            var hooks = env.hooks, get = hooks.get, inline = hooks.inline;
+            dom.detectNamespace(contextualElement);
+            var fragment;
+            if (env.useFragmentCache && dom.canClone) {
+              if (this.cachedFragment === null) {
+                fragment = this.build(dom);
+                if (this.hasRendered) {
+                  this.cachedFragment = fragment;
+                } else {
+                  this.hasRendered = true;
+                }
+              }
+              if (this.cachedFragment) {
+                fragment = dom.cloneNode(this.cachedFragment, true);
+              }
+            } else {
+              fragment = this.build(dom);
+            }
+            var morph0 = dom.createMorphAt(fragment,1,1,contextualElement);
+            inline(env, morph0, context, "node-profile", [], {"profile": get(env, context, "profile"), "plan": get(env, context, "model.plan"), "doAssign": true, "assignRole": "assignRole", "unassignRole": "unassignRole", "editRole": "editRole", "setRoleCount": "setRoleCount", "removeRole": "removeRole"});
+            return fragment;
+          }
+        };
+      }());
       return {
         isHTMLBars: true,
         revision: "Ember@1.11.1",
@@ -7221,11 +8183,11 @@ define('fusor-ember-cli/templates/assign-nodes', ['exports'], function (exports)
           dom.appendChild(el1, el2);
           var el2 = dom.createElement("div");
           dom.setAttribute(el2,"class","col-md-7");
-          var el3 = dom.createTextNode("\n                  ");
+          var el3 = dom.createTextNode("\n");
           dom.appendChild(el2, el3);
           var el3 = dom.createComment("");
           dom.appendChild(el2, el3);
-          var el3 = dom.createTextNode("\n                ");
+          var el3 = dom.createTextNode("                ");
           dom.appendChild(el2, el3);
           dom.appendChild(el1, el2);
           var el2 = dom.createTextNode("\n            ");
@@ -7237,7 +8199,7 @@ define('fusor-ember-cli/templates/assign-nodes', ['exports'], function (exports)
         },
         render: function render(context, env, contextualElement) {
           var dom = env.dom;
-          var hooks = env.hooks, get = hooks.get, inline = hooks.inline;
+          var hooks = env.hooks, get = hooks.get, block = hooks.block;
           dom.detectNamespace(contextualElement);
           var fragment;
           if (env.useFragmentCache && dom.canClone) {
@@ -7256,7 +8218,7 @@ define('fusor-ember-cli/templates/assign-nodes', ['exports'], function (exports)
             fragment = this.build(dom);
           }
           var morph0 = dom.createMorphAt(dom.childAt(fragment, [1, 1]),1,1);
-          inline(env, morph0, context, "node-profile", [], {"profile": get(env, context, "profile"), "nodeProfiles": get(env, context, "nodeProfiles"), "doAssign": true, "assignRole": "assignRole", "startDrag": "startDrag", "stopDrag": "stopDrag", "edit": "editRole", "removeRole": "removeRole"});
+          block(env, morph0, context, "if", [get(env, context, "nodes")], {}, child0, child1);
           return fragment;
         }
       };
@@ -7297,6 +8259,42 @@ define('fusor-ember-cli/templates/assign-nodes', ['exports'], function (exports)
         }
       };
     }());
+    var child3 = (function() {
+      return {
+        isHTMLBars: true,
+        revision: "Ember@1.11.1",
+        blockParams: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        build: function build(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("Next");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        render: function render(context, env, contextualElement) {
+          var dom = env.dom;
+          dom.detectNamespace(contextualElement);
+          var fragment;
+          if (env.useFragmentCache && dom.canClone) {
+            if (this.cachedFragment === null) {
+              fragment = this.build(dom);
+              if (this.hasRendered) {
+                this.cachedFragment = fragment;
+              } else {
+                this.hasRendered = true;
+              }
+            }
+            if (this.cachedFragment) {
+              fragment = dom.cloneNode(this.cachedFragment, true);
+            }
+          } else {
+            fragment = this.build(dom);
+          }
+          return fragment;
+        }
+      };
+    }());
     return {
       isHTMLBars: true,
       revision: "Ember@1.11.1",
@@ -7311,10 +8309,25 @@ define('fusor-ember-cli/templates/assign-nodes', ['exports'], function (exports)
         dom.appendChild(el1, el2);
         var el2 = dom.createElement("div");
         dom.setAttribute(el2,"class","col-md-12");
+        dom.setAttribute(el2,"style","float: left;");
         var el3 = dom.createTextNode("\n        ");
         dom.appendChild(el2, el3);
-        var el3 = dom.createElement("h2");
-        var el4 = dom.createTextNode("Available Deployment Roles");
+        var el3 = dom.createElement("p");
+        var el4 = dom.createTextNode("\n            ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("h2");
+        dom.setAttribute(el4,"style","vertical-align: bottom;display:inline-block;");
+        var el5 = dom.createTextNode("Available Deployment Roles");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n            ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("a");
+        dom.setAttribute(el4,"class","edit-global-config");
+        var el5 = dom.createTextNode(" Edit Global Configuration Settings ");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n        ");
         dom.appendChild(el3, el4);
         dom.appendChild(el2, el3);
         var el3 = dom.createTextNode("\n");
@@ -7377,7 +8390,7 @@ define('fusor-ember-cli/templates/assign-nodes', ['exports'], function (exports)
         var el2 = dom.createTextNode("\n    ");
         dom.appendChild(el1, el2);
         var el2 = dom.createElement("div");
-        dom.setAttribute(el2,"class","col-md-9");
+        dom.setAttribute(el2,"class","col-md-12 rhci-steps-buttons");
         var el3 = dom.createTextNode("\n        ");
         dom.appendChild(el2, el3);
         var el3 = dom.createElement("div");
@@ -7386,12 +8399,9 @@ define('fusor-ember-cli/templates/assign-nodes', ['exports'], function (exports)
         dom.appendChild(el3, el4);
         var el4 = dom.createComment("");
         dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("            ");
+        var el4 = dom.createTextNode("          ");
         dom.appendChild(el3, el4);
-        var el4 = dom.createElement("button");
-        dom.setAttribute(el4,"class","btn btn-primary");
-        var el5 = dom.createTextNode("\n                Next\n            ");
-        dom.appendChild(el4, el5);
+        var el4 = dom.createComment("");
         dom.appendChild(el3, el4);
         var el4 = dom.createTextNode("\n        ");
         dom.appendChild(el3, el4);
@@ -7402,13 +8412,25 @@ define('fusor-ember-cli/templates/assign-nodes', ['exports'], function (exports)
         var el2 = dom.createTextNode("\n");
         dom.appendChild(el1, el2);
         dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
         var el1 = dom.createTextNode("\n");
         dom.appendChild(el0, el1);
         return el0;
       },
       render: function render(context, env, contextualElement) {
         var dom = env.dom;
-        var hooks = env.hooks, block = hooks.block, get = hooks.get, attribute = hooks.attribute, element = hooks.element;
+        var hooks = env.hooks, element = hooks.element, block = hooks.block, get = hooks.get, inline = hooks.inline;
         dom.detectNamespace(contextualElement);
         var fragment;
         if (env.useFragmentCache && dom.canClone) {
@@ -7426,17 +8448,24 @@ define('fusor-ember-cli/templates/assign-nodes', ['exports'], function (exports)
         } else {
           fragment = this.build(dom);
         }
-        var element1 = dom.childAt(fragment, [7, 1, 1]);
-        var element2 = dom.childAt(element1, [3]);
-        var morph0 = dom.createMorphAt(dom.childAt(fragment, [0, 1]),3,3);
+        var element1 = dom.childAt(fragment, [0, 1]);
+        var element2 = dom.childAt(element1, [1, 3]);
+        var element3 = dom.childAt(fragment, [7, 1, 1]);
+        var morph0 = dom.createMorphAt(element1,3,3);
         var morph1 = dom.createMorphAt(dom.childAt(fragment, [3, 1]),3,3);
-        var morph2 = dom.createMorphAt(element1,1,1);
-        var attrMorph0 = dom.createAttrMorph(element2, 'disabled');
+        var morph2 = dom.createMorphAt(element3,1,1);
+        var morph3 = dom.createMorphAt(element3,3,3);
+        var morph4 = dom.createMorphAt(fragment,9,9,contextualElement);
+        var morph5 = dom.createMorphAt(fragment,11,11,contextualElement);
+        var morph6 = dom.createMorphAt(fragment,13,13,contextualElement);
+        element(env, element2, context, "action", ["editGlobalServiceConfig"], {});
         block(env, morph0, context, "draggable-object-target", [], {"action": "unassignRole"}, child0, null);
-        block(env, morph1, context, "each", [get(env, context, "nodeProfiles")], {"keyword": "profile"}, child1, null);
+        block(env, morph1, context, "each", [get(env, context, "profiles")], {"keyword": "profile"}, child1, null);
         block(env, morph2, context, "link-to", ["register-nodes"], {"class": "btn btn-default"}, child2, null);
-        attribute(env, attrMorph0, element2, "disabled", get(env, context, "disableAssignNodesNext"));
-        element(env, element2, context, "action", ["saveDeployment", get(env, context, "nextStepRouteName")], {});
+        block(env, morph3, context, "link-to", [get(env, context, "nextStepRouteName")], {"class": "btn btn-primary", "disabled": get(env, context, "disableAssignNodesNext")}, child3, null);
+        inline(env, morph4, context, "partial", ["edit-deployment-role"], {});
+        inline(env, morph5, context, "partial", ["edit-global-service-config"], {});
+        inline(env, morph6, context, "loading-spinner", [], {"show": get(env, context, "showLoadingSpinner"), "text": get(env, context, "loadingSpinnerText")});
         return fragment;
       }
     };
@@ -8282,6 +9311,56 @@ define('fusor-ember-cli/templates/components/base-f', ['exports'], function (exp
         hasRendered: false,
         build: function build(dom) {
           var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("          ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("button");
+          dom.setAttribute(el1,"class","pficon fa fa-info-circle rhci-popover-button");
+          dom.setAttribute(el1,"data-toggle","popover");
+          dom.setAttribute(el1,"data-trigger","focus");
+          dom.setAttribute(el1,"data-html","true");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        render: function render(context, env, contextualElement) {
+          var dom = env.dom;
+          var hooks = env.hooks, get = hooks.get, attribute = hooks.attribute;
+          dom.detectNamespace(contextualElement);
+          var fragment;
+          if (env.useFragmentCache && dom.canClone) {
+            if (this.cachedFragment === null) {
+              fragment = this.build(dom);
+              if (this.hasRendered) {
+                this.cachedFragment = fragment;
+              } else {
+                this.hasRendered = true;
+              }
+            }
+            if (this.cachedFragment) {
+              fragment = dom.cloneNode(this.cachedFragment, true);
+            }
+          } else {
+            fragment = this.build(dom);
+          }
+          var element1 = dom.childAt(fragment, [1]);
+          var attrMorph0 = dom.createAttrMorph(element1, 'data-original-title');
+          var attrMorph1 = dom.createAttrMorph(element1, 'data-content');
+          attribute(env, attrMorph0, element1, "data-original-title", get(env, context, "label"));
+          attribute(env, attrMorph1, element1, "data-content", get(env, context, "helpText"));
+          return fragment;
+        }
+      };
+    }());
+    var child2 = (function() {
+      return {
+        isHTMLBars: true,
+        revision: "Ember@1.11.1",
+        blockParams: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        build: function build(dom) {
+          var el0 = dom.createDocumentFragment();
           var el1 = dom.createTextNode("         ");
           dom.appendChild(el0, el1);
           var el1 = dom.createElement("div");
@@ -8347,9 +9426,20 @@ define('fusor-ember-cli/templates/components/base-f', ['exports'], function (exp
         dom.appendChild(el3, el4);
         var el4 = dom.createTextNode("        ");
         dom.appendChild(el3, el4);
+        var el4 = dom.createElement("label");
+        dom.setAttribute(el4,"class","class");
+        var el5 = dom.createTextNode("\n          ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createComment("");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n        ");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n");
+        dom.appendChild(el3, el4);
         var el4 = dom.createComment("");
         dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n      ");
+        var el4 = dom.createTextNode("      ");
         dom.appendChild(el3, el4);
         dom.appendChild(el2, el3);
         var el3 = dom.createTextNode("\n\n      ");
@@ -8405,25 +9495,71 @@ define('fusor-ember-cli/templates/components/base-f', ['exports'], function (exp
         } else {
           fragment = this.build(dom);
         }
-        var element1 = dom.childAt(fragment, [0, 1]);
-        var element2 = dom.childAt(element1, [1]);
-        var element3 = dom.childAt(element1, [3]);
-        var attrMorph0 = dom.createAttrMorph(element1, 'class');
-        var morph0 = dom.createMorphAt(element2,1,1);
-        var morph1 = dom.createMorphAt(element2,3,3);
-        var attrMorph1 = dom.createAttrMorph(element2, 'class');
-        var morph2 = dom.createMorphAt(element3,1,1);
-        var attrMorph2 = dom.createAttrMorph(element3, 'class');
-        var morph3 = dom.createMorphAt(element1,5,5);
-        var morph4 = dom.createMorphAt(dom.childAt(element1, [7]),1,1);
-        attribute(env, attrMorph0, element1, "class", concat(env, ["form-group ", subexpr(env, context, "if", [get(env, context, "hasError"), "has-error"], {})]));
-        attribute(env, attrMorph1, element2, "class", concat(env, ["control-label ", get(env, context, "labelClassSize"), " ", get(env, context, "class")]));
+        var element2 = dom.childAt(fragment, [0, 1]);
+        var element3 = dom.childAt(element2, [1]);
+        var element4 = dom.childAt(element2, [3]);
+        var attrMorph0 = dom.createAttrMorph(element2, 'class');
+        var morph0 = dom.createMorphAt(element3,1,1);
+        var attrMorph1 = dom.createAttrMorph(element3, 'class');
+        var morph1 = dom.createMorphAt(dom.childAt(element3, [3]),1,1);
+        var morph2 = dom.createMorphAt(element3,5,5);
+        var morph3 = dom.createMorphAt(element4,1,1);
+        var attrMorph2 = dom.createAttrMorph(element4, 'class');
+        var morph4 = dom.createMorphAt(element2,5,5);
+        var morph5 = dom.createMorphAt(dom.childAt(element2, [7]),1,1);
+        attribute(env, attrMorph0, element2, "class", concat(env, ["form-group ", subexpr(env, context, "if", [get(env, context, "hasError"), "has-error"], {})]));
+        attribute(env, attrMorph1, element3, "class", concat(env, ["control-label ", get(env, context, "labelClassSize"), " ", get(env, context, "class")]));
         block(env, morph0, context, "if", [get(env, context, "isRequired")], {}, child0, null);
         content(env, morph1, context, "label");
-        attribute(env, attrMorph2, element3, "class", concat(env, [get(env, context, "inputClassSize")]));
-        content(env, morph2, context, "yield");
-        block(env, morph3, context, "if", [get(env, context, "showUnits")], {}, child1, null);
-        content(env, morph4, context, "help-inline");
+        block(env, morph2, context, "if", [get(env, context, "showHelpPopover")], {}, child1, null);
+        attribute(env, attrMorph2, element4, "class", concat(env, [get(env, context, "inputClassSize")]));
+        content(env, morph3, context, "yield");
+        block(env, morph4, context, "if", [get(env, context, "showUnits")], {}, child2, null);
+        content(env, morph5, context, "help-inline");
+        return fragment;
+      }
+    };
+  }()));
+
+});
+define('fusor-ember-cli/templates/components/base-popover', ['exports'], function (exports) {
+
+  'use strict';
+
+  exports['default'] = Ember.HTMLBars.template((function() {
+    return {
+      isHTMLBars: true,
+      revision: "Ember@1.11.1",
+      blockParams: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      build: function build(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createElement("div");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      render: function render(context, env, contextualElement) {
+        var dom = env.dom;
+        dom.detectNamespace(contextualElement);
+        var fragment;
+        if (env.useFragmentCache && dom.canClone) {
+          if (this.cachedFragment === null) {
+            fragment = this.build(dom);
+            if (this.hasRendered) {
+              this.cachedFragment = fragment;
+            } else {
+              this.hasRendered = true;
+            }
+          }
+          if (this.cachedFragment) {
+            fragment = dom.cloneNode(this.cachedFragment, true);
+          }
+        } else {
+          fragment = this.build(dom);
+        }
         return fragment;
       }
     };
@@ -8752,6 +9888,97 @@ define('fusor-ember-cli/templates/components/cancel-back-next', ['exports'], fun
   }()));
 
 });
+define('fusor-ember-cli/templates/components/check-f', ['exports'], function (exports) {
+
+  'use strict';
+
+  exports['default'] = Ember.HTMLBars.template((function() {
+    var child0 = (function() {
+      return {
+        isHTMLBars: true,
+        revision: "Ember@1.11.1",
+        blockParams: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        build: function build(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("\n  ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        render: function render(context, env, contextualElement) {
+          var dom = env.dom;
+          var hooks = env.hooks, get = hooks.get, inline = hooks.inline;
+          dom.detectNamespace(contextualElement);
+          var fragment;
+          if (env.useFragmentCache && dom.canClone) {
+            if (this.cachedFragment === null) {
+              fragment = this.build(dom);
+              if (this.hasRendered) {
+                this.cachedFragment = fragment;
+              } else {
+                this.hasRendered = true;
+              }
+            }
+            if (this.cachedFragment) {
+              fragment = dom.cloneNode(this.cachedFragment, true);
+            }
+          } else {
+            fragment = this.build(dom);
+          }
+          var morph0 = dom.createMorphAt(fragment,1,1,contextualElement);
+          inline(env, morph0, context, "input", [], {"checked": get(env, context, "checked"), "placeholder": get(env, context, "placeholder"), "type": "checkbox", "id": get(env, context, "cssId")});
+          return fragment;
+        }
+      };
+    }());
+    return {
+      isHTMLBars: true,
+      revision: "Ember@1.11.1",
+      blockParams: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      build: function build(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      render: function render(context, env, contextualElement) {
+        var dom = env.dom;
+        var hooks = env.hooks, get = hooks.get, block = hooks.block;
+        dom.detectNamespace(contextualElement);
+        var fragment;
+        if (env.useFragmentCache && dom.canClone) {
+          if (this.cachedFragment === null) {
+            fragment = this.build(dom);
+            if (this.hasRendered) {
+              this.cachedFragment = fragment;
+            } else {
+              this.hasRendered = true;
+            }
+          }
+          if (this.cachedFragment) {
+            fragment = dom.cloneNode(this.cachedFragment, true);
+          }
+        } else {
+          fragment = this.build(dom);
+        }
+        var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
+        dom.insertBoundary(fragment, 0);
+        block(env, morph0, context, "base-f", [], {"label": get(env, context, "label"), "labelSize": get(env, context, "labelSize"), "inputSize": get(env, context, "inputSize"), "unitsSize": get(env, context, "unitsSize"), "unitsLabel": get(env, context, "unitsLabel"), "help-inline": get(env, context, "help-inline"), "errors": get(env, context, "errors"), "isRequired": get(env, context, "isRequired"), "helpText": get(env, context, "helpText")}, child0, null);
+        return fragment;
+      }
+    };
+  }()));
+
+});
 define('fusor-ember-cli/templates/components/delete-deployment-button', ['exports'], function (exports) {
 
   'use strict';
@@ -8815,20 +10042,12 @@ define('fusor-ember-cli/templates/components/deployment-role', ['exports'], func
             hasRendered: false,
             build: function build(dom) {
               var el0 = dom.createDocumentFragment();
-              var el1 = dom.createTextNode("                    ");
-              dom.appendChild(el0, el1);
-              var el1 = dom.createElement("option");
-              dom.setAttribute(el1,"selected","");
-              var el2 = dom.createComment("");
-              dom.appendChild(el1, el2);
-              dom.appendChild(el0, el1);
-              var el1 = dom.createTextNode("\n");
+              var el1 = dom.createTextNode("Nodes");
               dom.appendChild(el0, el1);
               return el0;
             },
             render: function render(context, env, contextualElement) {
               var dom = env.dom;
-              var hooks = env.hooks, content = hooks.content;
               dom.detectNamespace(contextualElement);
               var fragment;
               if (env.useFragmentCache && dom.canClone) {
@@ -8846,8 +10065,6 @@ define('fusor-ember-cli/templates/components/deployment-role', ['exports'], func
               } else {
                 fragment = this.build(dom);
               }
-              var morph0 = dom.createMorphAt(dom.childAt(fragment, [1]),0,0);
-              content(env, morph0, context, "option.label");
               return fragment;
             }
           };
@@ -8861,19 +10078,12 @@ define('fusor-ember-cli/templates/components/deployment-role', ['exports'], func
             hasRendered: false,
             build: function build(dom) {
               var el0 = dom.createDocumentFragment();
-              var el1 = dom.createTextNode("                    ");
-              dom.appendChild(el0, el1);
-              var el1 = dom.createElement("option");
-              var el2 = dom.createComment("");
-              dom.appendChild(el1, el2);
-              dom.appendChild(el0, el1);
-              var el1 = dom.createTextNode("\n");
+              var el1 = dom.createTextNode("Node");
               dom.appendChild(el0, el1);
               return el0;
             },
             render: function render(context, env, contextualElement) {
               var dom = env.dom;
-              var hooks = env.hooks, content = hooks.content;
               dom.detectNamespace(contextualElement);
               var fragment;
               if (env.useFragmentCache && dom.canClone) {
@@ -8891,8 +10101,6 @@ define('fusor-ember-cli/templates/components/deployment-role', ['exports'], func
               } else {
                 fragment = this.build(dom);
               }
-              var morph0 = dom.createMorphAt(dom.childAt(fragment, [1]),0,0);
-              content(env, morph0, context, "option.label");
               return fragment;
             }
           };
@@ -8905,13 +10113,32 @@ define('fusor-ember-cli/templates/components/deployment-role', ['exports'], func
           hasRendered: false,
           build: function build(dom) {
             var el0 = dom.createDocumentFragment();
-            var el1 = dom.createComment("");
+            var el1 = dom.createTextNode("    ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createElement("div");
+            dom.setAttribute(el1,"style","padding-left: 15px;");
+            var el2 = dom.createTextNode("\n      ");
+            dom.appendChild(el1, el2);
+            var el2 = dom.createComment("");
+            dom.appendChild(el1, el2);
+            var el2 = dom.createTextNode(" ");
+            dom.appendChild(el1, el2);
+            var el2 = dom.createComment("");
+            dom.appendChild(el1, el2);
+            var el2 = dom.createTextNode("\n      ");
+            dom.appendChild(el1, el2);
+            var el2 = dom.createComment("");
+            dom.appendChild(el1, el2);
+            var el2 = dom.createTextNode("\n    ");
+            dom.appendChild(el1, el2);
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n");
             dom.appendChild(el0, el1);
             return el0;
           },
           render: function render(context, env, contextualElement) {
             var dom = env.dom;
-            var hooks = env.hooks, get = hooks.get, block = hooks.block;
+            var hooks = env.hooks, content = hooks.content, get = hooks.get, block = hooks.block;
             dom.detectNamespace(contextualElement);
             var fragment;
             if (env.useFragmentCache && dom.canClone) {
@@ -8929,10 +10156,13 @@ define('fusor-ember-cli/templates/components/deployment-role', ['exports'], func
             } else {
               fragment = this.build(dom);
             }
-            var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
-            dom.insertBoundary(fragment, null);
-            dom.insertBoundary(fragment, 0);
-            block(env, morph0, context, "if", [get(env, context, "option.selected")], {}, child0, child1);
+            var element4 = dom.childAt(fragment, [1]);
+            var morph0 = dom.createMorphAt(element4,1,1);
+            var morph1 = dom.createMorphAt(element4,3,3);
+            var morph2 = dom.createMorphAt(element4,5,5);
+            content(env, morph0, context, "roleNodeCount");
+            content(env, morph1, context, "role.name");
+            block(env, morph2, context, "if", [get(env, context, "multipleAssignedNodes")], {}, child0, child1);
             return fragment;
           }
         };
@@ -8945,24 +10175,13 @@ define('fusor-ember-cli/templates/components/deployment-role', ['exports'], func
         hasRendered: false,
         build: function build(dom) {
           var el0 = dom.createDocumentFragment();
-          var el1 = dom.createTextNode("        ");
-          dom.appendChild(el0, el1);
-          var el1 = dom.createElement("select");
-          dom.setAttribute(el1,"class","selectpicker");
-          var el2 = dom.createTextNode("\n");
-          dom.appendChild(el1, el2);
-          var el2 = dom.createComment("");
-          dom.appendChild(el1, el2);
-          var el2 = dom.createTextNode("        ");
-          dom.appendChild(el1, el2);
-          dom.appendChild(el0, el1);
-          var el1 = dom.createTextNode("\n");
+          var el1 = dom.createComment("");
           dom.appendChild(el0, el1);
           return el0;
         },
         render: function render(context, env, contextualElement) {
           var dom = env.dom;
-          var hooks = env.hooks, get = hooks.get, element = hooks.element, block = hooks.block;
+          var hooks = env.hooks, get = hooks.get, block = hooks.block;
           dom.detectNamespace(contextualElement);
           var fragment;
           if (env.useFragmentCache && dom.canClone) {
@@ -8980,10 +10199,326 @@ define('fusor-ember-cli/templates/components/deployment-role', ['exports'], func
           } else {
             fragment = this.build(dom);
           }
-          var element0 = dom.childAt(fragment, [1]);
-          var morph0 = dom.createMorphAt(element0,1,1);
-          element(env, element0, context, "action", ["assignNodes", get(env, context, "this")], {"on": "change"});
-          block(env, morph0, context, "each", [get(env, context, "availableOptions")], {"keyword": "option"}, child0, null);
+          var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
+          dom.insertBoundary(fragment, null);
+          dom.insertBoundary(fragment, 0);
+          block(env, morph0, context, "if", [get(env, context, "hasAssignedNodes")], {}, child0, null);
+          return fragment;
+        }
+      };
+    }());
+    var child1 = (function() {
+      var child0 = (function() {
+        var child0 = (function() {
+          var child0 = (function() {
+            return {
+              isHTMLBars: true,
+              revision: "Ember@1.11.1",
+              blockParams: 0,
+              cachedFragment: null,
+              hasRendered: false,
+              build: function build(dom) {
+                var el0 = dom.createDocumentFragment();
+                var el1 = dom.createTextNode("                     ");
+                dom.appendChild(el0, el1);
+                var el1 = dom.createElement("option");
+                dom.setAttribute(el1,"selected","");
+                var el2 = dom.createComment("");
+                dom.appendChild(el1, el2);
+                dom.appendChild(el0, el1);
+                var el1 = dom.createTextNode("\n");
+                dom.appendChild(el0, el1);
+                return el0;
+              },
+              render: function render(context, env, contextualElement) {
+                var dom = env.dom;
+                var hooks = env.hooks, content = hooks.content;
+                dom.detectNamespace(contextualElement);
+                var fragment;
+                if (env.useFragmentCache && dom.canClone) {
+                  if (this.cachedFragment === null) {
+                    fragment = this.build(dom);
+                    if (this.hasRendered) {
+                      this.cachedFragment = fragment;
+                    } else {
+                      this.hasRendered = true;
+                    }
+                  }
+                  if (this.cachedFragment) {
+                    fragment = dom.cloneNode(this.cachedFragment, true);
+                  }
+                } else {
+                  fragment = this.build(dom);
+                }
+                var morph0 = dom.createMorphAt(dom.childAt(fragment, [1]),0,0);
+                content(env, morph0, context, "option.label");
+                return fragment;
+              }
+            };
+          }());
+          var child1 = (function() {
+            return {
+              isHTMLBars: true,
+              revision: "Ember@1.11.1",
+              blockParams: 0,
+              cachedFragment: null,
+              hasRendered: false,
+              build: function build(dom) {
+                var el0 = dom.createDocumentFragment();
+                var el1 = dom.createTextNode("                     ");
+                dom.appendChild(el0, el1);
+                var el1 = dom.createElement("option");
+                var el2 = dom.createComment("");
+                dom.appendChild(el1, el2);
+                dom.appendChild(el0, el1);
+                var el1 = dom.createTextNode("\n");
+                dom.appendChild(el0, el1);
+                return el0;
+              },
+              render: function render(context, env, contextualElement) {
+                var dom = env.dom;
+                var hooks = env.hooks, content = hooks.content;
+                dom.detectNamespace(contextualElement);
+                var fragment;
+                if (env.useFragmentCache && dom.canClone) {
+                  if (this.cachedFragment === null) {
+                    fragment = this.build(dom);
+                    if (this.hasRendered) {
+                      this.cachedFragment = fragment;
+                    } else {
+                      this.hasRendered = true;
+                    }
+                  }
+                  if (this.cachedFragment) {
+                    fragment = dom.cloneNode(this.cachedFragment, true);
+                  }
+                } else {
+                  fragment = this.build(dom);
+                }
+                var morph0 = dom.createMorphAt(dom.childAt(fragment, [1]),0,0);
+                content(env, morph0, context, "option.label");
+                return fragment;
+              }
+            };
+          }());
+          return {
+            isHTMLBars: true,
+            revision: "Ember@1.11.1",
+            blockParams: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            build: function build(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createComment("");
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            render: function render(context, env, contextualElement) {
+              var dom = env.dom;
+              var hooks = env.hooks, get = hooks.get, block = hooks.block;
+              dom.detectNamespace(contextualElement);
+              var fragment;
+              if (env.useFragmentCache && dom.canClone) {
+                if (this.cachedFragment === null) {
+                  fragment = this.build(dom);
+                  if (this.hasRendered) {
+                    this.cachedFragment = fragment;
+                  } else {
+                    this.hasRendered = true;
+                  }
+                }
+                if (this.cachedFragment) {
+                  fragment = dom.cloneNode(this.cachedFragment, true);
+                }
+              } else {
+                fragment = this.build(dom);
+              }
+              var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
+              dom.insertBoundary(fragment, null);
+              dom.insertBoundary(fragment, 0);
+              block(env, morph0, context, "if", [get(env, context, "option.selected")], {}, child0, child1);
+              return fragment;
+            }
+          };
+        }());
+        return {
+          isHTMLBars: true,
+          revision: "Ember@1.11.1",
+          blockParams: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          build: function build(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createTextNode("         ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createElement("select");
+            dom.setAttribute(el1,"class","selectpicker");
+            var el2 = dom.createTextNode("\n");
+            dom.appendChild(el1, el2);
+            var el2 = dom.createComment("");
+            dom.appendChild(el1, el2);
+            var el2 = dom.createTextNode("          ");
+            dom.appendChild(el1, el2);
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          render: function render(context, env, contextualElement) {
+            var dom = env.dom;
+            var hooks = env.hooks, get = hooks.get, element = hooks.element, block = hooks.block;
+            dom.detectNamespace(contextualElement);
+            var fragment;
+            if (env.useFragmentCache && dom.canClone) {
+              if (this.cachedFragment === null) {
+                fragment = this.build(dom);
+                if (this.hasRendered) {
+                  this.cachedFragment = fragment;
+                } else {
+                  this.hasRendered = true;
+                }
+              }
+              if (this.cachedFragment) {
+                fragment = dom.cloneNode(this.cachedFragment, true);
+              }
+            } else {
+              fragment = this.build(dom);
+            }
+            var element2 = dom.childAt(fragment, [1]);
+            var morph0 = dom.createMorphAt(element2,1,1);
+            element(env, element2, context, "action", ["updateNodeCount", get(env, context, "this")], {"on": "change"});
+            block(env, morph0, context, "each", [get(env, context, "availableOptions")], {"keyword": "option"}, child0, null);
+            return fragment;
+          }
+        };
+      }());
+      var child1 = (function() {
+        return {
+          isHTMLBars: true,
+          revision: "Ember@1.11.1",
+          blockParams: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          build: function build(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createTextNode("      ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createElement("a");
+            dom.setAttribute(el1,"class","role-option delete");
+            var el2 = dom.createTextNode("\n          ");
+            dom.appendChild(el1, el2);
+            var el2 = dom.createElement("i");
+            dom.setAttribute(el2,"class","fa fa-times");
+            dom.appendChild(el1, el2);
+            var el2 = dom.createTextNode("\n      ");
+            dom.appendChild(el1, el2);
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n      ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createElement("a");
+            dom.setAttribute(el1,"class","role-option edit");
+            var el2 = dom.createTextNode("\n          ");
+            dom.appendChild(el1, el2);
+            var el2 = dom.createElement("i");
+            dom.setAttribute(el2,"class","fa fa-pencil");
+            dom.appendChild(el1, el2);
+            var el2 = dom.createTextNode("\n      ");
+            dom.appendChild(el1, el2);
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          render: function render(context, env, contextualElement) {
+            var dom = env.dom;
+            var hooks = env.hooks, element = hooks.element;
+            dom.detectNamespace(contextualElement);
+            var fragment;
+            if (env.useFragmentCache && dom.canClone) {
+              if (this.cachedFragment === null) {
+                fragment = this.build(dom);
+                if (this.hasRendered) {
+                  this.cachedFragment = fragment;
+                } else {
+                  this.hasRendered = true;
+                }
+              }
+              if (this.cachedFragment) {
+                fragment = dom.cloneNode(this.cachedFragment, true);
+              }
+            } else {
+              fragment = this.build(dom);
+            }
+            var element0 = dom.childAt(fragment, [1, 1]);
+            var element1 = dom.childAt(fragment, [3, 1]);
+            element(env, element0, context, "action", ["removeRole"], {});
+            element(env, element1, context, "action", ["editRole"], {});
+            return fragment;
+          }
+        };
+      }());
+      return {
+        isHTMLBars: true,
+        revision: "Ember@1.11.1",
+        blockParams: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        build: function build(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("    ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("li");
+          var el2 = dom.createTextNode("\n    ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("div");
+          dom.setAttribute(el2,"class","deployment-role-label");
+          var el3 = dom.createTextNode("\n        ");
+          dom.appendChild(el2, el3);
+          var el3 = dom.createComment("");
+          dom.appendChild(el2, el3);
+          var el3 = dom.createTextNode("\n    ");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createComment("");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createComment("");
+          dom.appendChild(el1, el2);
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        render: function render(context, env, contextualElement) {
+          var dom = env.dom;
+          var hooks = env.hooks, get = hooks.get, concat = hooks.concat, attribute = hooks.attribute, content = hooks.content, block = hooks.block;
+          dom.detectNamespace(contextualElement);
+          var fragment;
+          if (env.useFragmentCache && dom.canClone) {
+            if (this.cachedFragment === null) {
+              fragment = this.build(dom);
+              if (this.hasRendered) {
+                this.cachedFragment = fragment;
+              } else {
+                this.hasRendered = true;
+              }
+            }
+            if (this.cachedFragment) {
+              fragment = dom.cloneNode(this.cachedFragment, true);
+            }
+          } else {
+            fragment = this.build(dom);
+          }
+          var element3 = dom.childAt(fragment, [1]);
+          var attrMorph0 = dom.createAttrMorph(element3, 'class');
+          var morph0 = dom.createMorphAt(dom.childAt(element3, [1]),1,1);
+          var morph1 = dom.createMorphAt(element3,3,3);
+          var morph2 = dom.createMorphAt(element3,4,4);
+          attribute(env, attrMorph0, element3, "class", concat(env, ["role role-", get(env, context, "role.roleType"), " ", get(env, context, "assignedClass")]));
+          content(env, morph0, context, "role.name");
+          block(env, morph1, context, "if", [get(env, context, "roleAssigned")], {}, child0, null);
+          block(env, morph2, context, "unless", [get(env, context, "readOnly")], {}, child1, null);
           return fragment;
         }
       };
@@ -8996,56 +10531,13 @@ define('fusor-ember-cli/templates/components/deployment-role', ['exports'], func
       hasRendered: false,
       build: function build(dom) {
         var el0 = dom.createDocumentFragment();
-        var el1 = dom.createElement("li");
-        var el2 = dom.createTextNode("\n    ");
-        dom.appendChild(el1, el2);
-        var el2 = dom.createElement("div");
-        dom.setAttribute(el2,"class","deployment-role-label");
-        var el3 = dom.createTextNode("\n        ");
-        dom.appendChild(el2, el3);
-        var el3 = dom.createComment("");
-        dom.appendChild(el2, el3);
-        var el3 = dom.createTextNode("\n    ");
-        dom.appendChild(el2, el3);
-        dom.appendChild(el1, el2);
-        var el2 = dom.createTextNode("\n");
-        dom.appendChild(el1, el2);
-        var el2 = dom.createComment("");
-        dom.appendChild(el1, el2);
-        var el2 = dom.createTextNode("    ");
-        dom.appendChild(el1, el2);
-        var el2 = dom.createElement("a");
-        dom.setAttribute(el2,"class","role-option delete");
-        var el3 = dom.createTextNode("\n        ");
-        dom.appendChild(el2, el3);
-        var el3 = dom.createElement("i");
-        dom.setAttribute(el3,"class","fa fa-times");
-        dom.appendChild(el2, el3);
-        var el3 = dom.createTextNode("\n    ");
-        dom.appendChild(el2, el3);
-        dom.appendChild(el1, el2);
-        var el2 = dom.createTextNode("\n    ");
-        dom.appendChild(el1, el2);
-        var el2 = dom.createElement("a");
-        dom.setAttribute(el2,"class","role-option edit");
-        var el3 = dom.createTextNode("\n        ");
-        dom.appendChild(el2, el3);
-        var el3 = dom.createElement("i");
-        dom.setAttribute(el3,"class","fa fa-pencil");
-        dom.appendChild(el2, el3);
-        var el3 = dom.createTextNode("\n    ");
-        dom.appendChild(el2, el3);
-        dom.appendChild(el1, el2);
-        var el2 = dom.createTextNode("\n");
-        dom.appendChild(el1, el2);
-        dom.appendChild(el0, el1);
-        var el1 = dom.createTextNode("\n");
+        var el1 = dom.createComment("");
         dom.appendChild(el0, el1);
         return el0;
       },
       render: function render(context, env, contextualElement) {
         var dom = env.dom;
-        var hooks = env.hooks, get = hooks.get, concat = hooks.concat, attribute = hooks.attribute, content = hooks.content, block = hooks.block, element = hooks.element;
+        var hooks = env.hooks, get = hooks.get, block = hooks.block;
         dom.detectNamespace(contextualElement);
         var fragment;
         if (env.useFragmentCache && dom.canClone) {
@@ -9063,17 +10555,10 @@ define('fusor-ember-cli/templates/components/deployment-role', ['exports'], func
         } else {
           fragment = this.build(dom);
         }
-        var element1 = dom.childAt(fragment, [0]);
-        var element2 = dom.childAt(element1, [5, 1]);
-        var element3 = dom.childAt(element1, [7, 1]);
-        var attrMorph0 = dom.createAttrMorph(element1, 'class');
-        var morph0 = dom.createMorphAt(dom.childAt(element1, [1]),1,1);
-        var morph1 = dom.createMorphAt(element1,3,3);
-        attribute(env, attrMorph0, element1, "class", concat(env, ["role role-", get(env, context, "role-type"), " ", get(env, context, "assignedClass")]));
-        content(env, morph0, context, "roleLabel");
-        block(env, morph1, context, "if", [get(env, context, "role-assigned")], {}, child0, null);
-        element(env, element2, context, "action", ["removeRole", get(env, context, "role-type")], {});
-        element(env, element3, context, "action", ["editRole", get(env, context, "role-type")], {});
+        var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
+        dom.insertBoundary(fragment, null);
+        dom.insertBoundary(fragment, 0);
+        block(env, morph0, context, "if", [get(env, context, "readOnly")], {}, child0, child1);
         return fragment;
       }
     };
@@ -10627,6 +12112,105 @@ define('fusor-ember-cli/templates/components/error-message', ['exports'], functi
   }()));
 
 });
+define('fusor-ember-cli/templates/components/file-upload-form', ['exports'], function (exports) {
+
+  'use strict';
+
+  exports['default'] = Ember.HTMLBars.template((function() {
+    return {
+      isHTMLBars: true,
+      revision: "Ember@1.11.1",
+      blockParams: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      build: function build(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createElement("form");
+        var el2 = dom.createTextNode("\n    ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("div");
+        dom.setAttribute(el2,"class","form-group required");
+        var el3 = dom.createTextNode("\n        ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("input");
+        dom.setAttribute(el3,"value","selectedFile");
+        dom.setAttribute(el3,"type","file");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n    ");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n    ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("div");
+        dom.setAttribute(el2,"class","form-group");
+        var el3 = dom.createTextNode("\n        ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("button");
+        dom.setAttribute(el3,"type","button");
+        dom.setAttribute(el3,"class","btn btn-sm btn-default");
+        var el4 = dom.createTextNode("Cancel");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n        ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("button");
+        dom.setAttribute(el3,"type","button");
+        dom.setAttribute(el3,"class","btn btn-sm btn-primary");
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n    ");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n\n");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      render: function render(context, env, contextualElement) {
+        var dom = env.dom;
+        var hooks = env.hooks, get = hooks.get, concat = hooks.concat, attribute = hooks.attribute, element = hooks.element, content = hooks.content;
+        dom.detectNamespace(contextualElement);
+        var fragment;
+        if (env.useFragmentCache && dom.canClone) {
+          if (this.cachedFragment === null) {
+            fragment = this.build(dom);
+            if (this.hasRendered) {
+              this.cachedFragment = fragment;
+            } else {
+              this.hasRendered = true;
+            }
+          }
+          if (this.cachedFragment) {
+            fragment = dom.cloneNode(this.cachedFragment, true);
+          }
+        } else {
+          fragment = this.build(dom);
+        }
+        var element0 = dom.childAt(fragment, [0]);
+        var element1 = dom.childAt(element0, [1, 1]);
+        var element2 = dom.childAt(element0, [3]);
+        var element3 = dom.childAt(element2, [1]);
+        var element4 = dom.childAt(element2, [3]);
+        var attrMorph0 = dom.createAttrMorph(element0, 'id');
+        var attrMorph1 = dom.createAttrMorph(element1, 'id');
+        var attrMorph2 = dom.createAttrMorph(element1, 'accept');
+        var morph0 = dom.createMorphAt(element4,0,0);
+        attribute(env, attrMorph0, element0, "id", concat(env, [get(env, context, "formId")]));
+        attribute(env, attrMorph1, element1, "id", concat(env, [get(env, context, "inputId")]));
+        attribute(env, attrMorph2, element1, "accept", get(env, context, "acceptValue"));
+        element(env, element1, context, "action", ["fileChosen"], {"on": "change"});
+        element(env, element3, context, "action", ["doCancel"], {});
+        element(env, element4, context, "action", ["doUpload"], {});
+        content(env, morph0, context, "uploadButtonTitle");
+        return fragment;
+      }
+    };
+  }()));
+
+});
 define('fusor-ember-cli/templates/components/formgroup/control-within-label', ['exports'], function (exports) {
 
   'use strict';
@@ -11642,6 +13226,125 @@ define('fusor-ember-cli/templates/components/labeled-radio-button', ['exports'],
   }()));
 
 });
+define('fusor-ember-cli/templates/components/loading-spinner', ['exports'], function (exports) {
+
+  'use strict';
+
+  exports['default'] = Ember.HTMLBars.template((function() {
+    var child0 = (function() {
+      return {
+        isHTMLBars: true,
+        revision: "Ember@1.11.1",
+        blockParams: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        build: function build(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("    ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("div");
+          dom.setAttribute(el1,"class","modal fade in");
+          dom.setAttribute(el1,"style","display:block");
+          var el2 = dom.createTextNode("\n        ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("div");
+          dom.setAttribute(el2,"class","modal-dialog loading-spinner");
+          var el3 = dom.createTextNode("\n            ");
+          dom.appendChild(el2, el3);
+          var el3 = dom.createElement("div");
+          dom.setAttribute(el3,"class","loading-spinner-content modal-content");
+          var el4 = dom.createTextNode("\n                ");
+          dom.appendChild(el3, el4);
+          var el4 = dom.createElement("span");
+          dom.setAttribute(el4,"class","spinner spinner-xs spinner-inline");
+          dom.appendChild(el3, el4);
+          var el4 = dom.createTextNode("\n                ");
+          dom.appendChild(el3, el4);
+          var el4 = dom.createElement("span");
+          var el5 = dom.createComment("");
+          dom.appendChild(el4, el5);
+          dom.appendChild(el3, el4);
+          var el4 = dom.createTextNode("\n            ");
+          dom.appendChild(el3, el4);
+          dom.appendChild(el2, el3);
+          var el3 = dom.createTextNode("\n        ");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n    ");
+          dom.appendChild(el1, el2);
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        render: function render(context, env, contextualElement) {
+          var dom = env.dom;
+          var hooks = env.hooks, content = hooks.content;
+          dom.detectNamespace(contextualElement);
+          var fragment;
+          if (env.useFragmentCache && dom.canClone) {
+            if (this.cachedFragment === null) {
+              fragment = this.build(dom);
+              if (this.hasRendered) {
+                this.cachedFragment = fragment;
+              } else {
+                this.hasRendered = true;
+              }
+            }
+            if (this.cachedFragment) {
+              fragment = dom.cloneNode(this.cachedFragment, true);
+            }
+          } else {
+            fragment = this.build(dom);
+          }
+          var morph0 = dom.createMorphAt(dom.childAt(fragment, [1, 1, 1, 3]),0,0);
+          content(env, morph0, context, "text");
+          return fragment;
+        }
+      };
+    }());
+    return {
+      isHTMLBars: true,
+      revision: "Ember@1.11.1",
+      blockParams: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      build: function build(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      render: function render(context, env, contextualElement) {
+        var dom = env.dom;
+        var hooks = env.hooks, get = hooks.get, block = hooks.block;
+        dom.detectNamespace(contextualElement);
+        var fragment;
+        if (env.useFragmentCache && dom.canClone) {
+          if (this.cachedFragment === null) {
+            fragment = this.build(dom);
+            if (this.hasRendered) {
+              this.cachedFragment = fragment;
+            } else {
+              this.hasRendered = true;
+            }
+          }
+          if (this.cachedFragment) {
+            fragment = dom.cloneNode(this.cachedFragment, true);
+          }
+        } else {
+          fragment = this.build(dom);
+        }
+        var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
+        dom.insertBoundary(fragment, null);
+        dom.insertBoundary(fragment, 0);
+        block(env, morph0, context, "if", [get(env, context, "show")], {}, child0, null);
+        return fragment;
+      }
+    };
+  }()));
+
+});
 define('fusor-ember-cli/templates/components/markdown-to-html', ['exports'], function (exports) {
 
   'use strict';
@@ -11697,7 +13400,141 @@ define('fusor-ember-cli/templates/components/node-profile', ['exports'], functio
   exports['default'] = Ember.HTMLBars.template((function() {
     var child0 = (function() {
       var child0 = (function() {
+        return {
+          isHTMLBars: true,
+          revision: "Ember@1.11.1",
+          blockParams: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          build: function build(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createTextNode("    ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          render: function render(context, env, contextualElement) {
+            var dom = env.dom;
+            var hooks = env.hooks, get = hooks.get, inline = hooks.inline;
+            dom.detectNamespace(contextualElement);
+            var fragment;
+            if (env.useFragmentCache && dom.canClone) {
+              if (this.cachedFragment === null) {
+                fragment = this.build(dom);
+                if (this.hasRendered) {
+                  this.cachedFragment = fragment;
+                } else {
+                  this.hasRendered = true;
+                }
+              }
+              if (this.cachedFragment) {
+                fragment = dom.cloneNode(this.cachedFragment, true);
+              }
+            } else {
+              fragment = this.build(dom);
+            }
+            var morph0 = dom.createMorphAt(fragment,1,1,contextualElement);
+            inline(env, morph0, context, "deployment-role", [], {"role": get(env, context, "role"), "profile": get(env, context, "profile"), "plan": get(env, context, "plan"), "readOnly": true});
+            return fragment;
+          }
+        };
+      }());
+      return {
+        isHTMLBars: true,
+        revision: "Ember@1.11.1",
+        blockParams: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        build: function build(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("  ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode(":\n");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        render: function render(context, env, contextualElement) {
+          var dom = env.dom;
+          var hooks = env.hooks, content = hooks.content, get = hooks.get, block = hooks.block;
+          dom.detectNamespace(contextualElement);
+          var fragment;
+          if (env.useFragmentCache && dom.canClone) {
+            if (this.cachedFragment === null) {
+              fragment = this.build(dom);
+              if (this.hasRendered) {
+                this.cachedFragment = fragment;
+              } else {
+                this.hasRendered = true;
+              }
+            }
+            if (this.cachedFragment) {
+              fragment = dom.cloneNode(this.cachedFragment, true);
+            }
+          } else {
+            fragment = this.build(dom);
+          }
+          var morph0 = dom.createMorphAt(fragment,1,1,contextualElement);
+          var morph1 = dom.createMorphAt(fragment,3,3,contextualElement);
+          dom.insertBoundary(fragment, null);
+          content(env, morph0, context, "profile.name");
+          block(env, morph1, context, "each", [get(env, context, "assignedRoles")], {"keyword": "role"}, child0, null);
+          return fragment;
+        }
+      };
+    }());
+    var child1 = (function() {
+      var child0 = (function() {
         var child0 = (function() {
+          var child0 = (function() {
+            return {
+              isHTMLBars: true,
+              revision: "Ember@1.11.1",
+              blockParams: 0,
+              cachedFragment: null,
+              hasRendered: false,
+              build: function build(dom) {
+                var el0 = dom.createDocumentFragment();
+                var el1 = dom.createTextNode("                            ");
+                dom.appendChild(el0, el1);
+                var el1 = dom.createComment("");
+                dom.appendChild(el0, el1);
+                var el1 = dom.createTextNode("\n");
+                dom.appendChild(el0, el1);
+                return el0;
+              },
+              render: function render(context, env, contextualElement) {
+                var dom = env.dom;
+                var hooks = env.hooks, get = hooks.get, inline = hooks.inline;
+                dom.detectNamespace(contextualElement);
+                var fragment;
+                if (env.useFragmentCache && dom.canClone) {
+                  if (this.cachedFragment === null) {
+                    fragment = this.build(dom);
+                    if (this.hasRendered) {
+                      this.cachedFragment = fragment;
+                    } else {
+                      this.hasRendered = true;
+                    }
+                  }
+                  if (this.cachedFragment) {
+                    fragment = dom.cloneNode(this.cachedFragment, true);
+                  }
+                } else {
+                  fragment = this.build(dom);
+                }
+                var morph0 = dom.createMorphAt(fragment,1,1,contextualElement);
+                inline(env, morph0, context, "deployment-role", [], {"role": get(env, context, "role"), "profile": get(env, context, "profile"), "nodeCount": get(env, context, "matchingNodeCount"), "plan": get(env, context, "plan"), "edit": "editRole", "setRoleCount": "setRoleCount", "remove": "removeRole", "readOnly": false});
+                return fragment;
+              }
+            };
+          }());
           return {
             isHTMLBars: true,
             revision: "Ember@1.11.1",
@@ -11706,17 +13543,13 @@ define('fusor-ember-cli/templates/components/node-profile', ['exports'], functio
             hasRendered: false,
             build: function build(dom) {
               var el0 = dom.createDocumentFragment();
-              var el1 = dom.createTextNode("                          ");
-              dom.appendChild(el0, el1);
               var el1 = dom.createComment("");
-              dom.appendChild(el0, el1);
-              var el1 = dom.createTextNode("\n");
               dom.appendChild(el0, el1);
               return el0;
             },
             render: function render(context, env, contextualElement) {
               var dom = env.dom;
-              var hooks = env.hooks, get = hooks.get, inline = hooks.inline;
+              var hooks = env.hooks, get = hooks.get, block = hooks.block;
               dom.detectNamespace(contextualElement);
               var fragment;
               if (env.useFragmentCache && dom.canClone) {
@@ -11734,8 +13567,177 @@ define('fusor-ember-cli/templates/components/node-profile', ['exports'], functio
               } else {
                 fragment = this.build(dom);
               }
-              var morph0 = dom.createMorphAt(fragment,1,1,contextualElement);
-              inline(env, morph0, context, "deployment-role", [], {"profile": get(env, context, "profile"), "role-type": get(env, context, "role.roleType"), "role-label": get(env, context, "role.roleLabel"), "role-assigned": true, "edit": "editRole", "remove": "removeRole"});
+              var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
+              dom.insertBoundary(fragment, null);
+              dom.insertBoundary(fragment, 0);
+              block(env, morph0, context, "draggable-object", [], {"content": get(env, context, "role")}, child0, null);
+              return fragment;
+            }
+          };
+        }());
+        var child1 = (function() {
+          var child0 = (function() {
+            var child0 = (function() {
+              return {
+                isHTMLBars: true,
+                revision: "Ember@1.11.1",
+                blockParams: 0,
+                cachedFragment: null,
+                hasRendered: false,
+                build: function build(dom) {
+                  var el0 = dom.createDocumentFragment();
+                  var el1 = dom.createTextNode("                                        ");
+                  dom.appendChild(el0, el1);
+                  var el1 = dom.createElement("a");
+                  dom.setAttribute(el1,"class","roles-menu-item role-controller");
+                  var el2 = dom.createComment("");
+                  dom.appendChild(el1, el2);
+                  dom.appendChild(el0, el1);
+                  var el1 = dom.createTextNode("\n");
+                  dom.appendChild(el0, el1);
+                  return el0;
+                },
+                render: function render(context, env, contextualElement) {
+                  var dom = env.dom;
+                  var hooks = env.hooks, get = hooks.get, element = hooks.element, content = hooks.content;
+                  dom.detectNamespace(contextualElement);
+                  var fragment;
+                  if (env.useFragmentCache && dom.canClone) {
+                    if (this.cachedFragment === null) {
+                      fragment = this.build(dom);
+                      if (this.hasRendered) {
+                        this.cachedFragment = fragment;
+                      } else {
+                        this.hasRendered = true;
+                      }
+                    }
+                    if (this.cachedFragment) {
+                      fragment = dom.cloneNode(this.cachedFragment, true);
+                    }
+                  } else {
+                    fragment = this.build(dom);
+                  }
+                  var element0 = dom.childAt(fragment, [1]);
+                  var morph0 = dom.createMorphAt(element0,0,0);
+                  element(env, element0, context, "action", ["assignRole", get(env, context, "role")], {});
+                  content(env, morph0, context, "role.name");
+                  return fragment;
+                }
+              };
+            }());
+            return {
+              isHTMLBars: true,
+              revision: "Ember@1.11.1",
+              blockParams: 0,
+              cachedFragment: null,
+              hasRendered: false,
+              build: function build(dom) {
+                var el0 = dom.createDocumentFragment();
+                var el1 = dom.createTextNode("                              ");
+                dom.appendChild(el0, el1);
+                var el1 = dom.createElement("li");
+                var el2 = dom.createTextNode("\n                                  ");
+                dom.appendChild(el1, el2);
+                var el2 = dom.createElement("a");
+                dom.setAttribute(el2,"id","role-target-dropdown-1");
+                dom.setAttribute(el2,"data-toggle","dropdown");
+                dom.setAttribute(el2,"aria-haspopup","true");
+                dom.setAttribute(el2,"aria-expanded","false");
+                var el3 = dom.createTextNode("\n                                      ");
+                dom.appendChild(el2, el3);
+                var el3 = dom.createElement("i");
+                dom.setAttribute(el3,"class","fa fa-plus");
+                dom.appendChild(el2, el3);
+                var el3 = dom.createTextNode(" Assign Role\n                                  ");
+                dom.appendChild(el2, el3);
+                dom.appendChild(el1, el2);
+                var el2 = dom.createTextNode("\n                                  ");
+                dom.appendChild(el1, el2);
+                var el2 = dom.createElement("ul");
+                dom.setAttribute(el2,"class","dropdown-menu");
+                dom.setAttribute(el2,"role","menu");
+                dom.setAttribute(el2,"aria-labelledby","role-target-dropdown-1");
+                var el3 = dom.createTextNode("\n");
+                dom.appendChild(el2, el3);
+                var el3 = dom.createComment("");
+                dom.appendChild(el2, el3);
+                var el3 = dom.createTextNode("                                  ");
+                dom.appendChild(el2, el3);
+                dom.appendChild(el1, el2);
+                var el2 = dom.createTextNode("\n                              ");
+                dom.appendChild(el1, el2);
+                dom.appendChild(el0, el1);
+                var el1 = dom.createTextNode("\n");
+                dom.appendChild(el0, el1);
+                return el0;
+              },
+              render: function render(context, env, contextualElement) {
+                var dom = env.dom;
+                var hooks = env.hooks, get = hooks.get, concat = hooks.concat, attribute = hooks.attribute, element = hooks.element, block = hooks.block;
+                dom.detectNamespace(contextualElement);
+                var fragment;
+                if (env.useFragmentCache && dom.canClone) {
+                  if (this.cachedFragment === null) {
+                    fragment = this.build(dom);
+                    if (this.hasRendered) {
+                      this.cachedFragment = fragment;
+                    } else {
+                      this.hasRendered = true;
+                    }
+                  }
+                  if (this.cachedFragment) {
+                    fragment = dom.cloneNode(this.cachedFragment, true);
+                  }
+                } else {
+                  fragment = this.build(dom);
+                }
+                var element1 = dom.childAt(fragment, [1]);
+                var element2 = dom.childAt(element1, [1]);
+                var attrMorph0 = dom.createAttrMorph(element1, 'class');
+                var morph0 = dom.createMorphAt(dom.childAt(element1, [3]),1,1);
+                attribute(env, attrMorph0, element1, "class", concat(env, ["role-target ", get(env, context, "assignMenuOpenClass"), "  dropdown"]));
+                element(env, element2, context, "action", ["showAssignMenu", get(env, context, "profile")], {"bubbles": false});
+                block(env, morph0, context, "each", [get(env, context, "unassignedRoles")], {"keyword": "role"}, child0, null);
+                return fragment;
+              }
+            };
+          }());
+          return {
+            isHTMLBars: true,
+            revision: "Ember@1.11.1",
+            blockParams: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            build: function build(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createComment("");
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            render: function render(context, env, contextualElement) {
+              var dom = env.dom;
+              var hooks = env.hooks, block = hooks.block;
+              dom.detectNamespace(contextualElement);
+              var fragment;
+              if (env.useFragmentCache && dom.canClone) {
+                if (this.cachedFragment === null) {
+                  fragment = this.build(dom);
+                  if (this.hasRendered) {
+                    this.cachedFragment = fragment;
+                  } else {
+                    this.hasRendered = true;
+                  }
+                }
+                if (this.cachedFragment) {
+                  fragment = dom.cloneNode(this.cachedFragment, true);
+                }
+              } else {
+                fragment = this.build(dom);
+              }
+              var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
+              dom.insertBoundary(fragment, null);
+              dom.insertBoundary(fragment, 0);
+              block(env, morph0, context, "draggable-object-target", [], {"action": "assignDroppedRole"}, child0, null);
               return fragment;
             }
           };
@@ -11748,7 +13750,34 @@ define('fusor-ember-cli/templates/components/node-profile', ['exports'], functio
           hasRendered: false,
           build: function build(dom) {
             var el0 = dom.createDocumentFragment();
-            var el1 = dom.createComment("");
+            var el1 = dom.createTextNode("                  ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createElement("div");
+            dom.setAttribute(el1,"class","col-sm-7 col-md-8");
+            var el2 = dom.createTextNode("\n                      ");
+            dom.appendChild(el1, el2);
+            var el2 = dom.createElement("h4");
+            dom.setAttribute(el2,"class","h5");
+            var el3 = dom.createTextNode("Assigned Nodes");
+            dom.appendChild(el2, el3);
+            dom.appendChild(el1, el2);
+            var el2 = dom.createTextNode("\n                      ");
+            dom.appendChild(el1, el2);
+            var el2 = dom.createElement("ul");
+            dom.setAttribute(el2,"class","deployment-roles deployment-roles-assigned");
+            var el3 = dom.createTextNode("\n");
+            dom.appendChild(el2, el3);
+            var el3 = dom.createComment("");
+            dom.appendChild(el2, el3);
+            var el3 = dom.createComment("");
+            dom.appendChild(el2, el3);
+            var el3 = dom.createTextNode("                      ");
+            dom.appendChild(el2, el3);
+            dom.appendChild(el1, el2);
+            var el2 = dom.createTextNode("\n                  ");
+            dom.appendChild(el1, el2);
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n");
             dom.appendChild(el0, el1);
             return el0;
           },
@@ -11772,290 +13801,16 @@ define('fusor-ember-cli/templates/components/node-profile', ['exports'], functio
             } else {
               fragment = this.build(dom);
             }
-            var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
-            dom.insertBoundary(fragment, null);
-            dom.insertBoundary(fragment, 0);
-            block(env, morph0, context, "draggable-object", [], {"content": get(env, context, "role")}, child0, null);
+            var element3 = dom.childAt(fragment, [1, 3]);
+            var morph0 = dom.createMorphAt(element3,1,1);
+            var morph1 = dom.createMorphAt(element3,2,2);
+            block(env, morph0, context, "each", [get(env, context, "assignedRoles")], {"keyword": "role"}, child0, null);
+            block(env, morph1, context, "unless", [get(env, context, "allRolesAssigned")], {}, child1, null);
             return fragment;
           }
         };
       }());
       var child1 = (function() {
-        var child0 = (function() {
-          var child0 = (function() {
-            return {
-              isHTMLBars: true,
-              revision: "Ember@1.11.1",
-              blockParams: 0,
-              cachedFragment: null,
-              hasRendered: false,
-              build: function build(dom) {
-                var el0 = dom.createDocumentFragment();
-                var el1 = dom.createTextNode("                                      ");
-                dom.appendChild(el0, el1);
-                var el1 = dom.createElement("a");
-                dom.setAttribute(el1,"class","roles-menu-item role-controller");
-                var el2 = dom.createTextNode("Controller");
-                dom.appendChild(el1, el2);
-                dom.appendChild(el0, el1);
-                var el1 = dom.createTextNode("\n");
-                dom.appendChild(el0, el1);
-                return el0;
-              },
-              render: function render(context, env, contextualElement) {
-                var dom = env.dom;
-                var hooks = env.hooks, element = hooks.element;
-                dom.detectNamespace(contextualElement);
-                var fragment;
-                if (env.useFragmentCache && dom.canClone) {
-                  if (this.cachedFragment === null) {
-                    fragment = this.build(dom);
-                    if (this.hasRendered) {
-                      this.cachedFragment = fragment;
-                    } else {
-                      this.hasRendered = true;
-                    }
-                  }
-                  if (this.cachedFragment) {
-                    fragment = dom.cloneNode(this.cachedFragment, true);
-                  }
-                } else {
-                  fragment = this.build(dom);
-                }
-                var element3 = dom.childAt(fragment, [1]);
-                element(env, element3, context, "action", ["assignRole", "controller"], {});
-                return fragment;
-              }
-            };
-          }());
-          var child1 = (function() {
-            return {
-              isHTMLBars: true,
-              revision: "Ember@1.11.1",
-              blockParams: 0,
-              cachedFragment: null,
-              hasRendered: false,
-              build: function build(dom) {
-                var el0 = dom.createDocumentFragment();
-                var el1 = dom.createTextNode("                                      ");
-                dom.appendChild(el0, el1);
-                var el1 = dom.createElement("a");
-                dom.setAttribute(el1,"class","roles-menu-item  role-compute");
-                var el2 = dom.createTextNode("Compute");
-                dom.appendChild(el1, el2);
-                dom.appendChild(el0, el1);
-                var el1 = dom.createTextNode("\n");
-                dom.appendChild(el0, el1);
-                return el0;
-              },
-              render: function render(context, env, contextualElement) {
-                var dom = env.dom;
-                var hooks = env.hooks, element = hooks.element;
-                dom.detectNamespace(contextualElement);
-                var fragment;
-                if (env.useFragmentCache && dom.canClone) {
-                  if (this.cachedFragment === null) {
-                    fragment = this.build(dom);
-                    if (this.hasRendered) {
-                      this.cachedFragment = fragment;
-                    } else {
-                      this.hasRendered = true;
-                    }
-                  }
-                  if (this.cachedFragment) {
-                    fragment = dom.cloneNode(this.cachedFragment, true);
-                  }
-                } else {
-                  fragment = this.build(dom);
-                }
-                var element2 = dom.childAt(fragment, [1]);
-                element(env, element2, context, "action", ["assignRole", "compute"], {});
-                return fragment;
-              }
-            };
-          }());
-          var child2 = (function() {
-            return {
-              isHTMLBars: true,
-              revision: "Ember@1.11.1",
-              blockParams: 0,
-              cachedFragment: null,
-              hasRendered: false,
-              build: function build(dom) {
-                var el0 = dom.createDocumentFragment();
-                var el1 = dom.createTextNode("                                      ");
-                dom.appendChild(el0, el1);
-                var el1 = dom.createElement("a");
-                dom.setAttribute(el1,"class","roles-menu-item  role-block");
-                var el2 = dom.createTextNode("Block Storage");
-                dom.appendChild(el1, el2);
-                dom.appendChild(el0, el1);
-                var el1 = dom.createTextNode("\n");
-                dom.appendChild(el0, el1);
-                return el0;
-              },
-              render: function render(context, env, contextualElement) {
-                var dom = env.dom;
-                var hooks = env.hooks, element = hooks.element;
-                dom.detectNamespace(contextualElement);
-                var fragment;
-                if (env.useFragmentCache && dom.canClone) {
-                  if (this.cachedFragment === null) {
-                    fragment = this.build(dom);
-                    if (this.hasRendered) {
-                      this.cachedFragment = fragment;
-                    } else {
-                      this.hasRendered = true;
-                    }
-                  }
-                  if (this.cachedFragment) {
-                    fragment = dom.cloneNode(this.cachedFragment, true);
-                  }
-                } else {
-                  fragment = this.build(dom);
-                }
-                var element1 = dom.childAt(fragment, [1]);
-                element(env, element1, context, "action", ["assignRole", "block"], {});
-                return fragment;
-              }
-            };
-          }());
-          var child3 = (function() {
-            return {
-              isHTMLBars: true,
-              revision: "Ember@1.11.1",
-              blockParams: 0,
-              cachedFragment: null,
-              hasRendered: false,
-              build: function build(dom) {
-                var el0 = dom.createDocumentFragment();
-                var el1 = dom.createTextNode("                                      ");
-                dom.appendChild(el0, el1);
-                var el1 = dom.createElement("a");
-                dom.setAttribute(el1,"class","roles-menu-item  role-object");
-                var el2 = dom.createTextNode("Object Storage");
-                dom.appendChild(el1, el2);
-                dom.appendChild(el0, el1);
-                var el1 = dom.createTextNode("\n");
-                dom.appendChild(el0, el1);
-                return el0;
-              },
-              render: function render(context, env, contextualElement) {
-                var dom = env.dom;
-                var hooks = env.hooks, element = hooks.element;
-                dom.detectNamespace(contextualElement);
-                var fragment;
-                if (env.useFragmentCache && dom.canClone) {
-                  if (this.cachedFragment === null) {
-                    fragment = this.build(dom);
-                    if (this.hasRendered) {
-                      this.cachedFragment = fragment;
-                    } else {
-                      this.hasRendered = true;
-                    }
-                  }
-                  if (this.cachedFragment) {
-                    fragment = dom.cloneNode(this.cachedFragment, true);
-                  }
-                } else {
-                  fragment = this.build(dom);
-                }
-                var element0 = dom.childAt(fragment, [1]);
-                element(env, element0, context, "action", ["assignRole", "object"], {});
-                return fragment;
-              }
-            };
-          }());
-          return {
-            isHTMLBars: true,
-            revision: "Ember@1.11.1",
-            blockParams: 0,
-            cachedFragment: null,
-            hasRendered: false,
-            build: function build(dom) {
-              var el0 = dom.createDocumentFragment();
-              var el1 = dom.createTextNode("                            ");
-              dom.appendChild(el0, el1);
-              var el1 = dom.createElement("li");
-              var el2 = dom.createTextNode("\n                                ");
-              dom.appendChild(el1, el2);
-              var el2 = dom.createElement("a");
-              dom.setAttribute(el2,"id","role-target-dropdown-1");
-              dom.setAttribute(el2,"data-toggle","dropdown");
-              dom.setAttribute(el2,"aria-haspopup","true");
-              dom.setAttribute(el2,"aria-expanded","false");
-              var el3 = dom.createTextNode("\n                                    ");
-              dom.appendChild(el2, el3);
-              var el3 = dom.createElement("i");
-              dom.setAttribute(el3,"class","fa fa-plus");
-              dom.appendChild(el2, el3);
-              var el3 = dom.createTextNode(" Assign Role\n                                ");
-              dom.appendChild(el2, el3);
-              dom.appendChild(el1, el2);
-              var el2 = dom.createTextNode("\n                                ");
-              dom.appendChild(el1, el2);
-              var el2 = dom.createElement("ul");
-              dom.setAttribute(el2,"class","dropdown-menu");
-              dom.setAttribute(el2,"role","menu");
-              dom.setAttribute(el2,"aria-labelledby","role-target-dropdown-1");
-              var el3 = dom.createTextNode("\n");
-              dom.appendChild(el2, el3);
-              var el3 = dom.createComment("");
-              dom.appendChild(el2, el3);
-              var el3 = dom.createComment("");
-              dom.appendChild(el2, el3);
-              var el3 = dom.createComment("");
-              dom.appendChild(el2, el3);
-              var el3 = dom.createComment("");
-              dom.appendChild(el2, el3);
-              var el3 = dom.createTextNode("                                ");
-              dom.appendChild(el2, el3);
-              dom.appendChild(el1, el2);
-              var el2 = dom.createTextNode("\n                            ");
-              dom.appendChild(el1, el2);
-              dom.appendChild(el0, el1);
-              var el1 = dom.createTextNode("\n");
-              dom.appendChild(el0, el1);
-              return el0;
-            },
-            render: function render(context, env, contextualElement) {
-              var dom = env.dom;
-              var hooks = env.hooks, get = hooks.get, concat = hooks.concat, attribute = hooks.attribute, element = hooks.element, block = hooks.block;
-              dom.detectNamespace(contextualElement);
-              var fragment;
-              if (env.useFragmentCache && dom.canClone) {
-                if (this.cachedFragment === null) {
-                  fragment = this.build(dom);
-                  if (this.hasRendered) {
-                    this.cachedFragment = fragment;
-                  } else {
-                    this.hasRendered = true;
-                  }
-                }
-                if (this.cachedFragment) {
-                  fragment = dom.cloneNode(this.cachedFragment, true);
-                }
-              } else {
-                fragment = this.build(dom);
-              }
-              var element4 = dom.childAt(fragment, [1]);
-              var element5 = dom.childAt(element4, [1]);
-              var element6 = dom.childAt(element4, [3]);
-              var attrMorph0 = dom.createAttrMorph(element4, 'class');
-              var morph0 = dom.createMorphAt(element6,1,1);
-              var morph1 = dom.createMorphAt(element6,2,2);
-              var morph2 = dom.createMorphAt(element6,3,3);
-              var morph3 = dom.createMorphAt(element6,4,4);
-              attribute(env, attrMorph0, element4, "class", concat(env, ["role-target ", get(env, context, "assignMenuOpenClass"), "  dropdown"]));
-              element(env, element5, context, "action", ["showAssignMenu", get(env, context, "profile")], {"bubbles": false});
-              block(env, morph0, context, "unless", [get(env, context, "controllerAssigned")], {}, child0, null);
-              block(env, morph1, context, "unless", [get(env, context, "computeAssigned")], {}, child1, null);
-              block(env, morph2, context, "unless", [get(env, context, "blockAssigned")], {}, child2, null);
-              block(env, morph3, context, "unless", [get(env, context, "objectAssigned")], {}, child3, null);
-              return fragment;
-            }
-          };
-        }());
         return {
           isHTMLBars: true,
           revision: "Ember@1.11.1",
@@ -12064,13 +13819,30 @@ define('fusor-ember-cli/templates/components/node-profile', ['exports'], functio
           hasRendered: false,
           build: function build(dom) {
             var el0 = dom.createDocumentFragment();
-            var el1 = dom.createComment("");
+            var el1 = dom.createTextNode("                  ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createElement("div");
+            dom.setAttribute(el1,"class","col-sm-7 col-md-8");
+            var el2 = dom.createTextNode("\n                      ");
+            dom.appendChild(el1, el2);
+            var el2 = dom.createElement("em");
+            var el3 = dom.createTextNode("Assigning nodes to roles will occur in step ");
+            dom.appendChild(el2, el3);
+            var el3 = dom.createComment("");
+            dom.appendChild(el2, el3);
+            var el3 = dom.createTextNode("B.");
+            dom.appendChild(el2, el3);
+            dom.appendChild(el1, el2);
+            var el2 = dom.createTextNode("\n                  ");
+            dom.appendChild(el1, el2);
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n");
             dom.appendChild(el0, el1);
             return el0;
           },
           render: function render(context, env, contextualElement) {
             var dom = env.dom;
-            var hooks = env.hooks, block = hooks.block;
+            var hooks = env.hooks, content = hooks.content;
             dom.detectNamespace(contextualElement);
             var fragment;
             if (env.useFragmentCache && dom.canClone) {
@@ -12088,10 +13860,8 @@ define('fusor-ember-cli/templates/components/node-profile', ['exports'], functio
             } else {
               fragment = this.build(dom);
             }
-            var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
-            dom.insertBoundary(fragment, null);
-            dom.insertBoundary(fragment, 0);
-            block(env, morph0, context, "draggable-object-target", [], {"action": "assignDroppedRole"}, child0, null);
+            var morph0 = dom.createMorphAt(dom.childAt(fragment, [1, 1]),1,1);
+            content(env, morph0, context, "stepNumberOpenstack");
             return fragment;
           }
         };
@@ -12104,31 +13874,157 @@ define('fusor-ember-cli/templates/components/node-profile', ['exports'], functio
         hasRendered: false,
         build: function build(dom) {
           var el0 = dom.createDocumentFragment();
-          var el1 = dom.createTextNode("                ");
+          var el1 = dom.createTextNode("    ");
           dom.appendChild(el0, el1);
           var el1 = dom.createElement("div");
-          dom.setAttribute(el1,"class","col-sm-7 col-md-8");
-          var el2 = dom.createTextNode("\n                    ");
+          var el2 = dom.createTextNode("\n        ");
           dom.appendChild(el1, el2);
-          var el2 = dom.createElement("h4");
-          dom.setAttribute(el2,"class","h5");
-          var el3 = dom.createTextNode("Assigned Nodes");
+          var el2 = dom.createElement("div");
+          dom.setAttribute(el2,"class","panel-heading");
+          var el3 = dom.createTextNode("\n            ");
+          dom.appendChild(el2, el3);
+          var el3 = dom.createElement("div");
+          dom.setAttribute(el3,"class","row");
+          var el4 = dom.createTextNode("\n                ");
+          dom.appendChild(el3, el4);
+          var el4 = dom.createElement("div");
+          dom.setAttribute(el4,"class","col-sm-7 col-md-8");
+          var el5 = dom.createTextNode("\n                    ");
+          dom.appendChild(el4, el5);
+          var el5 = dom.createElement("h3");
+          dom.setAttribute(el5,"class","node-profile-label h5");
+          var el6 = dom.createComment("");
+          dom.appendChild(el5, el6);
+          dom.appendChild(el4, el5);
+          var el5 = dom.createTextNode("\n                ");
+          dom.appendChild(el4, el5);
+          dom.appendChild(el3, el4);
+          var el4 = dom.createTextNode("\n                ");
+          dom.appendChild(el3, el4);
+          var el4 = dom.createElement("div");
+          dom.setAttribute(el4,"class","col-sm-5 col-md-4");
+          var el5 = dom.createTextNode("\n                    ");
+          dom.appendChild(el4, el5);
+          var el5 = dom.createElement("h4");
+          dom.setAttribute(el5,"class","node-profile-free-nodes h5");
+          var el6 = dom.createTextNode("Node Count: ");
+          dom.appendChild(el5, el6);
+          var el6 = dom.createComment("");
+          dom.appendChild(el5, el6);
+          dom.appendChild(el4, el5);
+          var el5 = dom.createTextNode("\n                ");
+          dom.appendChild(el4, el5);
+          dom.appendChild(el3, el4);
+          var el4 = dom.createTextNode("\n            ");
+          dom.appendChild(el3, el4);
+          dom.appendChild(el2, el3);
+          var el3 = dom.createTextNode("\n        ");
           dom.appendChild(el2, el3);
           dom.appendChild(el1, el2);
-          var el2 = dom.createTextNode("\n                    ");
+          var el2 = dom.createTextNode("\n        ");
           dom.appendChild(el1, el2);
-          var el2 = dom.createElement("ul");
-          dom.setAttribute(el2,"class","deployment-roles deployment-roles-assigned");
-          var el3 = dom.createTextNode("\n");
+          var el2 = dom.createElement("div");
+          dom.setAttribute(el2,"class","panel-body");
+          var el3 = dom.createTextNode("\n            ");
           dom.appendChild(el2, el3);
-          var el3 = dom.createComment("");
+          var el3 = dom.createElement("div");
+          dom.setAttribute(el3,"class","row");
+          var el4 = dom.createTextNode("\n                ");
+          dom.appendChild(el3, el4);
+          var el4 = dom.createElement("div");
+          dom.setAttribute(el4,"class","col-sm-5 col-md-4");
+          var el5 = dom.createTextNode("\n                    ");
+          dom.appendChild(el4, el5);
+          var el5 = dom.createElement("h4");
+          dom.setAttribute(el5,"class","h5");
+          var el6 = dom.createTextNode("Each node has:");
+          dom.appendChild(el5, el6);
+          dom.appendChild(el4, el5);
+          var el5 = dom.createTextNode("\n                    ");
+          dom.appendChild(el4, el5);
+          var el5 = dom.createElement("table");
+          dom.setAttribute(el5,"class","table node-specs");
+          var el6 = dom.createTextNode("\n                        ");
+          dom.appendChild(el5, el6);
+          var el6 = dom.createElement("tbody");
+          var el7 = dom.createTextNode("\n                        ");
+          dom.appendChild(el6, el7);
+          var el7 = dom.createElement("tr");
+          var el8 = dom.createTextNode("\n                            ");
+          dom.appendChild(el7, el8);
+          var el8 = dom.createElement("th");
+          var el9 = dom.createTextNode("CPU");
+          dom.appendChild(el8, el9);
+          dom.appendChild(el7, el8);
+          var el8 = dom.createTextNode("\n                            ");
+          dom.appendChild(el7, el8);
+          var el8 = dom.createElement("td");
+          var el9 = dom.createComment("");
+          dom.appendChild(el8, el9);
+          dom.appendChild(el7, el8);
+          var el8 = dom.createTextNode("\n                        ");
+          dom.appendChild(el7, el8);
+          dom.appendChild(el6, el7);
+          var el7 = dom.createTextNode("\n                        ");
+          dom.appendChild(el6, el7);
+          var el7 = dom.createElement("tr");
+          var el8 = dom.createTextNode("\n                            ");
+          dom.appendChild(el7, el8);
+          var el8 = dom.createElement("th");
+          var el9 = dom.createTextNode("RAM");
+          dom.appendChild(el8, el9);
+          dom.appendChild(el7, el8);
+          var el8 = dom.createTextNode("\n                            ");
+          dom.appendChild(el7, el8);
+          var el8 = dom.createElement("td");
+          var el9 = dom.createComment("");
+          dom.appendChild(el8, el9);
+          var el9 = dom.createTextNode(" MB");
+          dom.appendChild(el8, el9);
+          dom.appendChild(el7, el8);
+          var el8 = dom.createTextNode("\n                        ");
+          dom.appendChild(el7, el8);
+          dom.appendChild(el6, el7);
+          var el7 = dom.createTextNode("\n                        ");
+          dom.appendChild(el6, el7);
+          var el7 = dom.createElement("tr");
+          var el8 = dom.createTextNode("\n                            ");
+          dom.appendChild(el7, el8);
+          var el8 = dom.createElement("th");
+          var el9 = dom.createTextNode("Disk");
+          dom.appendChild(el8, el9);
+          dom.appendChild(el7, el8);
+          var el8 = dom.createTextNode("\n                            ");
+          dom.appendChild(el7, el8);
+          var el8 = dom.createElement("td");
+          var el9 = dom.createComment("");
+          dom.appendChild(el8, el9);
+          var el9 = dom.createTextNode(" GB");
+          dom.appendChild(el8, el9);
+          dom.appendChild(el7, el8);
+          var el8 = dom.createTextNode("\n                        ");
+          dom.appendChild(el7, el8);
+          dom.appendChild(el6, el7);
+          var el7 = dom.createTextNode("\n                        ");
+          dom.appendChild(el6, el7);
+          dom.appendChild(el5, el6);
+          var el6 = dom.createTextNode("\n                    ");
+          dom.appendChild(el5, el6);
+          dom.appendChild(el4, el5);
+          var el5 = dom.createTextNode("\n                ");
+          dom.appendChild(el4, el5);
+          dom.appendChild(el3, el4);
+          var el4 = dom.createTextNode("\n");
+          dom.appendChild(el3, el4);
+          var el4 = dom.createComment("");
+          dom.appendChild(el3, el4);
+          var el4 = dom.createTextNode("            ");
+          dom.appendChild(el3, el4);
           dom.appendChild(el2, el3);
-          var el3 = dom.createComment("");
-          dom.appendChild(el2, el3);
-          var el3 = dom.createTextNode("                    ");
+          var el3 = dom.createTextNode("\n        ");
           dom.appendChild(el2, el3);
           dom.appendChild(el1, el2);
-          var el2 = dom.createTextNode("\n                ");
+          var el2 = dom.createTextNode("\n    ");
           dom.appendChild(el1, el2);
           dom.appendChild(el0, el1);
           var el1 = dom.createTextNode("\n");
@@ -12137,7 +14033,7 @@ define('fusor-ember-cli/templates/components/node-profile', ['exports'], functio
         },
         render: function render(context, env, contextualElement) {
           var dom = env.dom;
-          var hooks = env.hooks, get = hooks.get, block = hooks.block;
+          var hooks = env.hooks, get = hooks.get, concat = hooks.concat, attribute = hooks.attribute, content = hooks.content, block = hooks.block;
           dom.detectNamespace(contextualElement);
           var fragment;
           if (env.useFragmentCache && dom.canClone) {
@@ -12155,67 +14051,24 @@ define('fusor-ember-cli/templates/components/node-profile', ['exports'], functio
           } else {
             fragment = this.build(dom);
           }
-          var element7 = dom.childAt(fragment, [1, 3]);
-          var morph0 = dom.createMorphAt(element7,1,1);
-          var morph1 = dom.createMorphAt(element7,2,2);
-          block(env, morph0, context, "each", [get(env, context, "assignedRoles")], {"keyword": "role"}, child0, null);
-          block(env, morph1, context, "unless", [get(env, context, "allAssigned")], {}, child1, null);
-          return fragment;
-        }
-      };
-    }());
-    var child1 = (function() {
-      return {
-        isHTMLBars: true,
-        revision: "Ember@1.11.1",
-        blockParams: 0,
-        cachedFragment: null,
-        hasRendered: false,
-        build: function build(dom) {
-          var el0 = dom.createDocumentFragment();
-          var el1 = dom.createTextNode("                ");
-          dom.appendChild(el0, el1);
-          var el1 = dom.createElement("div");
-          dom.setAttribute(el1,"class","col-sm-7 col-md-8");
-          var el2 = dom.createTextNode("\n                    ");
-          dom.appendChild(el1, el2);
-          var el2 = dom.createElement("em");
-          var el3 = dom.createTextNode("Assigning nodes to roles will occur in step ");
-          dom.appendChild(el2, el3);
-          var el3 = dom.createComment("");
-          dom.appendChild(el2, el3);
-          var el3 = dom.createTextNode("B.");
-          dom.appendChild(el2, el3);
-          dom.appendChild(el1, el2);
-          var el2 = dom.createTextNode("\n                ");
-          dom.appendChild(el1, el2);
-          dom.appendChild(el0, el1);
-          var el1 = dom.createTextNode("\n");
-          dom.appendChild(el0, el1);
-          return el0;
-        },
-        render: function render(context, env, contextualElement) {
-          var dom = env.dom;
-          var hooks = env.hooks, content = hooks.content;
-          dom.detectNamespace(contextualElement);
-          var fragment;
-          if (env.useFragmentCache && dom.canClone) {
-            if (this.cachedFragment === null) {
-              fragment = this.build(dom);
-              if (this.hasRendered) {
-                this.cachedFragment = fragment;
-              } else {
-                this.hasRendered = true;
-              }
-            }
-            if (this.cachedFragment) {
-              fragment = dom.cloneNode(this.cachedFragment, true);
-            }
-          } else {
-            fragment = this.build(dom);
-          }
-          var morph0 = dom.createMorphAt(dom.childAt(fragment, [1, 1]),1,1);
-          content(env, morph0, context, "stepNumberOpenstack");
+          var element4 = dom.childAt(fragment, [1]);
+          var element5 = dom.childAt(element4, [1, 1]);
+          var element6 = dom.childAt(element4, [3, 1]);
+          var element7 = dom.childAt(element6, [1, 3, 1]);
+          var attrMorph0 = dom.createAttrMorph(element4, 'class');
+          var morph0 = dom.createMorphAt(dom.childAt(element5, [1, 1]),0,0);
+          var morph1 = dom.createMorphAt(dom.childAt(element5, [3, 1]),1,1);
+          var morph2 = dom.createMorphAt(dom.childAt(element7, [1, 3]),0,0);
+          var morph3 = dom.createMorphAt(dom.childAt(element7, [3, 3]),0,0);
+          var morph4 = dom.createMorphAt(dom.childAt(element7, [5, 3]),0,0);
+          var morph5 = dom.createMorphAt(element6,3,3);
+          attribute(env, attrMorph0, element4, "class", concat(env, ["panel panel-default node-profile ", get(env, context, "assignClass")]));
+          content(env, morph0, context, "profile.name");
+          content(env, morph1, context, "matchingNodeCount");
+          content(env, morph2, context, "profile.vcpus");
+          content(env, morph3, context, "profile.ram");
+          content(env, morph4, context, "profile.disk");
+          block(env, morph5, context, "if", [get(env, context, "doAssign")], {}, child0, child1);
           return fragment;
         }
       };
@@ -12228,161 +14081,13 @@ define('fusor-ember-cli/templates/components/node-profile', ['exports'], functio
       hasRendered: false,
       build: function build(dom) {
         var el0 = dom.createDocumentFragment();
-        var el1 = dom.createTextNode("    ");
-        dom.appendChild(el0, el1);
-        var el1 = dom.createElement("div");
-        dom.setAttribute(el1,"class","panel panel-default node-profile nodes-coalescing");
-        var el2 = dom.createTextNode("\n    ");
-        dom.appendChild(el1, el2);
-        var el2 = dom.createElement("div");
-        dom.setAttribute(el2,"class","panel-heading");
-        var el3 = dom.createTextNode("\n        ");
-        dom.appendChild(el2, el3);
-        var el3 = dom.createElement("div");
-        dom.setAttribute(el3,"class","row");
-        var el4 = dom.createTextNode("\n            ");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createElement("div");
-        dom.setAttribute(el4,"class","col-sm-5 col-md-4");
-        var el5 = dom.createTextNode("\n                ");
-        dom.appendChild(el4, el5);
-        var el5 = dom.createElement("h3");
-        dom.setAttribute(el5,"class","node-profile-label h5");
-        var el6 = dom.createComment("");
-        dom.appendChild(el5, el6);
-        dom.appendChild(el4, el5);
-        var el5 = dom.createTextNode("\n            ");
-        dom.appendChild(el4, el5);
-        dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n            ");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createElement("div");
-        dom.setAttribute(el4,"class","col-sm-7 col-md-8");
-        var el5 = dom.createTextNode("\n                ");
-        dom.appendChild(el4, el5);
-        var el5 = dom.createElement("h4");
-        dom.setAttribute(el5,"class","node-profile-free-nodes h5");
-        var el6 = dom.createTextNode("Free Nodes: ");
-        dom.appendChild(el5, el6);
-        var el6 = dom.createComment("");
-        dom.appendChild(el5, el6);
-        dom.appendChild(el4, el5);
-        var el5 = dom.createTextNode("\n            ");
-        dom.appendChild(el4, el5);
-        dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n        ");
-        dom.appendChild(el3, el4);
-        dom.appendChild(el2, el3);
-        var el3 = dom.createTextNode("\n    ");
-        dom.appendChild(el2, el3);
-        dom.appendChild(el1, el2);
-        var el2 = dom.createTextNode("\n    ");
-        dom.appendChild(el1, el2);
-        var el2 = dom.createElement("div");
-        dom.setAttribute(el2,"class","panel-body");
-        var el3 = dom.createTextNode("\n        ");
-        dom.appendChild(el2, el3);
-        var el3 = dom.createElement("div");
-        dom.setAttribute(el3,"class","row");
-        var el4 = dom.createTextNode("\n            ");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createElement("div");
-        dom.setAttribute(el4,"class","col-sm-5 col-md-4");
-        var el5 = dom.createTextNode("\n                ");
-        dom.appendChild(el4, el5);
-        var el5 = dom.createElement("h4");
-        dom.setAttribute(el5,"class","h5");
-        var el6 = dom.createTextNode("Each node has:");
-        dom.appendChild(el5, el6);
-        dom.appendChild(el4, el5);
-        var el5 = dom.createTextNode("\n                ");
-        dom.appendChild(el4, el5);
-        var el5 = dom.createElement("table");
-        dom.setAttribute(el5,"class","table node-specs");
-        var el6 = dom.createTextNode("\n                    ");
-        dom.appendChild(el5, el6);
-        var el6 = dom.createElement("tr");
-        var el7 = dom.createTextNode("\n                        ");
-        dom.appendChild(el6, el7);
-        var el7 = dom.createElement("th");
-        var el8 = dom.createTextNode("CPU");
-        dom.appendChild(el7, el8);
-        dom.appendChild(el6, el7);
-        var el7 = dom.createTextNode("\n                        ");
-        dom.appendChild(el6, el7);
-        var el7 = dom.createElement("td");
-        var el8 = dom.createComment("");
-        dom.appendChild(el7, el8);
-        dom.appendChild(el6, el7);
-        var el7 = dom.createTextNode("\n                    ");
-        dom.appendChild(el6, el7);
-        dom.appendChild(el5, el6);
-        var el6 = dom.createTextNode("\n                    ");
-        dom.appendChild(el5, el6);
-        var el6 = dom.createElement("tr");
-        var el7 = dom.createTextNode("\n                        ");
-        dom.appendChild(el6, el7);
-        var el7 = dom.createElement("th");
-        var el8 = dom.createTextNode("RAM");
-        dom.appendChild(el7, el8);
-        dom.appendChild(el6, el7);
-        var el7 = dom.createTextNode("\n                        ");
-        dom.appendChild(el6, el7);
-        var el7 = dom.createElement("td");
-        var el8 = dom.createComment("");
-        dom.appendChild(el7, el8);
-        var el8 = dom.createTextNode(" GB");
-        dom.appendChild(el7, el8);
-        dom.appendChild(el6, el7);
-        var el7 = dom.createTextNode("\n                    ");
-        dom.appendChild(el6, el7);
-        dom.appendChild(el5, el6);
-        var el6 = dom.createTextNode("\n                    ");
-        dom.appendChild(el5, el6);
-        var el6 = dom.createElement("tr");
-        var el7 = dom.createTextNode("\n                        ");
-        dom.appendChild(el6, el7);
-        var el7 = dom.createElement("th");
-        var el8 = dom.createTextNode("Disk");
-        dom.appendChild(el7, el8);
-        dom.appendChild(el6, el7);
-        var el7 = dom.createTextNode("\n                        ");
-        dom.appendChild(el6, el7);
-        var el7 = dom.createElement("td");
-        var el8 = dom.createComment("");
-        dom.appendChild(el7, el8);
-        var el8 = dom.createTextNode(" TB");
-        dom.appendChild(el7, el8);
-        dom.appendChild(el6, el7);
-        var el7 = dom.createTextNode("\n                    ");
-        dom.appendChild(el6, el7);
-        dom.appendChild(el5, el6);
-        var el6 = dom.createTextNode("\n                ");
-        dom.appendChild(el5, el6);
-        dom.appendChild(el4, el5);
-        var el5 = dom.createTextNode("\n            ");
-        dom.appendChild(el4, el5);
-        dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("\n");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createComment("");
-        dom.appendChild(el3, el4);
-        var el4 = dom.createTextNode("        ");
-        dom.appendChild(el3, el4);
-        dom.appendChild(el2, el3);
-        var el3 = dom.createTextNode("\n    ");
-        dom.appendChild(el2, el3);
-        dom.appendChild(el1, el2);
-        var el2 = dom.createTextNode("\n");
-        dom.appendChild(el1, el2);
-        dom.appendChild(el0, el1);
-        var el1 = dom.createTextNode("\n");
+        var el1 = dom.createComment("");
         dom.appendChild(el0, el1);
         return el0;
       },
       render: function render(context, env, contextualElement) {
         var dom = env.dom;
-        var hooks = env.hooks, content = hooks.content, get = hooks.get, block = hooks.block;
+        var hooks = env.hooks, get = hooks.get, block = hooks.block;
         dom.detectNamespace(contextualElement);
         var fragment;
         if (env.useFragmentCache && dom.canClone) {
@@ -12400,22 +14105,10 @@ define('fusor-ember-cli/templates/components/node-profile', ['exports'], functio
         } else {
           fragment = this.build(dom);
         }
-        var element8 = dom.childAt(fragment, [1]);
-        var element9 = dom.childAt(element8, [1, 1]);
-        var element10 = dom.childAt(element8, [3, 1]);
-        var element11 = dom.childAt(element10, [1, 3]);
-        var morph0 = dom.createMorphAt(dom.childAt(element9, [1, 1]),0,0);
-        var morph1 = dom.createMorphAt(dom.childAt(element9, [3, 1]),1,1);
-        var morph2 = dom.createMorphAt(dom.childAt(element11, [1, 3]),0,0);
-        var morph3 = dom.createMorphAt(dom.childAt(element11, [3, 3]),0,0);
-        var morph4 = dom.createMorphAt(dom.childAt(element11, [5, 3]),0,0);
-        var morph5 = dom.createMorphAt(element10,3,3);
-        content(env, morph0, context, "profile.name");
-        content(env, morph1, context, "profile.freeNodes");
-        content(env, morph2, context, "profile.cpu");
-        content(env, morph3, context, "profile.ram");
-        content(env, morph4, context, "profile.disk");
-        block(env, morph5, context, "if", [get(env, context, "doAssign")], {}, child0, child1);
+        var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
+        dom.insertBoundary(fragment, null);
+        dom.insertBoundary(fragment, 0);
+        block(env, morph0, context, "if", [get(env, context, "readOnly")], {}, child0, child1);
         return fragment;
       }
     };
@@ -13262,6 +14955,357 @@ define('fusor-ember-cli/templates/components/radio-button-f', ['exports'], funct
         inline(env, morph0, context, "radio-button", [], {"name": get(env, context, "name"), "value": get(env, context, "value"), "checked": get(env, context, "checked"), "id": get(env, context, "cssId")});
         content(env, morph1, context, "value");
         content(env, morph2, context, "label");
+        return fragment;
+      }
+    };
+  }()));
+
+});
+define('fusor-ember-cli/templates/components/range-text-f', ['exports'], function (exports) {
+
+  'use strict';
+
+  exports['default'] = Ember.HTMLBars.template((function() {
+    var child0 = (function() {
+      var child0 = (function() {
+        var child0 = (function() {
+          return {
+            isHTMLBars: true,
+            revision: "Ember@1.11.1",
+            blockParams: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            build: function build(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createTextNode("      ");
+              dom.appendChild(el0, el1);
+              var el1 = dom.createElement("span");
+              dom.setAttribute(el1,"class","error errorForValidation");
+              var el2 = dom.createTextNode("\n        ");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createElement("span");
+              dom.setAttribute(el2,"class","glyphicon glyphicon-warning-sign");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createTextNode(" ");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createComment("");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createTextNode("\n      ");
+              dom.appendChild(el1, el2);
+              dom.appendChild(el0, el1);
+              var el1 = dom.createTextNode("\n");
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            render: function render(context, env, contextualElement) {
+              var dom = env.dom;
+              var hooks = env.hooks, content = hooks.content;
+              dom.detectNamespace(contextualElement);
+              var fragment;
+              if (env.useFragmentCache && dom.canClone) {
+                if (this.cachedFragment === null) {
+                  fragment = this.build(dom);
+                  if (this.hasRendered) {
+                    this.cachedFragment = fragment;
+                  } else {
+                    this.hasRendered = true;
+                  }
+                }
+                if (this.cachedFragment) {
+                  fragment = dom.cloneNode(this.cachedFragment, true);
+                }
+              } else {
+                fragment = this.build(dom);
+              }
+              var morph0 = dom.createMorphAt(dom.childAt(fragment, [1]),3,3);
+              content(env, morph0, context, "errors.name");
+              return fragment;
+            }
+          };
+        }());
+        return {
+          isHTMLBars: true,
+          revision: "Ember@1.11.1",
+          blockParams: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          build: function build(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          render: function render(context, env, contextualElement) {
+            var dom = env.dom;
+            var hooks = env.hooks, get = hooks.get, block = hooks.block;
+            dom.detectNamespace(contextualElement);
+            var fragment;
+            if (env.useFragmentCache && dom.canClone) {
+              if (this.cachedFragment === null) {
+                fragment = this.build(dom);
+                if (this.hasRendered) {
+                  this.cachedFragment = fragment;
+                } else {
+                  this.hasRendered = true;
+                }
+              }
+              if (this.cachedFragment) {
+                fragment = dom.cloneNode(this.cachedFragment, true);
+              }
+            } else {
+              fragment = this.build(dom);
+            }
+            var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
+            dom.insertBoundary(fragment, null);
+            dom.insertBoundary(fragment, 0);
+            block(env, morph0, context, "if", [get(env, context, "errors.name")], {}, child0, null);
+            return fragment;
+          }
+        };
+      }());
+      return {
+        isHTMLBars: true,
+        revision: "Ember@1.11.1",
+        blockParams: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        build: function build(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("\n  ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("div");
+          var el2 = dom.createTextNode("\n      ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("div");
+          var el3 = dom.createTextNode("\n        ");
+          dom.appendChild(el2, el3);
+          var el3 = dom.createComment("");
+          dom.appendChild(el2, el3);
+          var el3 = dom.createTextNode("\n      ");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n      ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("span");
+          dom.setAttribute(el2,"style","float: left;padding-left:5px;padding-right:5px;");
+          var el3 = dom.createTextNode(" - ");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n      ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("div");
+          var el3 = dom.createTextNode("\n        ");
+          dom.appendChild(el2, el3);
+          var el3 = dom.createComment("");
+          dom.appendChild(el2, el3);
+          var el3 = dom.createTextNode("\n      ");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n  ");
+          dom.appendChild(el1, el2);
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n\n");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n  ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        render: function render(context, env, contextualElement) {
+          var dom = env.dom;
+          var hooks = env.hooks, element = hooks.element, get = hooks.get, inline = hooks.inline, block = hooks.block, content = hooks.content;
+          dom.detectNamespace(contextualElement);
+          var fragment;
+          if (env.useFragmentCache && dom.canClone) {
+            if (this.cachedFragment === null) {
+              fragment = this.build(dom);
+              if (this.hasRendered) {
+                this.cachedFragment = fragment;
+              } else {
+                this.hasRendered = true;
+              }
+            }
+            if (this.cachedFragment) {
+              fragment = dom.cloneNode(this.cachedFragment, true);
+            }
+          } else {
+            fragment = this.build(dom);
+          }
+          var element0 = dom.childAt(fragment, [1]);
+          var element1 = dom.childAt(element0, [1]);
+          var element2 = dom.childAt(element0, [5]);
+          var morph0 = dom.createMorphAt(element1,1,1);
+          var morph1 = dom.createMorphAt(element2,1,1);
+          var morph2 = dom.createMorphAt(fragment,3,3,contextualElement);
+          var morph3 = dom.createMorphAt(fragment,5,5,contextualElement);
+          element(env, element1, context, "bind-attr", [], {"class": "inputSize"});
+          inline(env, morph0, context, "input", [], {"class": "form-control", "value": get(env, context, "value1"), "placeholder": get(env, context, "placeholder1"), "type": get(env, context, "typeInput"), "focus-out": "showErrors", "id": get(env, context, "cssId1")});
+          element(env, element2, context, "bind-attr", [], {"class": "inputSize"});
+          inline(env, morph1, context, "input", [], {"class": "form-control", "value": get(env, context, "value2"), "placeholder": get(env, context, "placeholder2"), "type": get(env, context, "typeInput"), "id": get(env, context, "cssId2")});
+          block(env, morph2, context, "if", [get(env, context, "showError")], {}, child0, null);
+          content(env, morph3, context, "yield");
+          return fragment;
+        }
+      };
+    }());
+    return {
+      isHTMLBars: true,
+      revision: "Ember@1.11.1",
+      blockParams: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      build: function build(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      render: function render(context, env, contextualElement) {
+        var dom = env.dom;
+        var hooks = env.hooks, get = hooks.get, block = hooks.block;
+        dom.detectNamespace(contextualElement);
+        var fragment;
+        if (env.useFragmentCache && dom.canClone) {
+          if (this.cachedFragment === null) {
+            fragment = this.build(dom);
+            if (this.hasRendered) {
+              this.cachedFragment = fragment;
+            } else {
+              this.hasRendered = true;
+            }
+          }
+          if (this.cachedFragment) {
+            fragment = dom.cloneNode(this.cachedFragment, true);
+          }
+        } else {
+          fragment = this.build(dom);
+        }
+        var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
+        dom.insertBoundary(fragment, 0);
+        block(env, morph0, context, "base-f", [], {"label": get(env, context, "label"), "labelSize": get(env, context, "labelSize"), "inputSize": get(env, context, "rangeSize"), "unitsSize": get(env, context, "unitsSize"), "unitsLabel": get(env, context, "unitsLabel"), "help-inline": get(env, context, "help-inline"), "errors": get(env, context, "errors"), "isRequired": get(env, context, "isRequired"), "helpText": get(env, context, "helpText")}, child0, null);
+        return fragment;
+      }
+    };
+  }()));
+
+});
+define('fusor-ember-cli/templates/components/rchi-item', ['exports'], function (exports) {
+
+  'use strict';
+
+  exports['default'] = Ember.HTMLBars.template((function() {
+    var child0 = (function() {
+      return {
+        isHTMLBars: true,
+        revision: "Ember@1.11.1",
+        blockParams: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        build: function build(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("           ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("i");
+          dom.setAttribute(el1,"class","fa fa-1x fa-check");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n           Deploy this product\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        render: function render(context, env, contextualElement) {
+          var dom = env.dom;
+          dom.detectNamespace(contextualElement);
+          var fragment;
+          if (env.useFragmentCache && dom.canClone) {
+            if (this.cachedFragment === null) {
+              fragment = this.build(dom);
+              if (this.hasRendered) {
+                this.cachedFragment = fragment;
+              } else {
+                this.hasRendered = true;
+              }
+            }
+            if (this.cachedFragment) {
+              fragment = dom.cloneNode(this.cachedFragment, true);
+            }
+          } else {
+            fragment = this.build(dom);
+          }
+          return fragment;
+        }
+      };
+    }());
+    return {
+      isHTMLBars: true,
+      revision: "Ember@1.11.1",
+      blockParams: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      build: function build(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createElement("span");
+        var el2 = dom.createTextNode("\n  ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("img");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n\n  ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("div");
+        var el3 = dom.createTextNode("\n       ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("span");
+        dom.setAttribute(el3,"class","rhci-install-footer");
+        var el4 = dom.createTextNode("\n");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("       ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n  ");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      render: function render(context, env, contextualElement) {
+        var dom = env.dom;
+        var hooks = env.hooks, get = hooks.get, element = hooks.element, block = hooks.block;
+        dom.detectNamespace(contextualElement);
+        var fragment;
+        if (env.useFragmentCache && dom.canClone) {
+          if (this.cachedFragment === null) {
+            fragment = this.build(dom);
+            if (this.hasRendered) {
+              this.cachedFragment = fragment;
+            } else {
+              this.hasRendered = true;
+            }
+          }
+          if (this.cachedFragment) {
+            fragment = dom.cloneNode(this.cachedFragment, true);
+          }
+        } else {
+          fragment = this.build(dom);
+        }
+        var element0 = dom.childAt(fragment, [0]);
+        var element1 = dom.childAt(element0, [1]);
+        var element2 = dom.childAt(element0, [3]);
+        var morph0 = dom.createMorphAt(dom.childAt(element2, [1]),1,1);
+        element(env, element0, context, "bind-attr", [], {"id": get(env, context, "cssId")});
+        element(env, element1, context, "bind-attr", [], {"src": get(env, context, "srcImage")});
+        element(env, element1, context, "bind-attr", [], {"class": ":img-responsive isDisabled:disabledImage"});
+        element(env, element2, context, "bind-attr", [], {"class": ":rhci-footer isChecked:rhci-footer-selected:rhci-footer-unselected"});
+        block(env, morph0, context, "if", [get(env, context, "isChecked")], {}, child0, null);
         return fragment;
       }
     };
@@ -14666,7 +16710,7 @@ define('fusor-ember-cli/templates/components/select-f', ['exports'], function (e
         var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
         dom.insertBoundary(fragment, null);
         dom.insertBoundary(fragment, 0);
-        block(env, morph0, context, "base-f", [], {"label": get(env, context, "label"), "labelSize": get(env, context, "labelSize"), "inputSize": get(env, context, "inputSize"), "unitsSize": get(env, context, "unitsSize"), "unitsLabel": get(env, context, "unitsLabel"), "isRequired": get(env, context, "isRequired")}, child0, null);
+        block(env, morph0, context, "base-f", [], {"label": get(env, context, "label"), "labelSize": get(env, context, "labelSize"), "inputSize": get(env, context, "inputSize"), "unitsSize": get(env, context, "unitsSize"), "unitsLabel": get(env, context, "unitsLabel"), "isRequired": get(env, context, "isRequired"), "helpText": get(env, context, "helpText")}, child0, null);
         return fragment;
       }
     };
@@ -14762,7 +16806,7 @@ define('fusor-ember-cli/templates/components/select-simple-f', ['exports'], func
         var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
         dom.insertBoundary(fragment, null);
         dom.insertBoundary(fragment, 0);
-        block(env, morph0, context, "base-f", [], {"label": get(env, context, "label"), "labelSize": get(env, context, "labelSize"), "inputSize": get(env, context, "inputSize"), "unitsSize": get(env, context, "unitsSize"), "unitsLabel": get(env, context, "unitsLabel"), "isRequired": get(env, context, "isRequired")}, child0, null);
+        block(env, morph0, context, "base-f", [], {"label": get(env, context, "label"), "labelSize": get(env, context, "labelSize"), "inputSize": get(env, context, "inputSize"), "unitsSize": get(env, context, "unitsSize"), "unitsLabel": get(env, context, "unitsLabel"), "isRequired": get(env, context, "isRequired"), "helpText": get(env, context, "helpText")}, child0, null);
         return fragment;
       }
     };
@@ -15342,7 +17386,7 @@ define('fusor-ember-cli/templates/components/textarea-f', ['exports'], function 
         var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
         dom.insertBoundary(fragment, null);
         dom.insertBoundary(fragment, 0);
-        block(env, morph0, context, "base-f", [], {"label": get(env, context, "label"), "labelSize": get(env, context, "labelSize"), "inputSize": get(env, context, "inputSize"), "unitsSize": get(env, context, "unitsSize"), "unitsLabel": get(env, context, "unitsLabel"), "isRequired": get(env, context, "isRequired"), "help-inline": get(env, context, "help-inline")}, child0, null);
+        block(env, morph0, context, "base-f", [], {"label": get(env, context, "label"), "labelSize": get(env, context, "labelSize"), "inputSize": get(env, context, "inputSize"), "unitsSize": get(env, context, "unitsSize"), "unitsLabel": get(env, context, "unitsLabel"), "isRequired": get(env, context, "isRequired"), "help-inline": get(env, context, "help-inline"), "helpText": get(env, context, "helpText")}, child0, null);
         return fragment;
       }
     };
@@ -19830,7 +21874,7 @@ define('fusor-ember-cli/templates/deployment', ['exports'], function (exports) {
         var el1 = dom.createTextNode("\n");
         dom.appendChild(el0, el1);
         var el1 = dom.createElement("div");
-        dom.setAttribute(el1,"class","row parent-sidebar-pf");
+        dom.setAttribute(el1,"class","row row-eq-height parent-sidebar-pf rhci-parent-sidebar");
         var el2 = dom.createTextNode("\n ");
         dom.appendChild(el1, el2);
         var el2 = dom.createComment("");
@@ -20200,6 +22244,1507 @@ define('fusor-ember-cli/templates/deployments', ['exports'], function (exports) 
         content(env, morph4, context, "model.length");
         content(env, morph5, context, "outlet");
         inline(env, morph6, context, "partial", ["delete-deployment-modal"], {});
+        return fragment;
+      }
+    };
+  }()));
+
+});
+define('fusor-ember-cli/templates/edit-deployment-role', ['exports'], function (exports) {
+
+  'use strict';
+
+  exports['default'] = Ember.HTMLBars.template((function() {
+    var child0 = (function() {
+      var child0 = (function() {
+        var child0 = (function() {
+          return {
+            isHTMLBars: true,
+            revision: "Ember@1.11.1",
+            blockParams: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            build: function build(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createTextNode("            ");
+              dom.appendChild(el0, el1);
+              var el1 = dom.createElement("span");
+              dom.setAttribute(el1,"aria-hidden","true");
+              var el2 = dom.createTextNode("×");
+              dom.appendChild(el1, el2);
+              dom.appendChild(el0, el1);
+              var el1 = dom.createElement("span");
+              dom.setAttribute(el1,"class","sr-only");
+              var el2 = dom.createTextNode("Close");
+              dom.appendChild(el1, el2);
+              dom.appendChild(el0, el1);
+              var el1 = dom.createTextNode("\n");
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            render: function render(context, env, contextualElement) {
+              var dom = env.dom;
+              var hooks = env.hooks, element = hooks.element;
+              dom.detectNamespace(contextualElement);
+              var fragment;
+              if (env.useFragmentCache && dom.canClone) {
+                if (this.cachedFragment === null) {
+                  fragment = this.build(dom);
+                  if (this.hasRendered) {
+                    this.cachedFragment = fragment;
+                  } else {
+                    this.hasRendered = true;
+                  }
+                }
+                if (this.cachedFragment) {
+                  fragment = dom.cloneNode(this.cachedFragment, true);
+                }
+              } else {
+                fragment = this.build(dom);
+              }
+              var element10 = dom.childAt(fragment, [1]);
+              element(env, element10, context, "action", ["cancelEditRole"], {});
+              return fragment;
+            }
+          };
+        }());
+        return {
+          isHTMLBars: true,
+          revision: "Ember@1.11.1",
+          blockParams: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          build: function build(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("        ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createElement("h4");
+            dom.setAttribute(el1,"class","modal-title");
+            var el2 = dom.createTextNode("Edit Deployment Role - ");
+            dom.appendChild(el1, el2);
+            var el2 = dom.createComment("");
+            dom.appendChild(el1, el2);
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          render: function render(context, env, contextualElement) {
+            var dom = env.dom;
+            var hooks = env.hooks, block = hooks.block, content = hooks.content;
+            dom.detectNamespace(contextualElement);
+            var fragment;
+            if (env.useFragmentCache && dom.canClone) {
+              if (this.cachedFragment === null) {
+                fragment = this.build(dom);
+                if (this.hasRendered) {
+                  this.cachedFragment = fragment;
+                } else {
+                  this.hasRendered = true;
+                }
+              }
+              if (this.cachedFragment) {
+                fragment = dom.cloneNode(this.cachedFragment, true);
+              }
+            } else {
+              fragment = this.build(dom);
+            }
+            var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
+            var morph1 = dom.createMorphAt(dom.childAt(fragment, [2]),1,1);
+            dom.insertBoundary(fragment, 0);
+            block(env, morph0, context, "em-modal-toggler", [], {"class": "close"}, child0, null);
+            content(env, morph1, context, "edittedRole.name");
+            return fragment;
+          }
+        };
+      }());
+      var child1 = (function() {
+        var child0 = (function() {
+          return {
+            isHTMLBars: true,
+            revision: "Ember@1.11.1",
+            blockParams: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            build: function build(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createTextNode("            Submitting, please wait...\n");
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            render: function render(context, env, contextualElement) {
+              var dom = env.dom;
+              dom.detectNamespace(contextualElement);
+              var fragment;
+              if (env.useFragmentCache && dom.canClone) {
+                if (this.cachedFragment === null) {
+                  fragment = this.build(dom);
+                  if (this.hasRendered) {
+                    this.cachedFragment = fragment;
+                  } else {
+                    this.hasRendered = true;
+                  }
+                }
+                if (this.cachedFragment) {
+                  fragment = dom.cloneNode(this.cachedFragment, true);
+                }
+              } else {
+                fragment = this.build(dom);
+              }
+              return fragment;
+            }
+          };
+        }());
+        var child1 = (function() {
+          var child0 = (function() {
+            return {
+              isHTMLBars: true,
+              revision: "Ember@1.11.1",
+              blockParams: 0,
+              cachedFragment: null,
+              hasRendered: false,
+              build: function build(dom) {
+                var el0 = dom.createDocumentFragment();
+                var el1 = dom.createTextNode("                    ");
+                dom.appendChild(el0, el1);
+                var el1 = dom.createElement("div");
+                dom.setAttribute(el1,"role","tabpanel");
+                dom.setAttribute(el1,"class","tab-pane active deployment-role-settings-content");
+                dom.setAttribute(el1,"id","overall-settings");
+                var el2 = dom.createTextNode("\n                        ");
+                dom.appendChild(el1, el2);
+                var el2 = dom.createElement("div");
+                dom.setAttribute(el2,"class","form-horizontal");
+                var el3 = dom.createTextNode("\n                            ");
+                dom.appendChild(el2, el3);
+                var el3 = dom.createElement("fieldset");
+                var el4 = dom.createTextNode("\n                                ");
+                dom.appendChild(el3, el4);
+                var el4 = dom.createElement("div");
+                dom.setAttribute(el4,"class","form-group");
+                var el5 = dom.createTextNode("\n                                    ");
+                dom.appendChild(el4, el5);
+                var el5 = dom.createElement("label");
+                dom.setAttribute(el5,"class","control-label col-sm-4 ");
+                var el6 = dom.createTextNode("Name");
+                dom.appendChild(el5, el6);
+                dom.appendChild(el4, el5);
+                var el5 = dom.createTextNode("\n                                    ");
+                dom.appendChild(el4, el5);
+                var el5 = dom.createElement("div");
+                dom.setAttribute(el5,"class","col-sm-8");
+                var el6 = dom.createTextNode("\n                                        ");
+                dom.appendChild(el5, el6);
+                var el6 = dom.createElement("input");
+                dom.setAttribute(el6,"class","form-control");
+                dom.setAttribute(el6,"type","text");
+                dom.setAttribute(el6,"readOnly","true");
+                dom.appendChild(el5, el6);
+                var el6 = dom.createTextNode("\n                                    ");
+                dom.appendChild(el5, el6);
+                dom.appendChild(el4, el5);
+                var el5 = dom.createTextNode("\n                                ");
+                dom.appendChild(el4, el5);
+                dom.appendChild(el3, el4);
+                var el4 = dom.createTextNode("\n                                ");
+                dom.appendChild(el3, el4);
+                var el4 = dom.createElement("div");
+                dom.setAttribute(el4,"class","form-group");
+                var el5 = dom.createTextNode("\n                                    ");
+                dom.appendChild(el4, el5);
+                var el5 = dom.createElement("label");
+                dom.setAttribute(el5,"class","control-label col-sm-4 ");
+                var el6 = dom.createTextNode("Description");
+                dom.appendChild(el5, el6);
+                dom.appendChild(el4, el5);
+                var el5 = dom.createTextNode("\n                                    ");
+                dom.appendChild(el4, el5);
+                var el5 = dom.createElement("div");
+                dom.setAttribute(el5,"class","col-sm-8");
+                var el6 = dom.createTextNode("\n                                        ");
+                dom.appendChild(el5, el6);
+                var el6 = dom.createElement("textarea");
+                dom.setAttribute(el6,"class","form-control");
+                dom.setAttribute(el6,"type","text");
+                dom.setAttribute(el6,"readOnly","true");
+                dom.appendChild(el5, el6);
+                var el6 = dom.createTextNode("\n                                    ");
+                dom.appendChild(el5, el6);
+                dom.appendChild(el4, el5);
+                var el5 = dom.createTextNode("\n                                ");
+                dom.appendChild(el4, el5);
+                dom.appendChild(el3, el4);
+                var el4 = dom.createTextNode("\n                                ");
+                dom.appendChild(el3, el4);
+                var el4 = dom.createComment("");
+                dom.appendChild(el3, el4);
+                var el4 = dom.createTextNode("\n                                ");
+                dom.appendChild(el3, el4);
+                var el4 = dom.createComment("");
+                dom.appendChild(el3, el4);
+                var el4 = dom.createTextNode("\n                                ");
+                dom.appendChild(el3, el4);
+                var el4 = dom.createComment("");
+                dom.appendChild(el3, el4);
+                var el4 = dom.createTextNode("\n                            ");
+                dom.appendChild(el3, el4);
+                dom.appendChild(el2, el3);
+                var el3 = dom.createTextNode("\n                        ");
+                dom.appendChild(el2, el3);
+                dom.appendChild(el1, el2);
+                var el2 = dom.createTextNode("\n                    ");
+                dom.appendChild(el1, el2);
+                dom.appendChild(el0, el1);
+                var el1 = dom.createTextNode("\n");
+                dom.appendChild(el0, el1);
+                return el0;
+              },
+              render: function render(context, env, contextualElement) {
+                var dom = env.dom;
+                var hooks = env.hooks, get = hooks.get, attribute = hooks.attribute, inline = hooks.inline;
+                dom.detectNamespace(contextualElement);
+                var fragment;
+                if (env.useFragmentCache && dom.canClone) {
+                  if (this.cachedFragment === null) {
+                    fragment = this.build(dom);
+                    if (this.hasRendered) {
+                      this.cachedFragment = fragment;
+                    } else {
+                      this.hasRendered = true;
+                    }
+                  }
+                  if (this.cachedFragment) {
+                    fragment = dom.cloneNode(this.cachedFragment, true);
+                  }
+                } else {
+                  fragment = this.build(dom);
+                }
+                var element2 = dom.childAt(fragment, [1, 1, 1]);
+                var element3 = dom.childAt(element2, [1, 3, 1]);
+                var element4 = dom.childAt(element2, [3, 3, 1]);
+                var attrMorph0 = dom.createAttrMorph(element3, 'value');
+                var attrMorph1 = dom.createAttrMorph(element4, 'value');
+                var morph0 = dom.createMorphAt(element2,5,5);
+                var morph1 = dom.createMorphAt(element2,7,7);
+                var morph2 = dom.createMorphAt(element2,9,9);
+                attribute(env, attrMorph0, element3, "value", get(env, context, "edittedRole.name"));
+                attribute(env, attrMorph1, element4, "value", get(env, context, "edittedRole.description"));
+                inline(env, morph0, context, "select-f", [], {"label": "Provisioning Image", "labelSize": "col-sm-4", "inputSize": "col-sm-8", "content": get(env, context, "images"), "value": get(env, context, "edittedRoleImage"), "isRequired": false, "optionLabelPath": "content.name", "optionValuePath": "content.name"});
+                inline(env, morph1, context, "select-f", [], {"label": "Node Profile", "labelSize": "col-sm-4", "inputSize": "col-sm-8", "content": get(env, context, "profiles"), "value": get(env, context, "edittedRoleProfile"), "isRequired": false, "optionLabelPath": "content.name", "optionValuePath": "content.name"});
+                inline(env, morph2, context, "text-f", [], {"label": "Number of Nodes", "type": "number", "labelSize": "col-sm-4", "inputSize": "col-sm-8", "value": get(env, context, "edittedRoleNodeCount"), "isRequired": false});
+                return fragment;
+              }
+            };
+          }());
+          var child1 = (function() {
+            var child0 = (function() {
+              var child0 = (function() {
+                return {
+                  isHTMLBars: true,
+                  revision: "Ember@1.11.1",
+                  blockParams: 0,
+                  cachedFragment: null,
+                  hasRendered: false,
+                  build: function build(dom) {
+                    var el0 = dom.createDocumentFragment();
+                    var el1 = dom.createTextNode("                                                  ");
+                    dom.appendChild(el0, el1);
+                    var el1 = dom.createComment("");
+                    dom.appendChild(el0, el1);
+                    var el1 = dom.createTextNode("\n");
+                    dom.appendChild(el0, el1);
+                    return el0;
+                  },
+                  render: function render(context, env, contextualElement) {
+                    var dom = env.dom;
+                    var hooks = env.hooks, get = hooks.get, inline = hooks.inline;
+                    dom.detectNamespace(contextualElement);
+                    var fragment;
+                    if (env.useFragmentCache && dom.canClone) {
+                      if (this.cachedFragment === null) {
+                        fragment = this.build(dom);
+                        if (this.hasRendered) {
+                          this.cachedFragment = fragment;
+                        } else {
+                          this.hasRendered = true;
+                        }
+                      }
+                      if (this.cachedFragment) {
+                        fragment = dom.cloneNode(this.cachedFragment, true);
+                      }
+                    } else {
+                      fragment = this.build(dom);
+                    }
+                    var morph0 = dom.createMorphAt(fragment,1,1,contextualElement);
+                    inline(env, morph0, context, "check-f", [], {"label": get(env, context, "roleParameter.displayId"), "checked": get(env, context, "roleParameter.value"), "labelSize": "col-md-6", "inputSize": "col-md-5", "isRequired": false, "helpText": get(env, context, "roleParameter.description")});
+                    return fragment;
+                  }
+                };
+              }());
+              var child1 = (function() {
+                var child0 = (function() {
+                  return {
+                    isHTMLBars: true,
+                    revision: "Ember@1.11.1",
+                    blockParams: 0,
+                    cachedFragment: null,
+                    hasRendered: false,
+                    build: function build(dom) {
+                      var el0 = dom.createDocumentFragment();
+                      var el1 = dom.createTextNode("                                                    ");
+                      dom.appendChild(el0, el1);
+                      var el1 = dom.createComment("");
+                      dom.appendChild(el0, el1);
+                      var el1 = dom.createTextNode("\n");
+                      dom.appendChild(el0, el1);
+                      return el0;
+                    },
+                    render: function render(context, env, contextualElement) {
+                      var dom = env.dom;
+                      var hooks = env.hooks, get = hooks.get, inline = hooks.inline;
+                      dom.detectNamespace(contextualElement);
+                      var fragment;
+                      if (env.useFragmentCache && dom.canClone) {
+                        if (this.cachedFragment === null) {
+                          fragment = this.build(dom);
+                          if (this.hasRendered) {
+                            this.cachedFragment = fragment;
+                          } else {
+                            this.hasRendered = true;
+                          }
+                        }
+                        if (this.cachedFragment) {
+                          fragment = dom.cloneNode(this.cachedFragment, true);
+                        }
+                      } else {
+                        fragment = this.build(dom);
+                      }
+                      var morph0 = dom.createMorphAt(fragment,1,1,contextualElement);
+                      inline(env, morph0, context, "text-f", [], {"label": get(env, context, "roleParameter.displayId"), "value": get(env, context, "roleParameter.value"), "type": "password", "labelSize": "col-md-6", "inputSize": "col-md-5", "isRequired": false, "helpText": get(env, context, "roleParameter.description")});
+                      return fragment;
+                    }
+                  };
+                }());
+                var child1 = (function() {
+                  return {
+                    isHTMLBars: true,
+                    revision: "Ember@1.11.1",
+                    blockParams: 0,
+                    cachedFragment: null,
+                    hasRendered: false,
+                    build: function build(dom) {
+                      var el0 = dom.createDocumentFragment();
+                      var el1 = dom.createTextNode("                                                    ");
+                      dom.appendChild(el0, el1);
+                      var el1 = dom.createComment("");
+                      dom.appendChild(el0, el1);
+                      var el1 = dom.createTextNode("\n");
+                      dom.appendChild(el0, el1);
+                      return el0;
+                    },
+                    render: function render(context, env, contextualElement) {
+                      var dom = env.dom;
+                      var hooks = env.hooks, get = hooks.get, inline = hooks.inline;
+                      dom.detectNamespace(contextualElement);
+                      var fragment;
+                      if (env.useFragmentCache && dom.canClone) {
+                        if (this.cachedFragment === null) {
+                          fragment = this.build(dom);
+                          if (this.hasRendered) {
+                            this.cachedFragment = fragment;
+                          } else {
+                            this.hasRendered = true;
+                          }
+                        }
+                        if (this.cachedFragment) {
+                          fragment = dom.cloneNode(this.cachedFragment, true);
+                        }
+                      } else {
+                        fragment = this.build(dom);
+                      }
+                      var morph0 = dom.createMorphAt(fragment,1,1,contextualElement);
+                      inline(env, morph0, context, "text-f", [], {"label": get(env, context, "roleParameter.displayId"), "value": get(env, context, "roleParameter.value"), "type": get(env, context, "roleParameter.inputType"), "labelSize": "col-md-6", "inputSize": "col-md-5", "isRequired": false, "helpText": get(env, context, "roleParameter.description")});
+                      return fragment;
+                    }
+                  };
+                }());
+                return {
+                  isHTMLBars: true,
+                  revision: "Ember@1.11.1",
+                  blockParams: 0,
+                  cachedFragment: null,
+                  hasRendered: false,
+                  build: function build(dom) {
+                    var el0 = dom.createDocumentFragment();
+                    var el1 = dom.createComment("");
+                    dom.appendChild(el0, el1);
+                    return el0;
+                  },
+                  render: function render(context, env, contextualElement) {
+                    var dom = env.dom;
+                    var hooks = env.hooks, get = hooks.get, block = hooks.block;
+                    dom.detectNamespace(contextualElement);
+                    var fragment;
+                    if (env.useFragmentCache && dom.canClone) {
+                      if (this.cachedFragment === null) {
+                        fragment = this.build(dom);
+                        if (this.hasRendered) {
+                          this.cachedFragment = fragment;
+                        } else {
+                          this.hasRendered = true;
+                        }
+                      }
+                      if (this.cachedFragment) {
+                        fragment = dom.cloneNode(this.cachedFragment, true);
+                      }
+                    } else {
+                      fragment = this.build(dom);
+                    }
+                    var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
+                    dom.insertBoundary(fragment, null);
+                    dom.insertBoundary(fragment, 0);
+                    block(env, morph0, context, "if", [get(env, context, "rolerParameter.isPassword")], {}, child0, child1);
+                    return fragment;
+                  }
+                };
+              }());
+              return {
+                isHTMLBars: true,
+                revision: "Ember@1.11.1",
+                blockParams: 0,
+                cachedFragment: null,
+                hasRendered: false,
+                build: function build(dom) {
+                  var el0 = dom.createDocumentFragment();
+                  var el1 = dom.createComment("");
+                  dom.appendChild(el0, el1);
+                  return el0;
+                },
+                render: function render(context, env, contextualElement) {
+                  var dom = env.dom;
+                  var hooks = env.hooks, get = hooks.get, block = hooks.block;
+                  dom.detectNamespace(contextualElement);
+                  var fragment;
+                  if (env.useFragmentCache && dom.canClone) {
+                    if (this.cachedFragment === null) {
+                      fragment = this.build(dom);
+                      if (this.hasRendered) {
+                        this.cachedFragment = fragment;
+                      } else {
+                        this.hasRendered = true;
+                      }
+                    }
+                    if (this.cachedFragment) {
+                      fragment = dom.cloneNode(this.cachedFragment, true);
+                    }
+                  } else {
+                    fragment = this.build(dom);
+                  }
+                  var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
+                  dom.insertBoundary(fragment, null);
+                  dom.insertBoundary(fragment, 0);
+                  block(env, morph0, context, "if", [get(env, context, "roleParameter.isBoolean")], {}, child0, child1);
+                  return fragment;
+                }
+              };
+            }());
+            return {
+              isHTMLBars: true,
+              revision: "Ember@1.11.1",
+              blockParams: 0,
+              cachedFragment: null,
+              hasRendered: false,
+              build: function build(dom) {
+                var el0 = dom.createDocumentFragment();
+                var el1 = dom.createTextNode("                    ");
+                dom.appendChild(el0, el1);
+                var el1 = dom.createElement("div");
+                dom.setAttribute(el1,"role","tabpanel");
+                dom.setAttribute(el1,"class","tab-pane active deployment-role-settings-content");
+                dom.setAttribute(el1,"id","service-configuration");
+                var el2 = dom.createTextNode("\n                        ");
+                dom.appendChild(el1, el2);
+                var el2 = dom.createElement("div");
+                dom.setAttribute(el2,"class","row");
+                var el3 = dom.createTextNode("\n                            ");
+                dom.appendChild(el2, el3);
+                var el3 = dom.createElement("div");
+                dom.setAttribute(el3,"class","col-md-12");
+                var el4 = dom.createTextNode("\n                                ");
+                dom.appendChild(el3, el4);
+                var el4 = dom.createElement("div");
+                dom.setAttribute(el4,"class","form-horizontal");
+                var el5 = dom.createTextNode("\n                                    ");
+                dom.appendChild(el4, el5);
+                var el5 = dom.createElement("fieldset");
+                var el6 = dom.createTextNode("\n                                        ");
+                dom.appendChild(el5, el6);
+                var el6 = dom.createElement("div");
+                dom.setAttribute(el6,"class","form-group required");
+                var el7 = dom.createTextNode("\n");
+                dom.appendChild(el6, el7);
+                var el7 = dom.createComment("");
+                dom.appendChild(el6, el7);
+                var el7 = dom.createTextNode("                                        ");
+                dom.appendChild(el6, el7);
+                dom.appendChild(el5, el6);
+                var el6 = dom.createTextNode("\n                                    ");
+                dom.appendChild(el5, el6);
+                dom.appendChild(el4, el5);
+                var el5 = dom.createTextNode("\n                                ");
+                dom.appendChild(el4, el5);
+                dom.appendChild(el3, el4);
+                var el4 = dom.createTextNode("\n                            ");
+                dom.appendChild(el3, el4);
+                dom.appendChild(el2, el3);
+                var el3 = dom.createTextNode("\n                        ");
+                dom.appendChild(el2, el3);
+                dom.appendChild(el1, el2);
+                var el2 = dom.createTextNode("\n                    ");
+                dom.appendChild(el1, el2);
+                dom.appendChild(el0, el1);
+                var el1 = dom.createTextNode("\n");
+                dom.appendChild(el0, el1);
+                return el0;
+              },
+              render: function render(context, env, contextualElement) {
+                var dom = env.dom;
+                var hooks = env.hooks, get = hooks.get, block = hooks.block;
+                dom.detectNamespace(contextualElement);
+                var fragment;
+                if (env.useFragmentCache && dom.canClone) {
+                  if (this.cachedFragment === null) {
+                    fragment = this.build(dom);
+                    if (this.hasRendered) {
+                      this.cachedFragment = fragment;
+                    } else {
+                      this.hasRendered = true;
+                    }
+                  }
+                  if (this.cachedFragment) {
+                    fragment = dom.cloneNode(this.cachedFragment, true);
+                  }
+                } else {
+                  fragment = this.build(dom);
+                }
+                var morph0 = dom.createMorphAt(dom.childAt(fragment, [1, 1, 1, 1, 1, 1]),1,1);
+                block(env, morph0, context, "each", [get(env, context, "edittedRoleParameters")], {"keyword": "roleParameter"}, child0, null);
+                return fragment;
+              }
+            };
+          }());
+          return {
+            isHTMLBars: true,
+            revision: "Ember@1.11.1",
+            blockParams: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            build: function build(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createTextNode("            ");
+              dom.appendChild(el0, el1);
+              var el1 = dom.createElement("ul");
+              dom.setAttribute(el1,"class","nav nav-tabs nav-tabs-pf");
+              dom.setAttribute(el1,"role","tablist");
+              var el2 = dom.createTextNode("\n                ");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createElement("li");
+              dom.setAttribute(el2,"role","presentation");
+              var el3 = dom.createTextNode("\n                    ");
+              dom.appendChild(el2, el3);
+              var el3 = dom.createElement("a");
+              dom.setAttribute(el3,"aria-controls","overall-settings");
+              dom.setAttribute(el3,"role","tab");
+              dom.setAttribute(el3,"data-toggle","tab");
+              var el4 = dom.createTextNode("Overall Settings");
+              dom.appendChild(el3, el4);
+              dom.appendChild(el2, el3);
+              var el3 = dom.createTextNode("\n                ");
+              dom.appendChild(el2, el3);
+              dom.appendChild(el1, el2);
+              var el2 = dom.createTextNode("\n                ");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createElement("li");
+              dom.setAttribute(el2,"role","presentation");
+              var el3 = dom.createTextNode("\n                    ");
+              dom.appendChild(el2, el3);
+              var el3 = dom.createElement("a");
+              dom.setAttribute(el3,"aria-controls","service-configuration");
+              dom.setAttribute(el3,"role","tab");
+              dom.setAttribute(el3,"data-toggle","tab");
+              var el4 = dom.createTextNode("Service Configuration");
+              dom.appendChild(el3, el4);
+              dom.appendChild(el2, el3);
+              var el3 = dom.createTextNode("\n                ");
+              dom.appendChild(el2, el3);
+              dom.appendChild(el1, el2);
+              var el2 = dom.createTextNode("\n            ");
+              dom.appendChild(el1, el2);
+              dom.appendChild(el0, el1);
+              var el1 = dom.createTextNode("\n            ");
+              dom.appendChild(el0, el1);
+              var el1 = dom.createElement("div");
+              dom.setAttribute(el1,"class","tab-content");
+              dom.setAttribute(el1,"style","margin-top: 30px;");
+              var el2 = dom.createTextNode("\n");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createComment("");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createTextNode("            ");
+              dom.appendChild(el1, el2);
+              dom.appendChild(el0, el1);
+              var el1 = dom.createTextNode("\n");
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            render: function render(context, env, contextualElement) {
+              var dom = env.dom;
+              var hooks = env.hooks, get = hooks.get, attribute = hooks.attribute, element = hooks.element, block = hooks.block;
+              dom.detectNamespace(contextualElement);
+              var fragment;
+              if (env.useFragmentCache && dom.canClone) {
+                if (this.cachedFragment === null) {
+                  fragment = this.build(dom);
+                  if (this.hasRendered) {
+                    this.cachedFragment = fragment;
+                  } else {
+                    this.hasRendered = true;
+                  }
+                }
+                if (this.cachedFragment) {
+                  fragment = dom.cloneNode(this.cachedFragment, true);
+                }
+              } else {
+                fragment = this.build(dom);
+              }
+              var element5 = dom.childAt(fragment, [1]);
+              var element6 = dom.childAt(element5, [1]);
+              var element7 = dom.childAt(element6, [1]);
+              var element8 = dom.childAt(element5, [3]);
+              var element9 = dom.childAt(element8, [1]);
+              var attrMorph0 = dom.createAttrMorph(element6, 'class');
+              var attrMorph1 = dom.createAttrMorph(element8, 'class');
+              var morph0 = dom.createMorphAt(dom.childAt(fragment, [3]),1,1);
+              attribute(env, attrMorph0, element6, "class", get(env, context, "settingsTabActiveClass"));
+              element(env, element7, context, "action", ["doShowSettings"], {});
+              attribute(env, attrMorph1, element8, "class", get(env, context, "configTabActiveClass"));
+              element(env, element9, context, "action", ["doShowConfig"], {});
+              block(env, morph0, context, "if", [get(env, context, "showSettings")], {}, child0, child1);
+              return fragment;
+            }
+          };
+        }());
+        return {
+          isHTMLBars: true,
+          revision: "Ember@1.11.1",
+          blockParams: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          build: function build(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          render: function render(context, env, contextualElement) {
+            var dom = env.dom;
+            var hooks = env.hooks, get = hooks.get, block = hooks.block;
+            dom.detectNamespace(contextualElement);
+            var fragment;
+            if (env.useFragmentCache && dom.canClone) {
+              if (this.cachedFragment === null) {
+                fragment = this.build(dom);
+                if (this.hasRendered) {
+                  this.cachedFragment = fragment;
+                } else {
+                  this.hasRendered = true;
+                }
+              }
+              if (this.cachedFragment) {
+                fragment = dom.cloneNode(this.cachedFragment, true);
+              }
+            } else {
+              fragment = this.build(dom);
+            }
+            var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
+            dom.insertBoundary(fragment, null);
+            dom.insertBoundary(fragment, 0);
+            block(env, morph0, context, "if", [get(env, context, "async")], {}, child0, child1);
+            return fragment;
+          }
+        };
+      }());
+      var child2 = (function() {
+        return {
+          isHTMLBars: true,
+          revision: "Ember@1.11.1",
+          blockParams: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          build: function build(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createTextNode("        ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createElement("button");
+            dom.setAttribute(el1,"type","cancel");
+            dom.setAttribute(el1,"class","btn btn-default");
+            var el2 = dom.createTextNode("Cancel");
+            dom.appendChild(el1, el2);
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n        ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createElement("button");
+            dom.setAttribute(el1,"type","submit");
+            dom.setAttribute(el1,"class","btn btn-primary");
+            var el2 = dom.createTextNode("Save");
+            dom.appendChild(el1, el2);
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          render: function render(context, env, contextualElement) {
+            var dom = env.dom;
+            var hooks = env.hooks, get = hooks.get, element = hooks.element;
+            dom.detectNamespace(contextualElement);
+            var fragment;
+            if (env.useFragmentCache && dom.canClone) {
+              if (this.cachedFragment === null) {
+                fragment = this.build(dom);
+                if (this.hasRendered) {
+                  this.cachedFragment = fragment;
+                } else {
+                  this.hasRendered = true;
+                }
+              }
+              if (this.cachedFragment) {
+                fragment = dom.cloneNode(this.cachedFragment, true);
+              }
+            } else {
+              fragment = this.build(dom);
+            }
+            var element0 = dom.childAt(fragment, [1]);
+            var element1 = dom.childAt(fragment, [3]);
+            element(env, element0, context, "bind-attr", [], {"disabled": get(env, context, "async")});
+            element(env, element0, context, "action", ["cancelEditRole"], {});
+            element(env, element1, context, "bind-attr", [], {"disabled": get(env, context, "async")});
+            element(env, element1, context, "action", ["saveRole"], {});
+            return fragment;
+          }
+        };
+      }());
+      return {
+        isHTMLBars: true,
+        revision: "Ember@1.11.1",
+        blockParams: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        build: function build(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        render: function render(context, env, contextualElement) {
+          var dom = env.dom;
+          var hooks = env.hooks, block = hooks.block;
+          dom.detectNamespace(contextualElement);
+          var fragment;
+          if (env.useFragmentCache && dom.canClone) {
+            if (this.cachedFragment === null) {
+              fragment = this.build(dom);
+              if (this.hasRendered) {
+                this.cachedFragment = fragment;
+              } else {
+                this.hasRendered = true;
+              }
+            }
+            if (this.cachedFragment) {
+              fragment = dom.cloneNode(this.cachedFragment, true);
+            }
+          } else {
+            fragment = this.build(dom);
+          }
+          var morph0 = dom.createMorphAt(fragment,1,1,contextualElement);
+          var morph1 = dom.createMorphAt(fragment,3,3,contextualElement);
+          var morph2 = dom.createMorphAt(fragment,5,5,contextualElement);
+          block(env, morph0, context, "em-modal-title", [], {}, child0, null);
+          block(env, morph1, context, "em-modal-body", [], {}, child1, null);
+          block(env, morph2, context, "em-modal-footer", [], {}, child2, null);
+          return fragment;
+        }
+      };
+    }());
+    return {
+      isHTMLBars: true,
+      revision: "Ember@1.11.1",
+      blockParams: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      build: function build(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      render: function render(context, env, contextualElement) {
+        var dom = env.dom;
+        var hooks = env.hooks, get = hooks.get, block = hooks.block;
+        dom.detectNamespace(contextualElement);
+        var fragment;
+        if (env.useFragmentCache && dom.canClone) {
+          if (this.cachedFragment === null) {
+            fragment = this.build(dom);
+            if (this.hasRendered) {
+              this.cachedFragment = fragment;
+            } else {
+              this.hasRendered = true;
+            }
+          }
+          if (this.cachedFragment) {
+            fragment = dom.cloneNode(this.cachedFragment, true);
+          }
+        } else {
+          fragment = this.build(dom);
+        }
+        var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
+        dom.insertBoundary(fragment, null);
+        dom.insertBoundary(fragment, 0);
+        block(env, morph0, context, "em-modal-form", [], {"configName": "bs", "id": "editDeploymentRoleModal", "on-submit": "editRole", "open-if": get(env, context, "editRoleModalOpened"), "close-if": get(env, context, "editRoleModalClosed"), "in-async": get(env, context, "async")}, child0, null);
+        return fragment;
+      }
+    };
+  }()));
+
+});
+define('fusor-ember-cli/templates/edit-global-service-config', ['exports'], function (exports) {
+
+  'use strict';
+
+  exports['default'] = Ember.HTMLBars.template((function() {
+    var child0 = (function() {
+      var child0 = (function() {
+        var child0 = (function() {
+          return {
+            isHTMLBars: true,
+            revision: "Ember@1.11.1",
+            blockParams: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            build: function build(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createTextNode("            ");
+              dom.appendChild(el0, el1);
+              var el1 = dom.createElement("span");
+              dom.setAttribute(el1,"aria-hidden","true");
+              var el2 = dom.createTextNode("×");
+              dom.appendChild(el1, el2);
+              dom.appendChild(el0, el1);
+              var el1 = dom.createElement("span");
+              dom.setAttribute(el1,"class","sr-only");
+              var el2 = dom.createTextNode("Close");
+              dom.appendChild(el1, el2);
+              dom.appendChild(el0, el1);
+              var el1 = dom.createTextNode("\n");
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            render: function render(context, env, contextualElement) {
+              var dom = env.dom;
+              var hooks = env.hooks, element = hooks.element;
+              dom.detectNamespace(contextualElement);
+              var fragment;
+              if (env.useFragmentCache && dom.canClone) {
+                if (this.cachedFragment === null) {
+                  fragment = this.build(dom);
+                  if (this.hasRendered) {
+                    this.cachedFragment = fragment;
+                  } else {
+                    this.hasRendered = true;
+                  }
+                }
+                if (this.cachedFragment) {
+                  fragment = dom.cloneNode(this.cachedFragment, true);
+                }
+              } else {
+                fragment = this.build(dom);
+              }
+              var element2 = dom.childAt(fragment, [1]);
+              element(env, element2, context, "action", ["cancelEditRole"], {});
+              return fragment;
+            }
+          };
+        }());
+        return {
+          isHTMLBars: true,
+          revision: "Ember@1.11.1",
+          blockParams: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          build: function build(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("        ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createElement("h4");
+            dom.setAttribute(el1,"class","modal-title");
+            var el2 = dom.createTextNode("Global Service Configuration");
+            dom.appendChild(el1, el2);
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          render: function render(context, env, contextualElement) {
+            var dom = env.dom;
+            var hooks = env.hooks, block = hooks.block;
+            dom.detectNamespace(contextualElement);
+            var fragment;
+            if (env.useFragmentCache && dom.canClone) {
+              if (this.cachedFragment === null) {
+                fragment = this.build(dom);
+                if (this.hasRendered) {
+                  this.cachedFragment = fragment;
+                } else {
+                  this.hasRendered = true;
+                }
+              }
+              if (this.cachedFragment) {
+                fragment = dom.cloneNode(this.cachedFragment, true);
+              }
+            } else {
+              fragment = this.build(dom);
+            }
+            var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
+            dom.insertBoundary(fragment, 0);
+            block(env, morph0, context, "em-modal-toggler", [], {"class": "close"}, child0, null);
+            return fragment;
+          }
+        };
+      }());
+      var child1 = (function() {
+        var child0 = (function() {
+          return {
+            isHTMLBars: true,
+            revision: "Ember@1.11.1",
+            blockParams: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            build: function build(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createTextNode("            Submitting, please wait...\n");
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            render: function render(context, env, contextualElement) {
+              var dom = env.dom;
+              dom.detectNamespace(contextualElement);
+              var fragment;
+              if (env.useFragmentCache && dom.canClone) {
+                if (this.cachedFragment === null) {
+                  fragment = this.build(dom);
+                  if (this.hasRendered) {
+                    this.cachedFragment = fragment;
+                  } else {
+                    this.hasRendered = true;
+                  }
+                }
+                if (this.cachedFragment) {
+                  fragment = dom.cloneNode(this.cachedFragment, true);
+                }
+              } else {
+                fragment = this.build(dom);
+              }
+              return fragment;
+            }
+          };
+        }());
+        var child1 = (function() {
+          var child0 = (function() {
+            var child0 = (function() {
+              return {
+                isHTMLBars: true,
+                revision: "Ember@1.11.1",
+                blockParams: 0,
+                cachedFragment: null,
+                hasRendered: false,
+                build: function build(dom) {
+                  var el0 = dom.createDocumentFragment();
+                  var el1 = dom.createTextNode("                            ");
+                  dom.appendChild(el0, el1);
+                  var el1 = dom.createComment("");
+                  dom.appendChild(el0, el1);
+                  var el1 = dom.createTextNode("\n");
+                  dom.appendChild(el0, el1);
+                  return el0;
+                },
+                render: function render(context, env, contextualElement) {
+                  var dom = env.dom;
+                  var hooks = env.hooks, get = hooks.get, inline = hooks.inline;
+                  dom.detectNamespace(contextualElement);
+                  var fragment;
+                  if (env.useFragmentCache && dom.canClone) {
+                    if (this.cachedFragment === null) {
+                      fragment = this.build(dom);
+                      if (this.hasRendered) {
+                        this.cachedFragment = fragment;
+                      } else {
+                        this.hasRendered = true;
+                      }
+                    }
+                    if (this.cachedFragment) {
+                      fragment = dom.cloneNode(this.cachedFragment, true);
+                    }
+                  } else {
+                    fragment = this.build(dom);
+                  }
+                  var morph0 = dom.createMorphAt(fragment,1,1,contextualElement);
+                  inline(env, morph0, context, "check-f", [], {"label": get(env, context, "planParameter.displayId"), "checked": get(env, context, "planParameter.value"), "labelSize": "col-md-6", "inputSize": "col-md-5", "isRequired": false, "helpText": get(env, context, "planParameter.description")});
+                  return fragment;
+                }
+              };
+            }());
+            var child1 = (function() {
+              var child0 = (function() {
+                return {
+                  isHTMLBars: true,
+                  revision: "Ember@1.11.1",
+                  blockParams: 0,
+                  cachedFragment: null,
+                  hasRendered: false,
+                  build: function build(dom) {
+                    var el0 = dom.createDocumentFragment();
+                    var el1 = dom.createTextNode("                              ");
+                    dom.appendChild(el0, el1);
+                    var el1 = dom.createComment("");
+                    dom.appendChild(el0, el1);
+                    var el1 = dom.createTextNode("\n");
+                    dom.appendChild(el0, el1);
+                    return el0;
+                  },
+                  render: function render(context, env, contextualElement) {
+                    var dom = env.dom;
+                    var hooks = env.hooks, get = hooks.get, inline = hooks.inline;
+                    dom.detectNamespace(contextualElement);
+                    var fragment;
+                    if (env.useFragmentCache && dom.canClone) {
+                      if (this.cachedFragment === null) {
+                        fragment = this.build(dom);
+                        if (this.hasRendered) {
+                          this.cachedFragment = fragment;
+                        } else {
+                          this.hasRendered = true;
+                        }
+                      }
+                      if (this.cachedFragment) {
+                        fragment = dom.cloneNode(this.cachedFragment, true);
+                      }
+                    } else {
+                      fragment = this.build(dom);
+                    }
+                    var morph0 = dom.createMorphAt(fragment,1,1,contextualElement);
+                    inline(env, morph0, context, "text-f", [], {"label": get(env, context, "planParameter.displayId"), "value": get(env, context, "planParameter.value"), "type": "password", "labelSize": "col-md-6", "inputSize": "col-md-5", "isRequired": false, "helpText": get(env, context, "planParameter.description")});
+                    return fragment;
+                  }
+                };
+              }());
+              var child1 = (function() {
+                return {
+                  isHTMLBars: true,
+                  revision: "Ember@1.11.1",
+                  blockParams: 0,
+                  cachedFragment: null,
+                  hasRendered: false,
+                  build: function build(dom) {
+                    var el0 = dom.createDocumentFragment();
+                    var el1 = dom.createTextNode("                              ");
+                    dom.appendChild(el0, el1);
+                    var el1 = dom.createComment("");
+                    dom.appendChild(el0, el1);
+                    var el1 = dom.createTextNode("\n");
+                    dom.appendChild(el0, el1);
+                    return el0;
+                  },
+                  render: function render(context, env, contextualElement) {
+                    var dom = env.dom;
+                    var hooks = env.hooks, get = hooks.get, inline = hooks.inline;
+                    dom.detectNamespace(contextualElement);
+                    var fragment;
+                    if (env.useFragmentCache && dom.canClone) {
+                      if (this.cachedFragment === null) {
+                        fragment = this.build(dom);
+                        if (this.hasRendered) {
+                          this.cachedFragment = fragment;
+                        } else {
+                          this.hasRendered = true;
+                        }
+                      }
+                      if (this.cachedFragment) {
+                        fragment = dom.cloneNode(this.cachedFragment, true);
+                      }
+                    } else {
+                      fragment = this.build(dom);
+                    }
+                    var morph0 = dom.createMorphAt(fragment,1,1,contextualElement);
+                    inline(env, morph0, context, "text-f", [], {"label": get(env, context, "planParameter.displayId"), "value": get(env, context, "planParameter.value"), "type": get(env, context, "planParameter.inputType"), "labelSize": "col-md-6", "inputSize": "col-md-5", "isRequired": false, "helpText": get(env, context, "planParameter.description")});
+                    return fragment;
+                  }
+                };
+              }());
+              return {
+                isHTMLBars: true,
+                revision: "Ember@1.11.1",
+                blockParams: 0,
+                cachedFragment: null,
+                hasRendered: false,
+                build: function build(dom) {
+                  var el0 = dom.createDocumentFragment();
+                  var el1 = dom.createComment("");
+                  dom.appendChild(el0, el1);
+                  return el0;
+                },
+                render: function render(context, env, contextualElement) {
+                  var dom = env.dom;
+                  var hooks = env.hooks, get = hooks.get, block = hooks.block;
+                  dom.detectNamespace(contextualElement);
+                  var fragment;
+                  if (env.useFragmentCache && dom.canClone) {
+                    if (this.cachedFragment === null) {
+                      fragment = this.build(dom);
+                      if (this.hasRendered) {
+                        this.cachedFragment = fragment;
+                      } else {
+                        this.hasRendered = true;
+                      }
+                    }
+                    if (this.cachedFragment) {
+                      fragment = dom.cloneNode(this.cachedFragment, true);
+                    }
+                  } else {
+                    fragment = this.build(dom);
+                  }
+                  var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
+                  dom.insertBoundary(fragment, null);
+                  dom.insertBoundary(fragment, 0);
+                  block(env, morph0, context, "if", [get(env, context, "rolerParameter.isPassword")], {}, child0, child1);
+                  return fragment;
+                }
+              };
+            }());
+            return {
+              isHTMLBars: true,
+              revision: "Ember@1.11.1",
+              blockParams: 0,
+              cachedFragment: null,
+              hasRendered: false,
+              build: function build(dom) {
+                var el0 = dom.createDocumentFragment();
+                var el1 = dom.createComment("");
+                dom.appendChild(el0, el1);
+                return el0;
+              },
+              render: function render(context, env, contextualElement) {
+                var dom = env.dom;
+                var hooks = env.hooks, get = hooks.get, block = hooks.block;
+                dom.detectNamespace(contextualElement);
+                var fragment;
+                if (env.useFragmentCache && dom.canClone) {
+                  if (this.cachedFragment === null) {
+                    fragment = this.build(dom);
+                    if (this.hasRendered) {
+                      this.cachedFragment = fragment;
+                    } else {
+                      this.hasRendered = true;
+                    }
+                  }
+                  if (this.cachedFragment) {
+                    fragment = dom.cloneNode(this.cachedFragment, true);
+                  }
+                } else {
+                  fragment = this.build(dom);
+                }
+                var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
+                dom.insertBoundary(fragment, null);
+                dom.insertBoundary(fragment, 0);
+                block(env, morph0, context, "if", [get(env, context, "planParameter.isBoolean")], {}, child0, child1);
+                return fragment;
+              }
+            };
+          }());
+          return {
+            isHTMLBars: true,
+            revision: "Ember@1.11.1",
+            blockParams: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            build: function build(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createTextNode("          ");
+              dom.appendChild(el0, el1);
+              var el1 = dom.createElement("div");
+              dom.setAttribute(el1,"role","tabpanel");
+              dom.setAttribute(el1,"class","tab-pane active global-config-settings-content");
+              var el2 = dom.createTextNode("\n              ");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createElement("div");
+              dom.setAttribute(el2,"class","form-horizontal");
+              var el3 = dom.createTextNode("\n                  ");
+              dom.appendChild(el2, el3);
+              var el3 = dom.createElement("fieldset");
+              var el4 = dom.createTextNode("\n                      ");
+              dom.appendChild(el3, el4);
+              var el4 = dom.createElement("div");
+              dom.setAttribute(el4,"class","form-group required");
+              var el5 = dom.createTextNode("\n");
+              dom.appendChild(el4, el5);
+              var el5 = dom.createComment("");
+              dom.appendChild(el4, el5);
+              var el5 = dom.createTextNode("                      ");
+              dom.appendChild(el4, el5);
+              dom.appendChild(el3, el4);
+              var el4 = dom.createTextNode("\n                  ");
+              dom.appendChild(el3, el4);
+              dom.appendChild(el2, el3);
+              var el3 = dom.createTextNode("\n              ");
+              dom.appendChild(el2, el3);
+              dom.appendChild(el1, el2);
+              var el2 = dom.createTextNode("\n          ");
+              dom.appendChild(el1, el2);
+              dom.appendChild(el0, el1);
+              var el1 = dom.createTextNode("\n");
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            render: function render(context, env, contextualElement) {
+              var dom = env.dom;
+              var hooks = env.hooks, get = hooks.get, block = hooks.block;
+              dom.detectNamespace(contextualElement);
+              var fragment;
+              if (env.useFragmentCache && dom.canClone) {
+                if (this.cachedFragment === null) {
+                  fragment = this.build(dom);
+                  if (this.hasRendered) {
+                    this.cachedFragment = fragment;
+                  } else {
+                    this.hasRendered = true;
+                  }
+                }
+                if (this.cachedFragment) {
+                  fragment = dom.cloneNode(this.cachedFragment, true);
+                }
+              } else {
+                fragment = this.build(dom);
+              }
+              var morph0 = dom.createMorphAt(dom.childAt(fragment, [1, 1, 1, 1]),1,1);
+              block(env, morph0, context, "each", [get(env, context, "edittedPlanParameters")], {"keyword": "planParameter"}, child0, null);
+              return fragment;
+            }
+          };
+        }());
+        return {
+          isHTMLBars: true,
+          revision: "Ember@1.11.1",
+          blockParams: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          build: function build(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createComment("");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          render: function render(context, env, contextualElement) {
+            var dom = env.dom;
+            var hooks = env.hooks, get = hooks.get, block = hooks.block;
+            dom.detectNamespace(contextualElement);
+            var fragment;
+            if (env.useFragmentCache && dom.canClone) {
+              if (this.cachedFragment === null) {
+                fragment = this.build(dom);
+                if (this.hasRendered) {
+                  this.cachedFragment = fragment;
+                } else {
+                  this.hasRendered = true;
+                }
+              }
+              if (this.cachedFragment) {
+                fragment = dom.cloneNode(this.cachedFragment, true);
+              }
+            } else {
+              fragment = this.build(dom);
+            }
+            var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
+            dom.insertBoundary(fragment, null);
+            dom.insertBoundary(fragment, 0);
+            block(env, morph0, context, "if", [get(env, context, "async")], {}, child0, child1);
+            return fragment;
+          }
+        };
+      }());
+      var child2 = (function() {
+        return {
+          isHTMLBars: true,
+          revision: "Ember@1.11.1",
+          blockParams: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          build: function build(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createTextNode("        ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createElement("button");
+            dom.setAttribute(el1,"type","cancel");
+            dom.setAttribute(el1,"class","btn btn-default");
+            var el2 = dom.createTextNode("Cancel");
+            dom.appendChild(el1, el2);
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n        ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createElement("button");
+            dom.setAttribute(el1,"type","submit");
+            dom.setAttribute(el1,"class","btn btn-primary");
+            var el2 = dom.createTextNode("Save");
+            dom.appendChild(el1, el2);
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          render: function render(context, env, contextualElement) {
+            var dom = env.dom;
+            var hooks = env.hooks, get = hooks.get, element = hooks.element;
+            dom.detectNamespace(contextualElement);
+            var fragment;
+            if (env.useFragmentCache && dom.canClone) {
+              if (this.cachedFragment === null) {
+                fragment = this.build(dom);
+                if (this.hasRendered) {
+                  this.cachedFragment = fragment;
+                } else {
+                  this.hasRendered = true;
+                }
+              }
+              if (this.cachedFragment) {
+                fragment = dom.cloneNode(this.cachedFragment, true);
+              }
+            } else {
+              fragment = this.build(dom);
+            }
+            var element0 = dom.childAt(fragment, [1]);
+            var element1 = dom.childAt(fragment, [3]);
+            element(env, element0, context, "bind-attr", [], {"disabled": get(env, context, "async")});
+            element(env, element0, context, "action", ["cancelGlobalServiceConfig"], {});
+            element(env, element1, context, "bind-attr", [], {"disabled": get(env, context, "async")});
+            element(env, element1, context, "action", ["saveGlobalServiceConfig"], {});
+            return fragment;
+          }
+        };
+      }());
+      return {
+        isHTMLBars: true,
+        revision: "Ember@1.11.1",
+        blockParams: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        build: function build(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        render: function render(context, env, contextualElement) {
+          var dom = env.dom;
+          var hooks = env.hooks, block = hooks.block;
+          dom.detectNamespace(contextualElement);
+          var fragment;
+          if (env.useFragmentCache && dom.canClone) {
+            if (this.cachedFragment === null) {
+              fragment = this.build(dom);
+              if (this.hasRendered) {
+                this.cachedFragment = fragment;
+              } else {
+                this.hasRendered = true;
+              }
+            }
+            if (this.cachedFragment) {
+              fragment = dom.cloneNode(this.cachedFragment, true);
+            }
+          } else {
+            fragment = this.build(dom);
+          }
+          var morph0 = dom.createMorphAt(fragment,1,1,contextualElement);
+          var morph1 = dom.createMorphAt(fragment,3,3,contextualElement);
+          var morph2 = dom.createMorphAt(fragment,5,5,contextualElement);
+          block(env, morph0, context, "em-modal-title", [], {}, child0, null);
+          block(env, morph1, context, "em-modal-body", [], {}, child1, null);
+          block(env, morph2, context, "em-modal-footer", [], {"class": "modal-button-bar"}, child2, null);
+          return fragment;
+        }
+      };
+    }());
+    return {
+      isHTMLBars: true,
+      revision: "Ember@1.11.1",
+      blockParams: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      build: function build(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      render: function render(context, env, contextualElement) {
+        var dom = env.dom;
+        var hooks = env.hooks, get = hooks.get, block = hooks.block;
+        dom.detectNamespace(contextualElement);
+        var fragment;
+        if (env.useFragmentCache && dom.canClone) {
+          if (this.cachedFragment === null) {
+            fragment = this.build(dom);
+            if (this.hasRendered) {
+              this.cachedFragment = fragment;
+            } else {
+              this.hasRendered = true;
+            }
+          }
+          if (this.cachedFragment) {
+            fragment = dom.cloneNode(this.cachedFragment, true);
+          }
+        } else {
+          fragment = this.build(dom);
+        }
+        var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
+        dom.insertBoundary(fragment, null);
+        dom.insertBoundary(fragment, 0);
+        block(env, morph0, context, "em-modal-form", [], {"configName": "bs", "id": "editGlobalServiceConfigModal", "on-submit": "saveGlobalServiceConfig", "open-if": get(env, context, "editGlobalServiceConfigModalOpened"), "close-if": get(env, context, "editGlobalServiceConfigModalClosed"), "in-async": get(env, context, "async")}, child0, null);
         return fragment;
       }
     };
@@ -21395,31 +24940,7 @@ define('fusor-ember-cli/templates/loading', ['exports'], function (exports) {
       hasRendered: false,
       build: function build(dom) {
         var el0 = dom.createDocumentFragment();
-        var el1 = dom.createElement("br");
-        dom.appendChild(el0, el1);
-        var el1 = dom.createTextNode("\n");
-        dom.appendChild(el0, el1);
-        var el1 = dom.createElement("br");
-        dom.appendChild(el0, el1);
-        var el1 = dom.createTextNode("\n");
-        dom.appendChild(el0, el1);
-        var el1 = dom.createElement("br");
-        dom.appendChild(el0, el1);
-        var el1 = dom.createTextNode("\n");
-        dom.appendChild(el0, el1);
-        var el1 = dom.createElement("br");
-        dom.appendChild(el0, el1);
-        var el1 = dom.createTextNode("\n");
-        dom.appendChild(el0, el1);
-        var el1 = dom.createElement("div");
-        dom.setAttribute(el1,"class","spinner spinner-md spinner-inline");
-        dom.appendChild(el0, el1);
-        var el1 = dom.createTextNode("\n");
-        dom.appendChild(el0, el1);
-        var el1 = dom.createElement("span");
-        dom.setAttribute(el1,"class","spinner-text");
-        var el2 = dom.createTextNode("\n  Loading ....\n");
-        dom.appendChild(el1, el2);
+        var el1 = dom.createComment("");
         dom.appendChild(el0, el1);
         var el1 = dom.createTextNode("\n");
         dom.appendChild(el0, el1);
@@ -21427,6 +24948,7 @@ define('fusor-ember-cli/templates/loading', ['exports'], function (exports) {
       },
       render: function render(context, env, contextualElement) {
         var dom = env.dom;
+        var hooks = env.hooks, inline = hooks.inline;
         dom.detectNamespace(contextualElement);
         var fragment;
         if (env.useFragmentCache && dom.canClone) {
@@ -21444,6 +24966,9 @@ define('fusor-ember-cli/templates/loading', ['exports'], function (exports) {
         } else {
           fragment = this.build(dom);
         }
+        var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
+        dom.insertBoundary(fragment, 0);
+        inline(env, morph0, context, "loading-spinner", [], {"show": true, "text": "Loading..."});
         return fragment;
       }
     };
@@ -22174,8 +25699,8 @@ define('fusor-ember-cli/templates/new-node-registration', ['exports'], function 
               } else {
                 fragment = this.build(dom);
               }
-              var element13 = dom.childAt(fragment, [1]);
-              element(env, element13, context, "action", ["cancelRegisterNodes"], {});
+              var element15 = dom.childAt(fragment, [1]);
+              element(env, element15, context, "action", ["cancelRegisterNodes"], {});
               return fragment;
             }
           };
@@ -22278,7 +25803,7 @@ define('fusor-ember-cli/templates/new-node-registration', ['exports'], function 
                 var el1 = dom.createTextNode("              ");
                 dom.appendChild(el0, el1);
                 var el1 = dom.createElement("span");
-                var el2 = dom.createTextNode("\n                Warning: The registration process is paused while editting the Node Profiles.\n              ");
+                var el2 = dom.createTextNode("\n                Warning: The registration process is paused while editting Nodes.\n              ");
                 dom.appendChild(el1, el2);
                 dom.appendChild(el0, el1);
                 var el1 = dom.createTextNode("\n");
@@ -22309,6 +25834,50 @@ define('fusor-ember-cli/templates/new-node-registration', ['exports'], function 
             };
           }());
           var child1 = (function() {
+            var child0 = (function() {
+              return {
+                isHTMLBars: true,
+                revision: "Ember@1.11.1",
+                blockParams: 0,
+                cachedFragment: null,
+                hasRendered: false,
+                build: function build(dom) {
+                  var el0 = dom.createDocumentFragment();
+                  var el1 = dom.createTextNode("                                  ");
+                  dom.appendChild(el0, el1);
+                  var el1 = dom.createElement("i");
+                  dom.setAttribute(el1,"class","fa fa-trash-o");
+                  dom.appendChild(el0, el1);
+                  var el1 = dom.createTextNode("\n");
+                  dom.appendChild(el0, el1);
+                  return el0;
+                },
+                render: function render(context, env, contextualElement) {
+                  var dom = env.dom;
+                  var hooks = env.hooks, get = hooks.get, element = hooks.element;
+                  dom.detectNamespace(contextualElement);
+                  var fragment;
+                  if (env.useFragmentCache && dom.canClone) {
+                    if (this.cachedFragment === null) {
+                      fragment = this.build(dom);
+                      if (this.hasRendered) {
+                        this.cachedFragment = fragment;
+                      } else {
+                        this.hasRendered = true;
+                      }
+                    }
+                    if (this.cachedFragment) {
+                      fragment = dom.cloneNode(this.cachedFragment, true);
+                    }
+                  } else {
+                    fragment = this.build(dom);
+                  }
+                  var element2 = dom.childAt(fragment, [1]);
+                  element(env, element2, context, "action", ["removeNode", get(env, context, "node")], {});
+                  return fragment;
+                }
+              };
+            }());
             return {
               isHTMLBars: true,
               revision: "Ember@1.11.1",
@@ -22326,12 +25895,11 @@ define('fusor-ember-cli/templates/new-node-registration', ['exports'], function 
                 var el3 = dom.createComment("");
                 dom.appendChild(el2, el3);
                 dom.appendChild(el1, el2);
-                var el2 = dom.createTextNode("\n                                ");
+                var el2 = dom.createTextNode("\n");
                 dom.appendChild(el1, el2);
-                var el2 = dom.createElement("i");
-                dom.setAttribute(el2,"class","fa fa-trash-o");
+                var el2 = dom.createComment("");
                 dom.appendChild(el1, el2);
-                var el2 = dom.createTextNode("\n                            ");
+                var el2 = dom.createTextNode("                            ");
                 dom.appendChild(el1, el2);
                 dom.appendChild(el0, el1);
                 var el1 = dom.createTextNode("\n");
@@ -22340,7 +25908,7 @@ define('fusor-ember-cli/templates/new-node-registration', ['exports'], function 
               },
               render: function render(context, env, contextualElement) {
                 var dom = env.dom;
-                var hooks = env.hooks, get = hooks.get, concat = hooks.concat, attribute = hooks.attribute, element = hooks.element, content = hooks.content;
+                var hooks = env.hooks, get = hooks.get, element = hooks.element, content = hooks.content, block = hooks.block;
                 dom.detectNamespace(contextualElement);
                 var fragment;
                 if (env.useFragmentCache && dom.canClone) {
@@ -22358,15 +25926,14 @@ define('fusor-ember-cli/templates/new-node-registration', ['exports'], function 
                 } else {
                   fragment = this.build(dom);
                 }
-                var element2 = dom.childAt(fragment, [1]);
-                var element3 = dom.childAt(element2, [1]);
-                var element4 = dom.childAt(element2, [3]);
-                var attrMorph0 = dom.createAttrMorph(element2, 'class');
-                var morph0 = dom.createMorphAt(element3,0,0);
-                attribute(env, attrMorph0, element2, "class", concat(env, [get(env, context, "profile.isActiveClass")]));
-                element(env, element3, context, "action", ["selectProfile", get(env, context, "profile")], {});
-                content(env, morph0, context, "profile.name");
-                element(env, element4, context, "action", ["removeProfile", get(env, context, "profile")], {});
+                var element3 = dom.childAt(fragment, [1]);
+                var element4 = dom.childAt(element3, [1]);
+                var morph0 = dom.createMorphAt(element4,0,0);
+                var morph1 = dom.createMorphAt(element3,3,3);
+                element(env, element3, context, "bind-attr", [], {"class": get(env, context, "node.isActiveClass")});
+                element(env, element4, context, "action", ["selectNode", get(env, context, "node")], {});
+                content(env, morph0, context, "node.name");
+                block(env, morph1, context, "if", [get(env, context, "node.isSelected")], {}, child0, null);
                 return fragment;
               }
             };
@@ -22392,23 +25959,27 @@ define('fusor-ember-cli/templates/new-node-registration', ['exports'], function 
               dom.setAttribute(el2,"class","col-xs-5");
               var el3 = dom.createTextNode("\n                    ");
               dom.appendChild(el2, el3);
-              var el3 = dom.createElement("ul");
-              dom.setAttribute(el3,"class","nav nav-tabs nav-node-registration");
-              dom.setAttribute(el3,"role","tablist");
-              dom.setAttribute(el3,"id","add-nodes");
+              var el3 = dom.createElement("div");
+              dom.setAttribute(el3,"class","row");
               var el4 = dom.createTextNode("\n                        ");
               dom.appendChild(el3, el4);
-              var el4 = dom.createElement("li");
-              dom.setAttribute(el4,"role","presentation");
-              dom.setAttribute(el4,"class","active");
+              var el4 = dom.createElement("div");
+              dom.setAttribute(el4,"class","col-xs-12 column");
+              dom.setAttribute(el4,"style","padding-bottom: 5px;");
+              var el5 = dom.createTextNode("\n                            ");
+              dom.appendChild(el4, el5);
+              var el5 = dom.createElement("h3");
+              dom.setAttribute(el5,"class","col-xs-6 nodes-registered-count");
+              var el6 = dom.createComment("");
+              dom.appendChild(el5, el6);
+              var el6 = dom.createTextNode(" Nodes");
+              dom.appendChild(el5, el6);
+              dom.appendChild(el4, el5);
               var el5 = dom.createTextNode("\n                            ");
               dom.appendChild(el4, el5);
               var el5 = dom.createElement("a");
-              dom.setAttribute(el5,"href","#upload-nodes");
-              dom.setAttribute(el5,"aria-controls","upload-nodes");
-              dom.setAttribute(el5,"role","tab");
-              dom.setAttribute(el5,"data-toggle","tab");
-              dom.setAttribute(el5,"title","Upload node");
+              dom.setAttribute(el5,"class","col-xs-2  nodes-add-button add-node-link");
+              dom.setAttribute(el5,"title","Upload from CSV");
               var el6 = dom.createTextNode("\n                                ");
               dom.appendChild(el5, el6);
               var el6 = dom.createElement("i");
@@ -22417,17 +25988,10 @@ define('fusor-ember-cli/templates/new-node-registration', ['exports'], function 
               var el6 = dom.createTextNode("\n                            ");
               dom.appendChild(el5, el6);
               dom.appendChild(el4, el5);
-              var el5 = dom.createTextNode("\n                        ");
-              dom.appendChild(el4, el5);
-              dom.appendChild(el3, el4);
-              var el4 = dom.createTextNode("\n                        ");
-              dom.appendChild(el3, el4);
-              var el4 = dom.createElement("li");
-              dom.setAttribute(el4,"role","presentation");
               var el5 = dom.createTextNode("\n                            ");
               dom.appendChild(el4, el5);
               var el5 = dom.createElement("a");
-              dom.setAttribute(el5,"class","add-node-link");
+              dom.setAttribute(el5,"class","col-xs-2  nodes-add-button add-node-link");
               dom.setAttribute(el5,"title","Add node");
               var el6 = dom.createTextNode("\n                                ");
               dom.appendChild(el5, el6);
@@ -22443,72 +26007,19 @@ define('fusor-ember-cli/templates/new-node-registration', ['exports'], function 
               var el4 = dom.createTextNode("\n                    ");
               dom.appendChild(el3, el4);
               dom.appendChild(el2, el3);
-              var el3 = dom.createTextNode("\n                    ");
-              dom.appendChild(el2, el3);
-              var el3 = dom.createElement("h3");
-              dom.setAttribute(el3,"class","nodes-registered-count");
-              var el4 = dom.createComment("");
-              dom.appendChild(el3, el4);
-              var el4 = dom.createTextNode(" Nodes");
-              dom.appendChild(el3, el4);
-              dom.appendChild(el2, el3);
-              var el3 = dom.createTextNode("\n                    ");
+              var el3 = dom.createTextNode("\n                        ");
               dom.appendChild(el2, el3);
               var el3 = dom.createElement("div");
-              dom.setAttribute(el3,"class","modal-tab-content");
+              dom.setAttribute(el3,"style","display: none;");
+              var el4 = dom.createTextNode("\n                            ");
+              dom.appendChild(el3, el4);
+              var el4 = dom.createElement("input");
+              dom.setAttribute(el4,"id","regNodesUploadFileInput");
+              dom.setAttribute(el4,"value","selectedFile");
+              dom.setAttribute(el4,"type","file");
+              dom.setAttribute(el4,"accept","text/csv");
+              dom.appendChild(el3, el4);
               var el4 = dom.createTextNode("\n                        ");
-              dom.appendChild(el3, el4);
-              var el4 = dom.createElement("div");
-              dom.setAttribute(el4,"role","tabpanel");
-              dom.setAttribute(el4,"class","tab-pane active upload-nodes");
-              dom.setAttribute(el4,"id","upload-nodes");
-              var el5 = dom.createTextNode("\n                            ");
-              dom.appendChild(el4, el5);
-              var el5 = dom.createElement("form");
-              var el6 = dom.createTextNode("\n                                ");
-              dom.appendChild(el5, el6);
-              var el6 = dom.createElement("div");
-              dom.setAttribute(el6,"class","form-group required");
-              var el7 = dom.createTextNode("\n                                    ");
-              dom.appendChild(el6, el7);
-              var el7 = dom.createElement("input");
-              dom.setAttribute(el7,"id","id_csv_file");
-              dom.setAttribute(el7,"name","csv_file");
-              dom.setAttribute(el7,"type","file");
-              dom.appendChild(el6, el7);
-              var el7 = dom.createTextNode("\n                                ");
-              dom.appendChild(el6, el7);
-              dom.appendChild(el5, el6);
-              var el6 = dom.createTextNode("\n                                ");
-              dom.appendChild(el5, el6);
-              var el6 = dom.createElement("div");
-              dom.setAttribute(el6,"class","form-group");
-              var el7 = dom.createTextNode("\n                                    ");
-              dom.appendChild(el6, el7);
-              var el7 = dom.createElement("button");
-              dom.setAttribute(el7,"type","button");
-              dom.setAttribute(el7,"class","btn btn-sm btn-default");
-              var el8 = dom.createTextNode("Cancel");
-              dom.appendChild(el7, el8);
-              dom.appendChild(el6, el7);
-              var el7 = dom.createTextNode("\n                                    ");
-              dom.appendChild(el6, el7);
-              var el7 = dom.createElement("button");
-              dom.setAttribute(el7,"type","button");
-              dom.setAttribute(el7,"class","btn btn-sm btn-primary");
-              var el8 = dom.createTextNode("Upload Nodes");
-              dom.appendChild(el7, el8);
-              dom.appendChild(el6, el7);
-              var el7 = dom.createTextNode("\n                                ");
-              dom.appendChild(el6, el7);
-              dom.appendChild(el5, el6);
-              var el6 = dom.createTextNode("\n                            ");
-              dom.appendChild(el5, el6);
-              dom.appendChild(el4, el5);
-              var el5 = dom.createTextNode("\n                        ");
-              dom.appendChild(el4, el5);
-              dom.appendChild(el3, el4);
-              var el4 = dom.createTextNode("\n                    ");
               dom.appendChild(el3, el4);
               dom.appendChild(el2, el3);
               var el3 = dom.createTextNode("\n                    ");
@@ -22538,9 +26049,7 @@ define('fusor-ember-cli/templates/new-node-registration', ['exports'], function 
               var el5 = dom.createTextNode("\n                              ");
               dom.appendChild(el4, el5);
               var el5 = dom.createElement("h4");
-              var el6 = dom.createTextNode("Node Detail - ");
-              dom.appendChild(el5, el6);
-              var el6 = dom.createComment("");
+              var el6 = dom.createTextNode("Node Detail");
               dom.appendChild(el5, el6);
               dom.appendChild(el4, el5);
               var el5 = dom.createTextNode("\n                              ");
@@ -22558,135 +26067,21 @@ define('fusor-ember-cli/templates/new-node-registration', ['exports'], function 
               dom.appendChild(el6, el7);
               var el7 = dom.createTextNode("\n                                      ");
               dom.appendChild(el6, el7);
-              var el7 = dom.createElement("div");
-              dom.setAttribute(el7,"class","form-group required");
-              var el8 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el7, el8);
-              var el8 = dom.createElement("label");
-              dom.setAttribute(el8,"class","col-xs-4");
-              dom.setAttribute(el8,"for","id_register_nodes-0-driver");
-              var el9 = dom.createTextNode("Driver");
-              dom.appendChild(el8, el9);
-              dom.appendChild(el7, el8);
-              var el8 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el7, el8);
-              var el8 = dom.createElement("div");
-              dom.setAttribute(el8,"class","col-xs-6");
-              var el9 = dom.createTextNode("\n                                              ");
-              dom.appendChild(el8, el9);
-              var el9 = dom.createComment("");
-              dom.appendChild(el8, el9);
-              var el9 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el8, el9);
-              dom.appendChild(el7, el8);
-              var el8 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el7, el8);
-              var el8 = dom.createElement("div");
-              dom.setAttribute(el8,"class","col-xs-2 muted");
-              dom.appendChild(el7, el8);
-              var el8 = dom.createTextNode("\n                                      ");
-              dom.appendChild(el7, el8);
+              var el7 = dom.createComment("");
               dom.appendChild(el6, el7);
               var el7 = dom.createTextNode("\n                                      ");
               dom.appendChild(el6, el7);
-              var el7 = dom.createElement("div");
-              dom.setAttribute(el7,"class","form-group required");
-              var el8 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el7, el8);
-              var el8 = dom.createElement("label");
-              dom.setAttribute(el8,"class","col-xs-4");
-              dom.setAttribute(el8,"for","id_register_nodes-0-ipmi_address");
-              var el9 = dom.createTextNode("IP Address");
-              dom.appendChild(el8, el9);
-              dom.appendChild(el7, el8);
-              var el8 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el7, el8);
-              var el8 = dom.createElement("div");
-              dom.setAttribute(el8,"class","col-xs-6");
-              var el9 = dom.createTextNode("\n                                              ");
-              dom.appendChild(el8, el9);
-              var el9 = dom.createComment("");
-              dom.appendChild(el8, el9);
-              var el9 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el8, el9);
-              dom.appendChild(el7, el8);
-              var el8 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el7, el8);
-              var el8 = dom.createElement("div");
-              dom.setAttribute(el8,"class","col-xs-2 muted");
-              dom.appendChild(el7, el8);
-              var el8 = dom.createTextNode("\n                                      ");
-              dom.appendChild(el7, el8);
+              var el7 = dom.createComment("");
               dom.appendChild(el6, el7);
               var el7 = dom.createTextNode("\n                                      ");
               dom.appendChild(el6, el7);
-              var el7 = dom.createElement("div");
-              dom.setAttribute(el7,"class","form-group");
-              var el8 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el7, el8);
-              var el8 = dom.createElement("label");
-              dom.setAttribute(el8,"class","col-xs-4");
-              dom.setAttribute(el8,"for","id_register_nodes-0-ipmi_username");
-              var el9 = dom.createTextNode("IPMI User");
-              dom.appendChild(el8, el9);
-              dom.appendChild(el7, el8);
-              var el8 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el7, el8);
-              var el8 = dom.createElement("div");
-              dom.setAttribute(el8,"class","col-xs-6");
-              var el9 = dom.createTextNode("\n                                              ");
-              dom.appendChild(el8, el9);
-              var el9 = dom.createComment("");
-              dom.appendChild(el8, el9);
-              var el9 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el8, el9);
-              dom.appendChild(el7, el8);
-              var el8 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el7, el8);
-              var el8 = dom.createElement("div");
-              dom.setAttribute(el8,"class","col-xs-2 muted");
-              dom.appendChild(el7, el8);
-              var el8 = dom.createTextNode("\n                                      ");
-              dom.appendChild(el7, el8);
+              var el7 = dom.createComment("");
               dom.appendChild(el6, el7);
               var el7 = dom.createTextNode("\n                                      ");
               dom.appendChild(el6, el7);
-              var el7 = dom.createElement("div");
-              dom.setAttribute(el7,"class","form-group");
-              var el8 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el7, el8);
-              var el8 = dom.createElement("label");
-              dom.setAttribute(el8,"class","col-xs-4");
-              dom.setAttribute(el8,"style","white-space:nowrap");
-              dom.setAttribute(el8,"for","id_register_nodes-0-ipmi_password");
-              var el9 = dom.createTextNode("IPMI Password");
-              dom.appendChild(el8, el9);
-              dom.appendChild(el7, el8);
-              var el8 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el7, el8);
-              var el8 = dom.createElement("div");
-              dom.setAttribute(el8,"class","col-xs-6");
-              var el9 = dom.createTextNode("\n                                            ");
-              dom.appendChild(el8, el9);
-              var el9 = dom.createComment("");
-              dom.appendChild(el8, el9);
-              var el9 = dom.createTextNode("\n                                              ");
-              dom.appendChild(el8, el9);
-              var el9 = dom.createElement("span");
-              dom.setAttribute(el9,"class","form-control-feedback glyphicon glyphicon-eye-open");
-              dom.appendChild(el8, el9);
-              var el9 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el8, el9);
-              dom.appendChild(el7, el8);
-              var el8 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el7, el8);
-              var el8 = dom.createElement("div");
-              dom.setAttribute(el8,"class","col-xs-2 muted");
-              dom.appendChild(el7, el8);
-              var el8 = dom.createTextNode("\n                                      ");
-              dom.appendChild(el7, el8);
+              var el7 = dom.createComment("");
               dom.appendChild(el6, el7);
-              var el7 = dom.createTextNode("\n                                  ");
+              var el7 = dom.createTextNode("\n\n                                  ");
               dom.appendChild(el6, el7);
               dom.appendChild(el5, el6);
               var el6 = dom.createTextNode("\n                                  ");
@@ -22700,35 +26095,7 @@ define('fusor-ember-cli/templates/new-node-registration', ['exports'], function 
               dom.appendChild(el6, el7);
               var el7 = dom.createTextNode("\n                                      ");
               dom.appendChild(el6, el7);
-              var el7 = dom.createElement("div");
-              dom.setAttribute(el7,"class","form-group required");
-              var el8 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el7, el8);
-              var el8 = dom.createElement("label");
-              dom.setAttribute(el8,"class","col-xs-4");
-              dom.setAttribute(el8,"style","white-space:nowrap");
-              dom.setAttribute(el8,"for","id_register_nodes-0-mac_addresses");
-              var el9 = dom.createTextNode("NIC MAC Address");
-              dom.appendChild(el8, el9);
-              dom.appendChild(el7, el8);
-              var el8 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el7, el8);
-              var el8 = dom.createElement("div");
-              dom.setAttribute(el8,"class","col-xs-6");
-              var el9 = dom.createTextNode("\n                                            ");
-              dom.appendChild(el8, el9);
-              var el9 = dom.createComment("");
-              dom.appendChild(el8, el9);
-              var el9 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el8, el9);
-              dom.appendChild(el7, el8);
-              var el8 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el7, el8);
-              var el8 = dom.createElement("div");
-              dom.setAttribute(el8,"class","col-xs-2 muted");
-              dom.appendChild(el7, el8);
-              var el8 = dom.createTextNode("\n                                      ");
-              dom.appendChild(el7, el8);
+              var el7 = dom.createComment("");
               dom.appendChild(el6, el7);
               var el7 = dom.createTextNode("\n                                  ");
               dom.appendChild(el6, el7);
@@ -22744,139 +26111,19 @@ define('fusor-ember-cli/templates/new-node-registration', ['exports'], function 
               dom.appendChild(el6, el7);
               var el7 = dom.createTextNode("\n                                      ");
               dom.appendChild(el6, el7);
-              var el7 = dom.createElement("div");
-              dom.setAttribute(el7,"class","form-group required");
-              var el8 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el7, el8);
-              var el8 = dom.createElement("label");
-              dom.setAttribute(el8,"class","col-xs-4");
-              dom.setAttribute(el8,"for","id_register_nodes-0-cpu_arch");
-              var el9 = dom.createTextNode("Architecture");
-              dom.appendChild(el8, el9);
-              dom.appendChild(el7, el8);
-              var el8 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el7, el8);
-              var el8 = dom.createElement("div");
-              dom.setAttribute(el8,"class","col-xs-6");
-              var el9 = dom.createTextNode("\n                                            ");
-              dom.appendChild(el8, el9);
-              var el9 = dom.createComment("");
-              dom.appendChild(el8, el9);
-              var el9 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el8, el9);
-              dom.appendChild(el7, el8);
-              var el8 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el7, el8);
-              var el8 = dom.createElement("div");
-              dom.setAttribute(el8,"class","col-xs-2 muted");
-              dom.appendChild(el7, el8);
-              var el8 = dom.createTextNode("\n                                      ");
-              dom.appendChild(el7, el8);
+              var el7 = dom.createComment("");
               dom.appendChild(el6, el7);
               var el7 = dom.createTextNode("\n                                      ");
               dom.appendChild(el6, el7);
-              var el7 = dom.createElement("div");
-              dom.setAttribute(el7,"class","form-group required");
-              var el8 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el7, el8);
-              var el8 = dom.createElement("label");
-              dom.setAttribute(el8,"class","col-xs-4");
-              dom.setAttribute(el8,"for","id_register_nodes-0-cpus");
-              var el9 = dom.createTextNode("CPUs");
-              dom.appendChild(el8, el9);
-              dom.appendChild(el7, el8);
-              var el8 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el7, el8);
-              var el8 = dom.createElement("div");
-              dom.setAttribute(el8,"class","col-xs-6");
-              dom.setAttribute(el8,"style","padding-right:5px;");
-              var el9 = dom.createTextNode("\n                                            ");
-              dom.appendChild(el8, el9);
-              var el9 = dom.createComment("");
-              dom.appendChild(el8, el9);
-              var el9 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el8, el9);
-              dom.appendChild(el7, el8);
-              var el8 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el7, el8);
-              var el8 = dom.createElement("div");
-              dom.setAttribute(el8,"class","col-xs-2 muted");
-              dom.setAttribute(el8,"style","padding:0px;");
-              var el9 = dom.createTextNode("cores");
-              dom.appendChild(el8, el9);
-              dom.appendChild(el7, el8);
-              var el8 = dom.createTextNode("\n                                      ");
-              dom.appendChild(el7, el8);
+              var el7 = dom.createComment("");
               dom.appendChild(el6, el7);
               var el7 = dom.createTextNode("\n                                      ");
               dom.appendChild(el6, el7);
-              var el7 = dom.createElement("div");
-              dom.setAttribute(el7,"class","form-group required");
-              var el8 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el7, el8);
-              var el8 = dom.createElement("label");
-              dom.setAttribute(el8,"class","col-xs-4");
-              dom.setAttribute(el8,"for","id_register_nodes-0-memory_mb");
-              var el9 = dom.createTextNode("Memory");
-              dom.appendChild(el8, el9);
-              dom.appendChild(el7, el8);
-              var el8 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el7, el8);
-              var el8 = dom.createElement("div");
-              dom.setAttribute(el8,"class","col-xs-6");
-              dom.setAttribute(el8,"style","padding-right:5px;");
-              var el9 = dom.createTextNode("\n                                              ");
-              dom.appendChild(el8, el9);
-              var el9 = dom.createComment("");
-              dom.appendChild(el8, el9);
-              var el9 = dom.createTextNode("\n\n                                          ");
-              dom.appendChild(el8, el9);
-              dom.appendChild(el7, el8);
-              var el8 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el7, el8);
-              var el8 = dom.createElement("div");
-              dom.setAttribute(el8,"class","col-xs-2 muted");
-              dom.setAttribute(el8,"style","padding:0px;");
-              var el9 = dom.createTextNode("MB");
-              dom.appendChild(el8, el9);
-              dom.appendChild(el7, el8);
-              var el8 = dom.createTextNode("\n                                      ");
-              dom.appendChild(el7, el8);
+              var el7 = dom.createComment("");
               dom.appendChild(el6, el7);
               var el7 = dom.createTextNode("\n                                      ");
               dom.appendChild(el6, el7);
-              var el7 = dom.createElement("div");
-              dom.setAttribute(el7,"class","form-group required");
-              var el8 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el7, el8);
-              var el8 = dom.createElement("label");
-              dom.setAttribute(el8,"class","col-xs-4");
-              dom.setAttribute(el8,"for","id_register_nodes-0-local_gb");
-              var el9 = dom.createTextNode("Local Disk");
-              dom.appendChild(el8, el9);
-              dom.appendChild(el7, el8);
-              var el8 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el7, el8);
-              var el8 = dom.createElement("div");
-              dom.setAttribute(el8,"class","col-xs-6");
-              dom.setAttribute(el8,"style","padding-right:5px;");
-              var el9 = dom.createTextNode("\n                                            ");
-              dom.appendChild(el8, el9);
-              var el9 = dom.createComment("");
-              dom.appendChild(el8, el9);
-              var el9 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el8, el9);
-              dom.appendChild(el7, el8);
-              var el8 = dom.createTextNode("\n                                          ");
-              dom.appendChild(el7, el8);
-              var el8 = dom.createElement("div");
-              dom.setAttribute(el8,"class","col-xs-2 muted");
-              dom.setAttribute(el8,"style","padding:0px;");
-              var el9 = dom.createTextNode("GB");
-              dom.appendChild(el8, el9);
-              dom.appendChild(el7, el8);
-              var el8 = dom.createTextNode("\n                                      ");
-              dom.appendChild(el7, el8);
+              var el7 = dom.createComment("");
               dom.appendChild(el6, el7);
               var el7 = dom.createTextNode("\n                                  ");
               dom.appendChild(el6, el7);
@@ -22902,7 +26149,7 @@ define('fusor-ember-cli/templates/new-node-registration', ['exports'], function 
             },
             render: function render(context, env, contextualElement) {
               var dom = env.dom;
-              var hooks = env.hooks, get = hooks.get, block = hooks.block, element = hooks.element, content = hooks.content, concat = hooks.concat, attribute = hooks.attribute, inline = hooks.inline;
+              var hooks = env.hooks, get = hooks.get, block = hooks.block, content = hooks.content, element = hooks.element, concat = hooks.concat, attribute = hooks.attribute, inline = hooks.inline;
               dom.detectNamespace(contextualElement);
               var fragment;
               if (env.useFragmentCache && dom.canClone) {
@@ -22922,42 +26169,44 @@ define('fusor-ember-cli/templates/new-node-registration', ['exports'], function 
               }
               var element5 = dom.childAt(fragment, [2]);
               var element6 = dom.childAt(element5, [1]);
-              var element7 = dom.childAt(element6, [1, 3, 1]);
-              var element8 = dom.childAt(element5, [3, 1]);
-              var element9 = dom.childAt(element8, [1]);
-              var element10 = dom.childAt(element9, [3]);
-              var element11 = dom.childAt(element10, [1]);
-              var element12 = dom.childAt(element10, [5]);
+              var element7 = dom.childAt(element6, [1, 1]);
+              var element8 = dom.childAt(element7, [3]);
+              var element9 = dom.childAt(element7, [5]);
+              var element10 = dom.childAt(element6, [3, 1]);
+              var element11 = dom.childAt(element5, [3, 1]);
+              var element12 = dom.childAt(element11, [1, 3]);
+              var element13 = dom.childAt(element12, [1]);
+              var element14 = dom.childAt(element12, [5]);
               var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
-              var morph1 = dom.createMorphAt(dom.childAt(element6, [3]),0,0);
-              var morph2 = dom.createMorphAt(dom.childAt(element6, [7]),1,1);
-              var attrMorph0 = dom.createAttrMorph(element8, 'style');
-              var morph3 = dom.createMorphAt(dom.childAt(element9, [1]),1,1);
-              var morph4 = dom.createMorphAt(dom.childAt(element11, [3, 3]),1,1);
-              var morph5 = dom.createMorphAt(dom.childAt(element11, [5, 3]),1,1);
-              var morph6 = dom.createMorphAt(dom.childAt(element11, [7, 3]),1,1);
-              var morph7 = dom.createMorphAt(dom.childAt(element11, [9, 3]),1,1);
-              var morph8 = dom.createMorphAt(dom.childAt(element10, [3, 3, 3]),1,1);
-              var morph9 = dom.createMorphAt(dom.childAt(element12, [3, 3]),1,1);
-              var morph10 = dom.createMorphAt(dom.childAt(element12, [5, 3]),1,1);
-              var morph11 = dom.createMorphAt(dom.childAt(element12, [7, 3]),1,1);
-              var morph12 = dom.createMorphAt(dom.childAt(element12, [9, 3]),1,1);
+              var morph1 = dom.createMorphAt(dom.childAt(element7, [1]),0,0);
+              var morph2 = dom.createMorphAt(dom.childAt(element6, [5]),1,1);
+              var attrMorph0 = dom.createAttrMorph(element11, 'style');
+              var morph3 = dom.createMorphAt(element13,3,3);
+              var morph4 = dom.createMorphAt(element13,5,5);
+              var morph5 = dom.createMorphAt(element13,7,7);
+              var morph6 = dom.createMorphAt(element13,9,9);
+              var morph7 = dom.createMorphAt(dom.childAt(element12, [3]),3,3);
+              var morph8 = dom.createMorphAt(element14,3,3);
+              var morph9 = dom.createMorphAt(element14,5,5);
+              var morph10 = dom.createMorphAt(element14,7,7);
+              var morph11 = dom.createMorphAt(element14,9,9);
               dom.insertBoundary(fragment, 0);
               block(env, morph0, context, "if", [get(env, context, "registrationPaused")], {}, child0, null);
-              element(env, element7, context, "action", ["addProfile"], {});
-              content(env, morph1, context, "edittedProfiles.length");
-              block(env, morph2, context, "each", [get(env, context, "edittedProfiles")], {"keyword": "profile"}, child1, null);
-              attribute(env, attrMorph0, element8, "style", concat(env, [get(env, context, "nodeFormStyle")]));
-              content(env, morph3, context, "selectedProfile.name");
-              inline(env, morph4, context, "view", ["select"], {"class": "form-control", "content": get(env, context, "drivers"), "value": get(env, context, "selectedProfile.driver"), "prompt": "unspecified"});
-              inline(env, morph5, context, "input", [], {"class": "form-control", "value": get(env, context, "selectedProfile.ipAddress"), "type": "text", "placeholder": "unspecified"});
-              inline(env, morph6, context, "input", [], {"class": "form-control", "value": get(env, context, "selectedProfile.ipmiUsername"), "type": "text"});
-              inline(env, morph7, context, "input", [], {"class": "form-control has-feedback", "value": get(env, context, "selectedProfile.ipmiPassword"), "type": "password"});
-              inline(env, morph8, context, "textarea", [], {"class": "form-control", "value": get(env, context, "selectedProfile.nicMacAddress"), "cols": "40", "placeholder": "unspecified", "rows": "2"});
-              inline(env, morph9, context, "view", ["select"], {"class": "form-control", "content": get(env, context, "architectures"), "value": get(env, context, "selectedProfile.architecture"), "prompt": "unspecified"});
-              inline(env, morph10, context, "input", [], {"class": "form-control", "type": "number", "value": get(env, context, "selectedProfile.cpu"), "placeholder": "unspecified"});
-              inline(env, morph11, context, "input", [], {"class": "form-control", "type": "number", "value": get(env, context, "selectedProfile.ram"), "placeholder": "unspecified"});
-              inline(env, morph12, context, "input", [], {"class": "form-control", "type": "number", "value": get(env, context, "selectedProfile.disk"), "placeholder": "unspecified"});
+              content(env, morph1, context, "edittedNodes.length");
+              element(env, element8, context, "action", ["updloadCsvFile"], {});
+              element(env, element9, context, "action", ["addNode"], {});
+              element(env, element10, context, "action", ["csvFileChosen"], {"on": "change"});
+              block(env, morph2, context, "each", [get(env, context, "edittedNodes")], {"keyword": "node"}, child1, null);
+              attribute(env, attrMorph0, element11, "style", concat(env, [get(env, context, "nodeFormStyle")]));
+              inline(env, morph3, context, "select-simple-f", [], {"label": "Driver", "labelSize": "col-xs-4", "inputSize": "col-xs-6", "content": get(env, context, "drivers"), "selection": get(env, context, "selectedNode.driver"), "prompt": "unspecified", "isRequired": true});
+              inline(env, morph4, context, "text-f", [], {"label": "IP Address", "type": "text", "labelSize": "col-xs-4", "inputSize": "col-xs-6", "value": get(env, context, "selectedNode.ipAddress"), "isRequired": true});
+              inline(env, morph5, context, "text-f", [], {"label": "IPMI User", "type": "text", "labelSize": "col-xs-4", "inputSize": "col-xs-6", "value": get(env, context, "selectedNode.ipmiUsername"), "isRequired": false});
+              inline(env, morph6, context, "text-f", [], {"label": "IPMI Password", "type": "password", "labelSize": "form-label-nowrap col-xs-4", "inputSize": "col-xs-6", "value": get(env, context, "selectedNode.ipmiPassword"), "isRequired": false});
+              inline(env, morph7, context, "textarea-f", [], {"label": "NIC MAC Address", "labelSize": "form-label-nowrap col-xs-4", "inputSize": "col-xs-6", "value": get(env, context, "selectedNode.nicMacAddress"), "cols": "40", "placeholder": "unspecified", "rows": "2", "isRequired": true});
+              inline(env, morph8, context, "select-simple-f", [], {"label": "Architecture", "labelSize": "form-label-nowrap col-xs-4", "inputSize": "col-xs-6", "content": get(env, context, "architectures"), "selection": get(env, context, "selectedNode.architecture"), "prompt": "unspecified", "isRequired": true});
+              inline(env, morph9, context, "text-f", [], {"label": "CPUs", "type": "number", "labelSize": "col-xs-4", "inputSize": "col-xs-6", "value": get(env, context, "selectedNode.cpu"), "isRequired": true, "unitsSize": "input-units-label col-xs-2 muted", "unitsLabel": "cores"});
+              inline(env, morph10, context, "text-f", [], {"label": "Memory", "type": "number", "labelSize": "col-xs-4", "inputSize": "col-xs-6", "value": get(env, context, "selectedNode.ram"), "isRequired": true, "unitsSize": "input-units-label col-xs-2 muted", "unitsLabel": "MB"});
+              inline(env, morph11, context, "text-f", [], {"label": "Local Disk", "type": "number", "labelSize": "col-xs-4", "inputSize": "col-xs-6", "value": get(env, context, "selectedNode.disk"), "isRequired": true, "unitsSize": "input-units-label col-xs-2 muted", "unitsLabel": "GB"});
               return fragment;
             }
           };
@@ -23152,7 +26401,7 @@ define('fusor-ember-cli/templates/new-node-registration', ['exports'], function 
         var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
         dom.insertBoundary(fragment, null);
         dom.insertBoundary(fragment, 0);
-        block(env, morph0, context, "em-modal-form", [], {"configName": "bs", "id": "nodeRegistrationModal", "on-submit": "registerNodes", "open-if": get(env, context, "registerNodesModalOpened"), "close-if": get(env, context, "registerNodesModalClosed"), "in-async": get(env, context, "async")}, child0, null);
+        block(env, morph0, context, "em-modal", [], {"class": "scrollable-form", "configName": "bs", "id": "nodeRegistrationModal", "closeIfClickedOutside": get(env, context, "handleOutsideClick"), "open-if": get(env, context, "registerNodesModalOpened"), "close-if": get(env, context, "registerNodesModalClosed"), "in-async": get(env, context, "async")}, child0, null);
         return fragment;
       }
     };
@@ -23961,7 +27210,7 @@ define('fusor-ember-cli/templates/openstack', ['exports'], function (exports) {
             var el1 = dom.createElement("a");
             var el2 = dom.createComment("");
             dom.appendChild(el1, el2);
-            var el2 = dom.createTextNode("A. Registering Nodes");
+            var el2 = dom.createTextNode("A. Deploying Undercloud");
             dom.appendChild(el1, el2);
             dom.appendChild(el0, el1);
             var el1 = dom.createTextNode("\n");
@@ -24008,7 +27257,54 @@ define('fusor-ember-cli/templates/openstack', ['exports'], function (exports) {
             var el1 = dom.createElement("a");
             var el2 = dom.createComment("");
             dom.appendChild(el1, el2);
-            var el2 = dom.createTextNode("B. Assigning Nodes");
+            var el2 = dom.createTextNode("B. Registering Nodes");
+            dom.appendChild(el1, el2);
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          render: function render(context, env, contextualElement) {
+            var dom = env.dom;
+            var hooks = env.hooks, content = hooks.content;
+            dom.detectNamespace(contextualElement);
+            var fragment;
+            if (env.useFragmentCache && dom.canClone) {
+              if (this.cachedFragment === null) {
+                fragment = this.build(dom);
+                if (this.hasRendered) {
+                  this.cachedFragment = fragment;
+                } else {
+                  this.hasRendered = true;
+                }
+              }
+              if (this.cachedFragment) {
+                fragment = dom.cloneNode(this.cachedFragment, true);
+              }
+            } else {
+              fragment = this.build(dom);
+            }
+            var morph0 = dom.createMorphAt(dom.childAt(fragment, [1]),0,0);
+            content(env, morph0, context, "stepNumberOpenstack");
+            return fragment;
+          }
+        };
+      }());
+      var child2 = (function() {
+        return {
+          isHTMLBars: true,
+          revision: "Ember@1.11.1",
+          blockParams: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          build: function build(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createTextNode("        ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createElement("a");
+            var el2 = dom.createComment("");
+            dom.appendChild(el1, el2);
+            var el2 = dom.createTextNode("C. Assigning Nodes");
             dom.appendChild(el1, el2);
             dom.appendChild(el0, el1);
             var el1 = dom.createTextNode("\n");
@@ -24059,6 +27355,10 @@ define('fusor-ember-cli/templates/openstack', ['exports'], function (exports) {
           dom.appendChild(el0, el1);
           var el1 = dom.createTextNode("\n");
           dom.appendChild(el0, el1);
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
           return el0;
         },
         render: function render(context, env, contextualElement) {
@@ -24083,8 +27383,10 @@ define('fusor-ember-cli/templates/openstack', ['exports'], function (exports) {
           }
           var morph0 = dom.createMorphAt(fragment,1,1,contextualElement);
           var morph1 = dom.createMorphAt(fragment,3,3,contextualElement);
-          block(env, morph0, context, "link-to", ["register-nodes"], {"tagName": "li"}, child0, null);
-          block(env, morph1, context, "link-to", ["assign-nodes"], {"tagName": "li"}, child1, null);
+          var morph2 = dom.createMorphAt(fragment,5,5,contextualElement);
+          block(env, morph0, context, "link-to", ["undercloud-deploy"], {"tagName": "li"}, child0, null);
+          block(env, morph1, context, "link-to", ["register-nodes"], {"tagName": "li"}, child1, null);
+          block(env, morph2, context, "link-to", ["assign-nodes"], {"tagName": "li"}, child2, null);
           return fragment;
         }
       };
@@ -24173,6 +27475,54 @@ define('fusor-ember-cli/templates/openstack/index', ['exports'], function (expor
         var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
         dom.insertBoundary(fragment, 0);
         content(env, morph0, context, "outlet");
+        return fragment;
+      }
+    };
+  }()));
+
+});
+define('fusor-ember-cli/templates/openstack/loading', ['exports'], function (exports) {
+
+  'use strict';
+
+  exports['default'] = Ember.HTMLBars.template((function() {
+    return {
+      isHTMLBars: true,
+      revision: "Ember@1.11.1",
+      blockParams: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      build: function build(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      render: function render(context, env, contextualElement) {
+        var dom = env.dom;
+        var hooks = env.hooks, inline = hooks.inline;
+        dom.detectNamespace(contextualElement);
+        var fragment;
+        if (env.useFragmentCache && dom.canClone) {
+          if (this.cachedFragment === null) {
+            fragment = this.build(dom);
+            if (this.hasRendered) {
+              this.cachedFragment = fragment;
+            } else {
+              this.hasRendered = true;
+            }
+          }
+          if (this.cachedFragment) {
+            fragment = dom.cloneNode(this.cachedFragment, true);
+          }
+        } else {
+          fragment = this.build(dom);
+        }
+        var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
+        dom.insertBoundary(fragment, 0);
+        inline(env, morph0, context, "loading-spinner", [], {"show": true, "text": "Loading..."});
         return fragment;
       }
     };
@@ -24420,7 +27770,7 @@ define('fusor-ember-cli/templates/register-nodes', ['exports'], function (export
             var el1 = dom.createTextNode("      ");
             dom.appendChild(el0, el1);
             var el1 = dom.createElement("p");
-            var el2 = dom.createTextNode("\n        Currently, there are no registered nodes available. You must have at least ??? nodes in order to continue\n        this deployment. Use the Register Nodes button below to begin the registration process.\n      ");
+            var el2 = dom.createTextNode("\n        Currently, there are no registered nodes available. You must have at least 3 nodes in order to continue\n        this deployment. Use the Register Nodes button below to begin the registration process.\n      ");
             dom.appendChild(el1, el2);
             dom.appendChild(el0, el1);
             var el1 = dom.createTextNode("\n");
@@ -24507,7 +27857,7 @@ define('fusor-ember-cli/templates/register-nodes', ['exports'], function (export
           var el2 = dom.createTextNode("\n    ");
           dom.appendChild(el1, el2);
           var el2 = dom.createElement("div");
-          dom.setAttribute(el2,"class","col-md-5");
+          dom.setAttribute(el2,"class","col-md-7");
           var el3 = dom.createTextNode("\n");
           dom.appendChild(el2, el3);
           var el3 = dom.createComment("");
@@ -24627,6 +27977,92 @@ define('fusor-ember-cli/templates/register-nodes', ['exports'], function (export
     }());
     var child5 = (function() {
       var child0 = (function() {
+        var child0 = (function() {
+          return {
+            isHTMLBars: true,
+            revision: "Ember@1.11.1",
+            blockParams: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            build: function build(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createTextNode("              ");
+              dom.appendChild(el0, el1);
+              var el1 = dom.createComment("");
+              dom.appendChild(el0, el1);
+              var el1 = dom.createTextNode("\n");
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            render: function render(context, env, contextualElement) {
+              var dom = env.dom;
+              var hooks = env.hooks, get = hooks.get, inline = hooks.inline;
+              dom.detectNamespace(contextualElement);
+              var fragment;
+              if (env.useFragmentCache && dom.canClone) {
+                if (this.cachedFragment === null) {
+                  fragment = this.build(dom);
+                  if (this.hasRendered) {
+                    this.cachedFragment = fragment;
+                  } else {
+                    this.hasRendered = true;
+                  }
+                }
+                if (this.cachedFragment) {
+                  fragment = dom.cloneNode(this.cachedFragment, true);
+                }
+              } else {
+                fragment = this.build(dom);
+              }
+              var morph0 = dom.createMorphAt(fragment,1,1,contextualElement);
+              inline(env, morph0, context, "node-profile", [], {"profile": get(env, context, "profile"), "nodes": get(env, context, "model.nodes"), "stepNumberOpenstack": get(env, context, "stepNumberOpenstack")});
+              return fragment;
+            }
+          };
+        }());
+        var child1 = (function() {
+          return {
+            isHTMLBars: true,
+            revision: "Ember@1.11.1",
+            blockParams: 0,
+            cachedFragment: null,
+            hasRendered: false,
+            build: function build(dom) {
+              var el0 = dom.createDocumentFragment();
+              var el1 = dom.createTextNode("              ");
+              dom.appendChild(el0, el1);
+              var el1 = dom.createComment("");
+              dom.appendChild(el0, el1);
+              var el1 = dom.createTextNode("\n");
+              dom.appendChild(el0, el1);
+              return el0;
+            },
+            render: function render(context, env, contextualElement) {
+              var dom = env.dom;
+              var hooks = env.hooks, get = hooks.get, inline = hooks.inline;
+              dom.detectNamespace(contextualElement);
+              var fragment;
+              if (env.useFragmentCache && dom.canClone) {
+                if (this.cachedFragment === null) {
+                  fragment = this.build(dom);
+                  if (this.hasRendered) {
+                    this.cachedFragment = fragment;
+                  } else {
+                    this.hasRendered = true;
+                  }
+                }
+                if (this.cachedFragment) {
+                  fragment = dom.cloneNode(this.cachedFragment, true);
+                }
+              } else {
+                fragment = this.build(dom);
+              }
+              var morph0 = dom.createMorphAt(fragment,1,1,contextualElement);
+              inline(env, morph0, context, "node-profile", [], {"profile": get(env, context, "profile"), "stepNumberOpenstack": get(env, context, "stepNumberOpenstack")});
+              return fragment;
+            }
+          };
+        }());
         return {
           isHTMLBars: true,
           revision: "Ember@1.11.1",
@@ -24643,11 +28079,11 @@ define('fusor-ember-cli/templates/register-nodes', ['exports'], function (export
             dom.appendChild(el1, el2);
             var el2 = dom.createElement("div");
             dom.setAttribute(el2,"class","col-md-7");
-            var el3 = dom.createTextNode("\n            ");
+            var el3 = dom.createTextNode("\n");
             dom.appendChild(el2, el3);
             var el3 = dom.createComment("");
             dom.appendChild(el2, el3);
-            var el3 = dom.createTextNode("\n          ");
+            var el3 = dom.createTextNode("          ");
             dom.appendChild(el2, el3);
             dom.appendChild(el1, el2);
             var el2 = dom.createTextNode("\n      ");
@@ -24659,7 +28095,7 @@ define('fusor-ember-cli/templates/register-nodes', ['exports'], function (export
           },
           render: function render(context, env, contextualElement) {
             var dom = env.dom;
-            var hooks = env.hooks, get = hooks.get, inline = hooks.inline;
+            var hooks = env.hooks, get = hooks.get, block = hooks.block;
             dom.detectNamespace(contextualElement);
             var fragment;
             if (env.useFragmentCache && dom.canClone) {
@@ -24678,7 +28114,7 @@ define('fusor-ember-cli/templates/register-nodes', ['exports'], function (export
               fragment = this.build(dom);
             }
             var morph0 = dom.createMorphAt(dom.childAt(fragment, [1, 1]),1,1);
-            inline(env, morph0, context, "node-profile", [], {"profile": get(env, context, "profile"), "stepNumberOpenstack": get(env, context, "stepNumberOpenstack")});
+            block(env, morph0, context, "if", [get(env, context, "model.nodes")], {}, child0, child1);
             return fragment;
           }
         };
@@ -24739,7 +28175,7 @@ define('fusor-ember-cli/templates/register-nodes', ['exports'], function (export
           }
           var morph0 = dom.createMorphAt(fragment,3,3,contextualElement);
           dom.insertBoundary(fragment, null);
-          block(env, morph0, context, "each", [get(env, context, "model.nodeProfiles")], {"keyword": "profile"}, child0, null);
+          block(env, morph0, context, "each", [get(env, context, "model.profiles")], {"keyword": "profile"}, child0, null);
           return fragment;
         }
       };
@@ -24903,7 +28339,7 @@ define('fusor-ember-cli/templates/register-nodes', ['exports'], function (export
         var el2 = dom.createTextNode("\n    ");
         dom.appendChild(el1, el2);
         var el2 = dom.createElement("div");
-        dom.setAttribute(el2,"class","col-md-9");
+        dom.setAttribute(el2,"class","col-md-12 rhci-steps-buttons");
         var el3 = dom.createTextNode("\n        ");
         dom.appendChild(el2, el3);
         var el3 = dom.createElement("div");
@@ -24928,6 +28364,8 @@ define('fusor-ember-cli/templates/register-nodes', ['exports'], function (export
         var el1 = dom.createTextNode("\n\n");
         dom.appendChild(el0, el1);
         var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n\n");
         dom.appendChild(el0, el1);
         return el0;
       },
@@ -24962,14 +28400,13 @@ define('fusor-ember-cli/templates/register-nodes', ['exports'], function (export
         var morph5 = dom.createMorphAt(element5,1,1);
         var morph6 = dom.createMorphAt(element5,3,3);
         var morph7 = dom.createMorphAt(fragment,18,18,contextualElement);
-        dom.insertBoundary(fragment, null);
         block(env, morph0, context, "if", [get(env, context, "showAlertMessage")], {}, child0, null);
         block(env, morph1, context, "if", [get(env, context, "registrationError")], {}, child1, null);
         block(env, morph2, context, "if", [get(env, context, "registrationInProgress")], {}, child2, child3);
         block(env, morph3, context, "if", [get(env, context, "registrationInProgress")], {}, child4, null);
         element(env, element4, context, "action", ["showNodeRegistrationModal"], {});
         block(env, morph4, context, "unless", [get(env, context, "noRegisteredNodes")], {}, child5, null);
-        block(env, morph5, context, "link-to", [get(env, context, "satelliteTabRouteName")], {"class": "btn btn-default"}, child6, null);
+        block(env, morph5, context, "link-to", ["undercloud-deploy"], {"class": "btn btn-default"}, child6, null);
         block(env, morph6, context, "link-to", ["assign-nodes"], {"class": "btn btn-primary", "disabled": get(env, context, "disableRegisterNodesNext")}, child7, null);
         inline(env, morph7, context, "partial", ["new-node-registration"], {});
         return fragment;
@@ -25785,6 +29222,133 @@ define('fusor-ember-cli/templates/review/installation', ['exports'], function (e
       }());
       var child3 = (function() {
         var child0 = (function() {
+          var child0 = (function() {
+            return {
+              isHTMLBars: true,
+              revision: "Ember@1.11.1",
+              blockParams: 0,
+              cachedFragment: null,
+              hasRendered: false,
+              build: function build(dom) {
+                var el0 = dom.createDocumentFragment();
+                var el1 = dom.createTextNode("Assigned Nodes");
+                dom.appendChild(el0, el1);
+                return el0;
+              },
+              render: function render(context, env, contextualElement) {
+                var dom = env.dom;
+                dom.detectNamespace(contextualElement);
+                var fragment;
+                if (env.useFragmentCache && dom.canClone) {
+                  if (this.cachedFragment === null) {
+                    fragment = this.build(dom);
+                    if (this.hasRendered) {
+                      this.cachedFragment = fragment;
+                    } else {
+                      this.hasRendered = true;
+                    }
+                  }
+                  if (this.cachedFragment) {
+                    fragment = dom.cloneNode(this.cachedFragment, true);
+                  }
+                } else {
+                  fragment = this.build(dom);
+                }
+                return fragment;
+              }
+            };
+          }());
+          var child1 = (function() {
+            var child0 = (function() {
+              return {
+                isHTMLBars: true,
+                revision: "Ember@1.11.1",
+                blockParams: 0,
+                cachedFragment: null,
+                hasRendered: false,
+                build: function build(dom) {
+                  var el0 = dom.createDocumentFragment();
+                  var el1 = dom.createTextNode("                ");
+                  dom.appendChild(el0, el1);
+                  var el1 = dom.createElement("div");
+                  dom.setAttribute(el1,"class","col-md-8");
+                  var el2 = dom.createTextNode("\n                  ");
+                  dom.appendChild(el1, el2);
+                  var el2 = dom.createComment("");
+                  dom.appendChild(el1, el2);
+                  var el2 = dom.createTextNode("\n                ");
+                  dom.appendChild(el1, el2);
+                  dom.appendChild(el0, el1);
+                  var el1 = dom.createTextNode("\n");
+                  dom.appendChild(el0, el1);
+                  return el0;
+                },
+                render: function render(context, env, contextualElement) {
+                  var dom = env.dom;
+                  var hooks = env.hooks, get = hooks.get, inline = hooks.inline;
+                  dom.detectNamespace(contextualElement);
+                  var fragment;
+                  if (env.useFragmentCache && dom.canClone) {
+                    if (this.cachedFragment === null) {
+                      fragment = this.build(dom);
+                      if (this.hasRendered) {
+                        this.cachedFragment = fragment;
+                      } else {
+                        this.hasRendered = true;
+                      }
+                    }
+                    if (this.cachedFragment) {
+                      fragment = dom.cloneNode(this.cachedFragment, true);
+                    }
+                  } else {
+                    fragment = this.build(dom);
+                  }
+                  var morph0 = dom.createMorphAt(dom.childAt(fragment, [1]),1,1);
+                  inline(env, morph0, context, "node-profile", [], {"profile": get(env, context, "profile"), "nodes": get(env, context, "model.openstackNodes"), "plan": get(env, context, "model.penstackPlan"), "doAssign": true, "readOnly": true});
+                  return fragment;
+                }
+              };
+            }());
+            return {
+              isHTMLBars: true,
+              revision: "Ember@1.11.1",
+              blockParams: 0,
+              cachedFragment: null,
+              hasRendered: false,
+              build: function build(dom) {
+                var el0 = dom.createDocumentFragment();
+                var el1 = dom.createComment("");
+                dom.appendChild(el0, el1);
+                return el0;
+              },
+              render: function render(context, env, contextualElement) {
+                var dom = env.dom;
+                var hooks = env.hooks, get = hooks.get, block = hooks.block;
+                dom.detectNamespace(contextualElement);
+                var fragment;
+                if (env.useFragmentCache && dom.canClone) {
+                  if (this.cachedFragment === null) {
+                    fragment = this.build(dom);
+                    if (this.hasRendered) {
+                      this.cachedFragment = fragment;
+                    } else {
+                      this.hasRendered = true;
+                    }
+                  }
+                  if (this.cachedFragment) {
+                    fragment = dom.cloneNode(this.cachedFragment, true);
+                  }
+                } else {
+                  fragment = this.build(dom);
+                }
+                var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
+                dom.insertBoundary(fragment, null);
+                dom.insertBoundary(fragment, 0);
+                block(env, morph0, context, "each", [get(env, context, "model.openstackProfiles")], {"keyword": "profile"}, child0, null);
+                return fragment;
+              }
+            };
+          }());
           return {
             isHTMLBars: true,
             revision: "Ember@1.11.1",
@@ -25793,10 +29357,28 @@ define('fusor-ember-cli/templates/review/installation', ['exports'], function (e
             hasRendered: false,
             build: function build(dom) {
               var el0 = dom.createDocumentFragment();
+              var el1 = dom.createTextNode("        ");
+              dom.appendChild(el0, el1);
+              var el1 = dom.createComment("");
+              dom.appendChild(el0, el1);
+              var el1 = dom.createTextNode(":\n          ");
+              dom.appendChild(el0, el1);
+              var el1 = dom.createElement("div");
+              dom.setAttribute(el1,"class","row");
+              var el2 = dom.createTextNode("\n");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createComment("");
+              dom.appendChild(el1, el2);
+              var el2 = dom.createTextNode("          ");
+              dom.appendChild(el1, el2);
+              dom.appendChild(el0, el1);
+              var el1 = dom.createTextNode("\n");
+              dom.appendChild(el0, el1);
               return el0;
             },
             render: function render(context, env, contextualElement) {
               var dom = env.dom;
+              var hooks = env.hooks, block = hooks.block, get = hooks.get;
               dom.detectNamespace(contextualElement);
               var fragment;
               if (env.useFragmentCache && dom.canClone) {
@@ -25814,6 +29396,10 @@ define('fusor-ember-cli/templates/review/installation', ['exports'], function (e
               } else {
                 fragment = this.build(dom);
               }
+              var morph0 = dom.createMorphAt(fragment,1,1,contextualElement);
+              var morph1 = dom.createMorphAt(dom.childAt(fragment, [3]),1,1);
+              block(env, morph0, context, "link-to", ["assign-nodes"], {}, child0, null);
+              block(env, morph1, context, "each", [get(env, context, "model.openstackProfiles")], {"keyword": "profile"}, child1, null);
               return fragment;
             }
           };
@@ -25853,7 +29439,7 @@ define('fusor-ember-cli/templates/review/installation', ['exports'], function (e
             var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
             dom.insertBoundary(fragment, null);
             dom.insertBoundary(fragment, 0);
-            block(env, morph0, context, "accordion-item", [], {"name": "Red Hat OpenStack Platform", "isOpen": get(env, context, "isOpenStackOpen")}, child0, null);
+            block(env, morph0, context, "accordion-item", [], {"name": get(env, context, "controllers.deployment.nameOpenStack"), "isOpen": get(env, context, "isOpenStackOpen")}, child0, null);
             return fragment;
           }
         };
@@ -26460,14 +30046,16 @@ define('fusor-ember-cli/templates/review/installation', ['exports'], function (e
           dom.appendChild(el0, el1);
           var el1 = dom.createElement("div");
           dom.setAttribute(el1,"class","spinner spinner-md spinner-inline");
-          dom.appendChild(el0, el1);
-          var el1 = dom.createTextNode("\n  ");
-          dom.appendChild(el0, el1);
-          var el1 = dom.createElement("span");
-          dom.setAttribute(el1,"class","spinner-text");
-          var el2 = dom.createTextNode("\n      ");
+          var el2 = dom.createTextNode("\n    ");
           dom.appendChild(el1, el2);
-          var el2 = dom.createComment("");
+          var el2 = dom.createElement("span");
+          dom.setAttribute(el2,"class","spinner-text");
+          var el3 = dom.createTextNode("\n      ");
+          dom.appendChild(el2, el3);
+          var el3 = dom.createComment("");
+          dom.appendChild(el2, el3);
+          var el3 = dom.createTextNode("\n    ");
+          dom.appendChild(el2, el3);
           dom.appendChild(el1, el2);
           var el2 = dom.createTextNode("\n  ");
           dom.appendChild(el1, el2);
@@ -26496,7 +30084,7 @@ define('fusor-ember-cli/templates/review/installation', ['exports'], function (e
           } else {
             fragment = this.build(dom);
           }
-          var morph0 = dom.createMorphAt(dom.childAt(fragment, [3]),1,1);
+          var morph0 = dom.createMorphAt(dom.childAt(fragment, [1, 1]),1,1);
           content(env, morph0, context, "spinnerTextMessage");
           return fragment;
         }
@@ -26557,15 +30145,7 @@ define('fusor-ember-cli/templates/review/loading', ['exports'], function (export
       hasRendered: false,
       build: function build(dom) {
         var el0 = dom.createDocumentFragment();
-        var el1 = dom.createElement("div");
-        dom.setAttribute(el1,"class","spinner spinner-md spinner-inline");
-        dom.appendChild(el0, el1);
-        var el1 = dom.createTextNode("\n");
-        dom.appendChild(el0, el1);
-        var el1 = dom.createElement("span");
-        dom.setAttribute(el1,"class","spinner-text");
-        var el2 = dom.createTextNode("\n  Loading Data from Tasks ...\n");
-        dom.appendChild(el1, el2);
+        var el1 = dom.createComment("");
         dom.appendChild(el0, el1);
         var el1 = dom.createTextNode("\n");
         dom.appendChild(el0, el1);
@@ -26573,6 +30153,7 @@ define('fusor-ember-cli/templates/review/loading', ['exports'], function (export
       },
       render: function render(context, env, contextualElement) {
         var dom = env.dom;
+        var hooks = env.hooks, inline = hooks.inline;
         dom.detectNamespace(contextualElement);
         var fragment;
         if (env.useFragmentCache && dom.canClone) {
@@ -26590,6 +30171,9 @@ define('fusor-ember-cli/templates/review/loading', ['exports'], function (export
         } else {
           fragment = this.build(dom);
         }
+        var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
+        dom.insertBoundary(fragment, 0);
+        inline(env, morph0, context, "loading-spinner", [], {"show": true, "text": "Loading Data from Tasks ..."});
         return fragment;
       }
     };
@@ -29752,12 +33336,15 @@ define('fusor-ember-cli/templates/satellite/loading', ['exports'], function (exp
       hasRendered: false,
       build: function build(dom) {
         var el0 = dom.createDocumentFragment();
-        var el1 = dom.createTextNode("Loading ....\n");
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n\n");
         dom.appendChild(el0, el1);
         return el0;
       },
       render: function render(context, env, contextualElement) {
         var dom = env.dom;
+        var hooks = env.hooks, inline = hooks.inline;
         dom.detectNamespace(contextualElement);
         var fragment;
         if (env.useFragmentCache && dom.canClone) {
@@ -29775,6 +33362,9 @@ define('fusor-ember-cli/templates/satellite/loading', ['exports'], function (exp
         } else {
           fragment = this.build(dom);
         }
+        var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
+        dom.insertBoundary(fragment, 0);
+        inline(env, morph0, context, "loading-spinner", [], {"show": true, "text": "Loading..."});
         return fragment;
       }
     };
@@ -31338,15 +34928,7 @@ define('fusor-ember-cli/templates/subscriptions/loading', ['exports'], function 
       hasRendered: false,
       build: function build(dom) {
         var el0 = dom.createDocumentFragment();
-        var el1 = dom.createElement("div");
-        dom.setAttribute(el1,"class","spinner spinner-md spinner-inline");
-        dom.appendChild(el0, el1);
-        var el1 = dom.createTextNode("\n");
-        dom.appendChild(el0, el1);
-        var el1 = dom.createElement("span");
-        dom.setAttribute(el1,"class","spinner-text");
-        var el2 = dom.createTextNode("\n  Loading from Red Hat Customer Portal ...\n");
-        dom.appendChild(el1, el2);
+        var el1 = dom.createComment("");
         dom.appendChild(el0, el1);
         var el1 = dom.createTextNode("\n");
         dom.appendChild(el0, el1);
@@ -31354,6 +34936,7 @@ define('fusor-ember-cli/templates/subscriptions/loading', ['exports'], function 
       },
       render: function render(context, env, contextualElement) {
         var dom = env.dom;
+        var hooks = env.hooks, inline = hooks.inline;
         dom.detectNamespace(contextualElement);
         var fragment;
         if (env.useFragmentCache && dom.canClone) {
@@ -31371,6 +34954,9 @@ define('fusor-ember-cli/templates/subscriptions/loading', ['exports'], function 
         } else {
           fragment = this.build(dom);
         }
+        var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
+        dom.insertBoundary(fragment, 0);
+        inline(env, morph0, context, "loading-spinner", [], {"show": true, "text": "Loading from Red Hat Customer Portal ..."});
         return fragment;
       }
     };
@@ -33893,6 +37479,433 @@ define('fusor-ember-cli/templates/subscriptions/select-subscriptions', ['exports
   }()));
 
 });
+define('fusor-ember-cli/templates/undercloud-deploy', ['exports'], function (exports) {
+
+  'use strict';
+
+  exports['default'] = Ember.HTMLBars.template((function() {
+    var child0 = (function() {
+      return {
+        isHTMLBars: true,
+        revision: "Ember@1.11.1",
+        blockParams: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        build: function build(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createTextNode("            ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createElement("div");
+          dom.setAttribute(el1,"class","col-md-12");
+          dom.setAttribute(el1,"style","padding-top: 10px;");
+          var el2 = dom.createTextNode("\n                ");
+          dom.appendChild(el1, el2);
+          var el2 = dom.createElement("div");
+          dom.setAttribute(el2,"class","alert alert-success");
+          dom.setAttribute(el2,"style","margin-bottom: 0px;");
+          var el3 = dom.createTextNode("\n                    ");
+          dom.appendChild(el2, el3);
+          var el3 = dom.createElement("span");
+          dom.setAttribute(el3,"class","pficon pficon-ok");
+          dom.appendChild(el2, el3);
+          var el3 = dom.createTextNode("\n                    Undercloud has been successfully deployed.\n                ");
+          dom.appendChild(el2, el3);
+          dom.appendChild(el1, el2);
+          var el2 = dom.createTextNode("\n            ");
+          dom.appendChild(el1, el2);
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        render: function render(context, env, contextualElement) {
+          var dom = env.dom;
+          dom.detectNamespace(contextualElement);
+          var fragment;
+          if (env.useFragmentCache && dom.canClone) {
+            if (this.cachedFragment === null) {
+              fragment = this.build(dom);
+              if (this.hasRendered) {
+                this.cachedFragment = fragment;
+              } else {
+                this.hasRendered = true;
+              }
+            }
+            if (this.cachedFragment) {
+              fragment = dom.cloneNode(this.cachedFragment, true);
+            }
+          } else {
+            fragment = this.build(dom);
+          }
+          return fragment;
+        }
+      };
+    }());
+    var child1 = (function() {
+      var child0 = (function() {
+        return {
+          isHTMLBars: true,
+          revision: "Ember@1.11.1",
+          blockParams: 0,
+          cachedFragment: null,
+          hasRendered: false,
+          build: function build(dom) {
+            var el0 = dom.createDocumentFragment();
+            var el1 = dom.createTextNode("                ");
+            dom.appendChild(el0, el1);
+            var el1 = dom.createElement("div");
+            dom.setAttribute(el1,"class","col-md-12");
+            dom.setAttribute(el1,"style","padding-top: 10px;");
+            var el2 = dom.createTextNode("\n                    ");
+            dom.appendChild(el1, el2);
+            var el2 = dom.createElement("div");
+            dom.setAttribute(el2,"class","alert alert-danger");
+            dom.setAttribute(el2,"style","margin-bottom: 0px;");
+            var el3 = dom.createTextNode("\n                        ");
+            dom.appendChild(el2, el3);
+            var el3 = dom.createElement("span");
+            dom.setAttribute(el3,"class","pficon pficon-error-circle-o");
+            dom.appendChild(el2, el3);
+            var el3 = dom.createTextNode("\n                        Undercloud deployment failed: ");
+            dom.appendChild(el2, el3);
+            var el3 = dom.createComment("");
+            dom.appendChild(el2, el3);
+            var el3 = dom.createTextNode("\n                    ");
+            dom.appendChild(el2, el3);
+            dom.appendChild(el1, el2);
+            var el2 = dom.createTextNode("\n                ");
+            dom.appendChild(el1, el2);
+            dom.appendChild(el0, el1);
+            var el1 = dom.createTextNode("\n");
+            dom.appendChild(el0, el1);
+            return el0;
+          },
+          render: function render(context, env, contextualElement) {
+            var dom = env.dom;
+            var hooks = env.hooks, content = hooks.content;
+            dom.detectNamespace(contextualElement);
+            var fragment;
+            if (env.useFragmentCache && dom.canClone) {
+              if (this.cachedFragment === null) {
+                fragment = this.build(dom);
+                if (this.hasRendered) {
+                  this.cachedFragment = fragment;
+                } else {
+                  this.hasRendered = true;
+                }
+              }
+              if (this.cachedFragment) {
+                fragment = dom.cloneNode(this.cachedFragment, true);
+              }
+            } else {
+              fragment = this.build(dom);
+            }
+            var morph0 = dom.createMorphAt(dom.childAt(fragment, [1, 1]),3,3);
+            content(env, morph0, context, "deploymentError");
+            return fragment;
+          }
+        };
+      }());
+      return {
+        isHTMLBars: true,
+        revision: "Ember@1.11.1",
+        blockParams: 0,
+        cachedFragment: null,
+        hasRendered: false,
+        build: function build(dom) {
+          var el0 = dom.createDocumentFragment();
+          var el1 = dom.createComment("");
+          dom.appendChild(el0, el1);
+          return el0;
+        },
+        render: function render(context, env, contextualElement) {
+          var dom = env.dom;
+          var hooks = env.hooks, get = hooks.get, block = hooks.block;
+          dom.detectNamespace(contextualElement);
+          var fragment;
+          if (env.useFragmentCache && dom.canClone) {
+            if (this.cachedFragment === null) {
+              fragment = this.build(dom);
+              if (this.hasRendered) {
+                this.cachedFragment = fragment;
+              } else {
+                this.hasRendered = true;
+              }
+            }
+            if (this.cachedFragment) {
+              fragment = dom.cloneNode(this.cachedFragment, true);
+            }
+          } else {
+            fragment = this.build(dom);
+          }
+          var morph0 = dom.createMorphAt(fragment,0,0,contextualElement);
+          dom.insertBoundary(fragment, null);
+          dom.insertBoundary(fragment, 0);
+          block(env, morph0, context, "if", [get(env, context, "deploymentError")], {}, child0, null);
+          return fragment;
+        }
+      };
+    }());
+    return {
+      isHTMLBars: true,
+      revision: "Ember@1.11.1",
+      blockParams: 0,
+      cachedFragment: null,
+      hasRendered: false,
+      build: function build(dom) {
+        var el0 = dom.createDocumentFragment();
+        var el1 = dom.createElement("br");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createElement("form");
+        dom.setAttribute(el1,"class","form-horizontal");
+        dom.setAttribute(el1,"role","form");
+        var el2 = dom.createTextNode("\n    ");
+        dom.appendChild(el1, el2);
+        var el2 = dom.createElement("div");
+        dom.setAttribute(el2,"class","row");
+        var el3 = dom.createTextNode("\n        ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("div");
+        dom.setAttribute(el3,"class","col-md-12");
+        var el4 = dom.createTextNode("\n          ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n          ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n          ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n          ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n          ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n          ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createComment("");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n        ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n        ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("div");
+        dom.setAttribute(el3,"class","col-md-12");
+        var el4 = dom.createTextNode("\n            ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("div");
+        dom.setAttribute(el4,"class","advanced-settings-group");
+        dom.setAttribute(el4,"style","width:100%");
+        var el5 = dom.createTextNode("\n                ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("div");
+        dom.setAttribute(el5,"class","advanced-settings advanced-settings-default");
+        var el6 = dom.createTextNode("\n                    ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createElement("div");
+        dom.setAttribute(el6,"class","advanced-settings-heading");
+        var el7 = dom.createTextNode("\n                        ");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createElement("div");
+        dom.setAttribute(el7,"class","advanced-settings-title");
+        var el8 = dom.createTextNode("\n                            ");
+        dom.appendChild(el7, el8);
+        var el8 = dom.createElement("a");
+        var el9 = dom.createTextNode("Advanced Settings");
+        dom.appendChild(el8, el9);
+        dom.appendChild(el7, el8);
+        var el8 = dom.createTextNode("\n                        ");
+        dom.appendChild(el7, el8);
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode("\n                    ");
+        dom.appendChild(el6, el7);
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n                ");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n                ");
+        dom.appendChild(el4, el5);
+        var el5 = dom.createElement("div");
+        dom.setAttribute(el5,"id","collapseOne");
+        dom.setAttribute(el5,"style","margin-top: 15px;");
+        var el6 = dom.createTextNode("\n                    ");
+        dom.appendChild(el5, el6);
+        var el6 = dom.createElement("div");
+        dom.setAttribute(el6,"role","tabpanel");
+        dom.setAttribute(el6,"class","tab-pane active undercloud-advanced-settings-content");
+        dom.setAttribute(el6,"id","network-settings");
+        var el7 = dom.createTextNode("\n                      ");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createComment("");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode("\n                      ");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createComment("");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode("\n                      ");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createComment("");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode("\n                      ");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createComment("");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode("\n                      ");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createComment("");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode("\n                      ");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createComment("");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode("\n                      ");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createComment("");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode("\n                      ");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createComment("");
+        dom.appendChild(el6, el7);
+        var el7 = dom.createTextNode("\n                    ");
+        dom.appendChild(el6, el7);
+        dom.appendChild(el5, el6);
+        var el6 = dom.createTextNode("\n                ");
+        dom.appendChild(el5, el6);
+        dom.appendChild(el4, el5);
+        var el5 = dom.createTextNode("\n            ");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n        ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n        ");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createElement("div");
+        dom.setAttribute(el3,"class","col-md-10");
+        var el4 = dom.createTextNode("\n                ");
+        dom.appendChild(el3, el4);
+        var el4 = dom.createElement("button");
+        dom.setAttribute(el4,"class","btn btn-primary pull-left");
+        var el5 = dom.createTextNode("\n                    Deploy Undercloud\n                ");
+        dom.appendChild(el4, el5);
+        dom.appendChild(el3, el4);
+        var el4 = dom.createTextNode("\n        ");
+        dom.appendChild(el3, el4);
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("\n");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createComment("");
+        dom.appendChild(el2, el3);
+        var el3 = dom.createTextNode("    ");
+        dom.appendChild(el2, el3);
+        dom.appendChild(el1, el2);
+        var el2 = dom.createTextNode("\n");
+        dom.appendChild(el1, el2);
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createElement("br");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n\n");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createComment("");
+        dom.appendChild(el0, el1);
+        var el1 = dom.createTextNode("\n");
+        dom.appendChild(el0, el1);
+        return el0;
+      },
+      render: function render(context, env, contextualElement) {
+        var dom = env.dom;
+        var hooks = env.hooks, get = hooks.get, inline = hooks.inline, element = hooks.element, concat = hooks.concat, attribute = hooks.attribute, block = hooks.block;
+        dom.detectNamespace(contextualElement);
+        var fragment;
+        if (env.useFragmentCache && dom.canClone) {
+          if (this.cachedFragment === null) {
+            fragment = this.build(dom);
+            if (this.hasRendered) {
+              this.cachedFragment = fragment;
+            } else {
+              this.hasRendered = true;
+            }
+          }
+          if (this.cachedFragment) {
+            fragment = dom.cloneNode(this.cachedFragment, true);
+          }
+        } else {
+          fragment = this.build(dom);
+        }
+        var element0 = dom.childAt(fragment, [2, 1]);
+        var element1 = dom.childAt(element0, [1]);
+        var element2 = dom.childAt(element0, [3, 1]);
+        var element3 = dom.childAt(element2, [1, 1, 1, 1]);
+        var element4 = dom.childAt(element2, [3]);
+        var element5 = dom.childAt(element4, [1]);
+        var element6 = dom.childAt(element0, [5, 1]);
+        var morph0 = dom.createMorphAt(element1,1,1);
+        var morph1 = dom.createMorphAt(element1,3,3);
+        var morph2 = dom.createMorphAt(element1,5,5);
+        var morph3 = dom.createMorphAt(element1,7,7);
+        var morph4 = dom.createMorphAt(element1,9,9);
+        var morph5 = dom.createMorphAt(element1,11,11);
+        var attrMorph0 = dom.createAttrMorph(element4, 'class');
+        var morph6 = dom.createMorphAt(element5,1,1);
+        var morph7 = dom.createMorphAt(element5,3,3);
+        var morph8 = dom.createMorphAt(element5,5,5);
+        var morph9 = dom.createMorphAt(element5,7,7);
+        var morph10 = dom.createMorphAt(element5,9,9);
+        var morph11 = dom.createMorphAt(element5,11,11);
+        var morph12 = dom.createMorphAt(element5,13,13);
+        var morph13 = dom.createMorphAt(element5,15,15);
+        var morph14 = dom.createMorphAt(element0,7,7);
+        var morph15 = dom.createMorphAt(fragment,6,6,contextualElement);
+        var morph16 = dom.createMorphAt(fragment,8,8,contextualElement);
+        var morph17 = dom.createMorphAt(fragment,10,10,contextualElement);
+        inline(env, morph0, context, "select-simple-f", [], {"id": "example", "label": "Deployment Mode", "value": get(env, context, "model.deploymentMode"), "labelSize": "deploy-undercloud-param-label", "inputSize": "deploy-undercloud-param-input", "isRequired": true, "helpText": get(env, context, "deploymentModeHelp"), "content": get(env, context, "deploymentModes")});
+        inline(env, morph1, context, "text-f", [], {"label": "Image Path", "value": get(env, context, "model.imagePath"), "labelSize": "deploy-undercloud-param-label", "inputSize": "deploy-undercloud-param-input", "isRequired": true, "helpText": get(env, context, "imagePathHelp")});
+        inline(env, morph2, context, "text-f", [], {"label": "Undercloud IP", "valueBinding": get(env, context, "model.undercloudIP"), "labelSize": "deploy-undercloud-param-label", "inputSize": "deploy-undercloud-param-input", "isRequired": true, "helpText": get(env, context, "undercloudIPHelp")});
+        inline(env, morph3, context, "text-f", [], {"label": "SSH User", "valueBinding": get(env, context, "model.sshUser"), "labelSize": "deploy-undercloud-param-label", "inputSize": "deploy-undercloud-param-input", "isRequired": true, "helpText": get(env, context, "sshUserHelp")});
+        inline(env, morph4, context, "text-f", [], {"label": "SSH Password", "value": get(env, context, "model.sshPassword"), "labelSize": "deploy-undercloud-param-label", "inputSize": "deploy-undercloud-param-input", "isRequired": true, "helpText": get(env, context, "sshPasswordHelp"), "type": "password"});
+        inline(env, morph5, context, "text-f", [], {"label": "Local Interface", "value": get(env, context, "model.localInterface"), "labelSize": "deploy-undercloud-param-label", "inputSize": "deploy-undercloud-param-input", "isRequired": true, "helpText": get(env, context, "localInterfaceHelp")});
+        element(env, element3, context, "action", ["toggleShowAdvancedSettings"], {});
+        element(env, element3, context, "bind-attr", [], {"class": "showAdvancedSettingsClass"});
+        attribute(env, attrMorph0, element4, "class", concat(env, ["advanced-settings-collapse collapse ", get(env, context, "showAdvancedSettings")]));
+        inline(env, morph6, context, "text-f", [], {"label": "Masquerade Network", "value": get(env, context, "model.masqueradeNetwork"), "labelSize": "deploy-undercloud-param-label", "inputSize": "deploy-undercloud-param-input", "isRequired": false, "helpText": get(env, context, "masquerateNetworkHelp")});
+        inline(env, morph7, context, "range-text-f", [], {"label": "DHCP Range", "value1": get(env, context, "model.dhcpStart"), "value2": get(env, context, "model.dhcpEnd"), "labelSize": "deploy-undercloud-param-label", "rangeSize": "deploy-undercloud-param-range", "inputSize": "deploy-undercloud-param-range-input", "isRequired": false, "helpText": get(env, context, "dhcpRangeHelp"), "input-width": "127px"});
+        inline(env, morph8, context, "text-f", [], {"label": "Network CIDR", "value": get(env, context, "model.networkCidr"), "labelSize": "deploy-undercloud-param-label", "inputSize": "deploy-undercloud-param-input", "isRequired": false, "helpText": get(env, context, "networkCidrHelp")});
+        inline(env, morph9, context, "text-f", [], {"label": "Network Gateway", "value": get(env, context, "model.networkGateway"), "labelSize": "deploy-undercloud-param-label", "inputSize": "deploy-undercloud-param-input", "isRequired": false, "helpText": get(env, context, "networkGatewayHelp")});
+        inline(env, morph10, context, "text-f", [], {"label": "Discovery Interface", "value": get(env, context, "model.discoveryInterface"), "labelSize": "deploy-undercloud-param-label", "inputSize": "deploy-undercloud-param-input", "isRequired": false, "helpText": get(env, context, "discoveryInterfaceHelp")});
+        inline(env, morph11, context, "range-text-f", [], {"label": "Discovery IP Range", "value1": get(env, context, "model.discoveryIpStart"), "value2": get(env, context, "model.discoveryIpEnd"), "labelSize": "deploy-undercloud-param-label", "rangeSize": "deploy-undercloud-param-range", "inputSize": "deploy-undercloud-param-range-input", "isRequired": false, "helpText": get(env, context, "discoveryIpRangeHelp"), "input-width": "127px"});
+        inline(env, morph12, context, "check-f", [], {"label": "Run Discovery Benchmark", "checked": get(env, context, "model.discoveryRunbench"), "labelSize": "deploy-undercloud-param-label", "inputSize": "deploy-undercloud-param-input", "isRequired": false});
+        inline(env, morph13, context, "check-f", [], {"label": "Enable Undercloud Debug", "checked": get(env, context, "model.undercloudDebug"), "labelSize": "deploy-undercloud-param-label", "inputSize": "deploy-undercloud-param-input", "isRequired": false});
+        element(env, element6, context, "action", ["deployUndercloud"], {});
+        element(env, element6, context, "bindAttr", [], {"disabled": "deployDisabled"});
+        block(env, morph14, context, "if", [get(env, context, "deployed")], {}, child0, child1);
+        inline(env, morph15, context, "cancel-back-next", [], {"backRouteName": get(env, context, "satelliteTabRouteName"), "disableBack": false, "nextRouteName": "register-nodes", "disableNext": get(env, context, "disableDeployUndercloudNext"), "parentController": get(env, context, "controller")});
+        inline(env, morph16, context, "loading-spinner", [], {"show": get(env, context, "showLoadingSpinner"), "text": get(env, context, "loadingSpinnerText")});
+        inline(env, morph17, context, "base-popover", [], {"selector": "popover"});
+        return fragment;
+      }
+    };
+  }()));
+
+});
 define('fusor-ember-cli/templates/where-install', ['exports'], function (exports) {
 
   'use strict';
@@ -34131,6 +38144,26 @@ define('fusor-ember-cli/tests/adapters/application.jshint', function () {
   });
 
 });
+define('fusor-ember-cli/tests/adapters/deployment-plan.jshint', function () {
+
+  'use strict';
+
+  module('JSHint - adapters');
+  test('adapters/deployment-plan.js should pass jshint', function() { 
+    ok(true, 'adapters/deployment-plan.js should pass jshint.'); 
+  });
+
+});
+define('fusor-ember-cli/tests/adapters/deployment-role.jshint', function () {
+
+  'use strict';
+
+  module('JSHint - adapters');
+  test('adapters/deployment-role.js should pass jshint', function() { 
+    ok(true, 'adapters/deployment-role.js should pass jshint.'); 
+  });
+
+});
 define('fusor-ember-cli/tests/adapters/deployment.jshint', function () {
 
   'use strict';
@@ -34151,6 +38184,16 @@ define('fusor-ember-cli/tests/adapters/entitlement.jshint', function () {
   });
 
 });
+define('fusor-ember-cli/tests/adapters/flavor.jshint', function () {
+
+  'use strict';
+
+  module('JSHint - adapters');
+  test('adapters/flavor.js should pass jshint', function() { 
+    ok(true, 'adapters/flavor.js should pass jshint.'); 
+  });
+
+});
 define('fusor-ember-cli/tests/adapters/foreman-task.jshint', function () {
 
   'use strict';
@@ -34161,6 +38204,16 @@ define('fusor-ember-cli/tests/adapters/foreman-task.jshint', function () {
   });
 
 });
+define('fusor-ember-cli/tests/adapters/image.jshint', function () {
+
+  'use strict';
+
+  module('JSHint - adapters');
+  test('adapters/image.js should pass jshint', function() { 
+    ok(true, 'adapters/image.js should pass jshint.'); 
+  });
+
+});
 define('fusor-ember-cli/tests/adapters/management-application.jshint', function () {
 
   'use strict';
@@ -34168,6 +38221,26 @@ define('fusor-ember-cli/tests/adapters/management-application.jshint', function 
   module('JSHint - adapters');
   test('adapters/management-application.js should pass jshint', function() { 
     ok(true, 'adapters/management-application.js should pass jshint.'); 
+  });
+
+});
+define('fusor-ember-cli/tests/adapters/node.jshint', function () {
+
+  'use strict';
+
+  module('JSHint - adapters');
+  test('adapters/node.js should pass jshint', function() { 
+    ok(true, 'adapters/node.js should pass jshint.'); 
+  });
+
+});
+define('fusor-ember-cli/tests/adapters/openstack-deployment.jshint', function () {
+
+  'use strict';
+
+  module('JSHint - adapters');
+  test('adapters/openstack-deployment.js should pass jshint', function() { 
+    ok(true, 'adapters/openstack-deployment.js should pass jshint.'); 
   });
 
 });
@@ -34231,6 +38304,16 @@ define('fusor-ember-cli/tests/components/base-f.jshint', function () {
   });
 
 });
+define('fusor-ember-cli/tests/components/base-popover.jshint', function () {
+
+  'use strict';
+
+  module('JSHint - components');
+  test('components/base-popover.js should pass jshint', function() { 
+    ok(true, 'components/base-popover.js should pass jshint.'); 
+  });
+
+});
 define('fusor-ember-cli/tests/components/button-f.jshint', function () {
 
   'use strict';
@@ -34291,6 +38374,16 @@ define('fusor-ember-cli/tests/components/error-message.jshint', function () {
   });
 
 });
+define('fusor-ember-cli/tests/components/file-upload-form.jshint', function () {
+
+  'use strict';
+
+  module('JSHint - components');
+  test('components/file-upload-form.js should pass jshint', function() { 
+    ok(true, 'components/file-upload-form.js should pass jshint.'); 
+  });
+
+});
 define('fusor-ember-cli/tests/components/hypervisor-name.jshint', function () {
 
   'use strict';
@@ -34328,6 +38421,16 @@ define('fusor-ember-cli/tests/components/radio-button-f.jshint', function () {
   module('JSHint - components');
   test('components/radio-button-f.js should pass jshint', function() { 
     ok(true, 'components/radio-button-f.js should pass jshint.'); 
+  });
+
+});
+define('fusor-ember-cli/tests/components/range-text-f.jshint', function () {
+
+  'use strict';
+
+  module('JSHint - components');
+  test('components/range-text-f.js should pass jshint', function() { 
+    ok(true, 'components/range-text-f.js should pass jshint.'); 
   });
 
 });
@@ -34651,6 +38754,26 @@ define('fusor-ember-cli/tests/controllers/deployment-new/start.jshint', function
   });
 
 });
+define('fusor-ember-cli/tests/controllers/deployment-plan.jshint', function () {
+
+  'use strict';
+
+  module('JSHint - controllers');
+  test('controllers/deployment-plan.js should pass jshint', function() { 
+    ok(true, 'controllers/deployment-plan.js should pass jshint.'); 
+  });
+
+});
+define('fusor-ember-cli/tests/controllers/deployment-role.jshint', function () {
+
+  'use strict';
+
+  module('JSHint - controllers');
+  test('controllers/deployment-role.js should pass jshint', function() { 
+    ok(true, 'controllers/deployment-role.js should pass jshint.'); 
+  });
+
+});
 define('fusor-ember-cli/tests/controllers/deployment.jshint', function () {
 
   'use strict';
@@ -34721,6 +38844,16 @@ define('fusor-ember-cli/tests/controllers/entitlements.jshint', function () {
   });
 
 });
+define('fusor-ember-cli/tests/controllers/flavor.jshint', function () {
+
+  'use strict';
+
+  module('JSHint - controllers');
+  test('controllers/flavor.js should pass jshint', function() { 
+    ok(true, 'controllers/flavor.js should pass jshint.'); 
+  });
+
+});
 define('fusor-ember-cli/tests/controllers/host.jshint', function () {
 
   'use strict';
@@ -34751,6 +38884,16 @@ define('fusor-ember-cli/tests/controllers/hypervisor/discovered-host.jshint', fu
   });
 
 });
+define('fusor-ember-cli/tests/controllers/image.jshint', function () {
+
+  'use strict';
+
+  module('JSHint - controllers');
+  test('controllers/image.js should pass jshint', function() { 
+    ok(true, 'controllers/image.js should pass jshint.'); 
+  });
+
+});
 define('fusor-ember-cli/tests/controllers/new-environment.jshint', function () {
 
   'use strict';
@@ -34768,6 +38911,26 @@ define('fusor-ember-cli/tests/controllers/new-organization.jshint', function () 
   module('JSHint - controllers');
   test('controllers/new-organization.js should pass jshint', function() { 
     ok(true, 'controllers/new-organization.js should pass jshint.'); 
+  });
+
+});
+define('fusor-ember-cli/tests/controllers/node.jshint', function () {
+
+  'use strict';
+
+  module('JSHint - controllers');
+  test('controllers/node.js should pass jshint', function() { 
+    ok(true, 'controllers/node.js should pass jshint.'); 
+  });
+
+});
+define('fusor-ember-cli/tests/controllers/openstack-deployment.jshint', function () {
+
+  'use strict';
+
+  module('JSHint - controllers');
+  test('controllers/openstack-deployment.js should pass jshint', function() { 
+    ok(true, 'controllers/openstack-deployment.js should pass jshint.'); 
   });
 
 });
@@ -34991,6 +39154,16 @@ define('fusor-ember-cli/tests/controllers/subscriptions/select-subscriptions.jsh
   });
 
 });
+define('fusor-ember-cli/tests/controllers/undercloud-deploy.jshint', function () {
+
+  'use strict';
+
+  module('JSHint - controllers');
+  test('controllers/undercloud-deploy.js should pass jshint', function() { 
+    ok(true, 'controllers/undercloud-deploy.js should pass jshint.'); 
+  });
+
+});
 define('fusor-ember-cli/tests/controllers/where-install.jshint', function () {
 
   'use strict';
@@ -35168,6 +39341,36 @@ define('fusor-ember-cli/tests/models/consumer.jshint', function () {
   });
 
 });
+define('fusor-ember-cli/tests/models/deployment-plan-parameter.jshint', function () {
+
+  'use strict';
+
+  module('JSHint - models');
+  test('models/deployment-plan-parameter.js should pass jshint', function() { 
+    ok(true, 'models/deployment-plan-parameter.js should pass jshint.'); 
+  });
+
+});
+define('fusor-ember-cli/tests/models/deployment-plan.jshint', function () {
+
+  'use strict';
+
+  module('JSHint - models');
+  test('models/deployment-plan.js should pass jshint', function() { 
+    ok(true, 'models/deployment-plan.js should pass jshint.'); 
+  });
+
+});
+define('fusor-ember-cli/tests/models/deployment-role.jshint', function () {
+
+  'use strict';
+
+  module('JSHint - models');
+  test('models/deployment-role.js should pass jshint', function() { 
+    ok(true, 'models/deployment-role.js should pass jshint.'); 
+  });
+
+});
 define('fusor-ember-cli/tests/models/deployment.jshint', function () {
 
   'use strict';
@@ -35208,6 +39411,16 @@ define('fusor-ember-cli/tests/models/environment.jshint', function () {
   });
 
 });
+define('fusor-ember-cli/tests/models/flavor.jshint', function () {
+
+  'use strict';
+
+  module('JSHint - models');
+  test('models/flavor.js should pass jshint', function() { 
+    ok(true, 'models/flavor.js should pass jshint.'); 
+  });
+
+});
 define('fusor-ember-cli/tests/models/foreman-task.jshint', function () {
 
   'use strict';
@@ -35228,6 +39441,16 @@ define('fusor-ember-cli/tests/models/host.jshint', function () {
   });
 
 });
+define('fusor-ember-cli/tests/models/image.jshint', function () {
+
+  'use strict';
+
+  module('JSHint - models');
+  test('models/image.js should pass jshint', function() { 
+    ok(true, 'models/image.js should pass jshint.'); 
+  });
+
+});
 define('fusor-ember-cli/tests/models/lifecycle-environment.jshint', function () {
 
   'use strict';
@@ -35245,6 +39468,26 @@ define('fusor-ember-cli/tests/models/management-application.jshint', function ()
   module('JSHint - models');
   test('models/management-application.js should pass jshint', function() { 
     ok(true, 'models/management-application.js should pass jshint.'); 
+  });
+
+});
+define('fusor-ember-cli/tests/models/node.jshint', function () {
+
+  'use strict';
+
+  module('JSHint - models');
+  test('models/node.js should pass jshint', function() { 
+    ok(true, 'models/node.js should pass jshint.'); 
+  });
+
+});
+define('fusor-ember-cli/tests/models/openstack-deployment.jshint', function () {
+
+  'use strict';
+
+  module('JSHint - models');
+  test('models/openstack-deployment.js should pass jshint', function() { 
+    ok(true, 'models/openstack-deployment.js should pass jshint.'); 
   });
 
 });
@@ -35908,6 +40151,16 @@ define('fusor-ember-cli/tests/routes/subscriptions/select-subscriptions.jshint',
   });
 
 });
+define('fusor-ember-cli/tests/routes/undercloud-deploy.jshint', function () {
+
+  'use strict';
+
+  module('JSHint - routes');
+  test('routes/undercloud-deploy.js should pass jshint', function() { 
+    ok(true, 'routes/undercloud-deploy.js should pass jshint.'); 
+  });
+
+});
 define('fusor-ember-cli/tests/routes/where-install.jshint', function () {
 
   'use strict';
@@ -35915,6 +40168,36 @@ define('fusor-ember-cli/tests/routes/where-install.jshint', function () {
   module('JSHint - routes');
   test('routes/where-install.js should pass jshint', function() { 
     ok(true, 'routes/where-install.js should pass jshint.'); 
+  });
+
+});
+define('fusor-ember-cli/tests/serializers/deployment-plan-parameter.jshint', function () {
+
+  'use strict';
+
+  module('JSHint - serializers');
+  test('serializers/deployment-plan-parameter.js should pass jshint', function() { 
+    ok(true, 'serializers/deployment-plan-parameter.js should pass jshint.'); 
+  });
+
+});
+define('fusor-ember-cli/tests/serializers/deployment-plan.jshint', function () {
+
+  'use strict';
+
+  module('JSHint - serializers');
+  test('serializers/deployment-plan.js should pass jshint', function() { 
+    ok(true, 'serializers/deployment-plan.js should pass jshint.'); 
+  });
+
+});
+define('fusor-ember-cli/tests/serializers/deployment-role.jshint', function () {
+
+  'use strict';
+
+  module('JSHint - serializers');
+  test('serializers/deployment-role.js should pass jshint', function() { 
+    ok(true, 'serializers/deployment-role.js should pass jshint.'); 
   });
 
 });
@@ -35945,6 +40228,26 @@ define('fusor-ember-cli/tests/serializers/management-application.jshint', functi
   module('JSHint - serializers');
   test('serializers/management-application.js should pass jshint', function() { 
     ok(true, 'serializers/management-application.js should pass jshint.'); 
+  });
+
+});
+define('fusor-ember-cli/tests/serializers/node.jshint', function () {
+
+  'use strict';
+
+  module('JSHint - serializers');
+  test('serializers/node.js should pass jshint', function() { 
+    ok(true, 'serializers/node.js should pass jshint.'); 
+  });
+
+});
+define('fusor-ember-cli/tests/serializers/openstack-deployment.jshint', function () {
+
+  'use strict';
+
+  module('JSHint - serializers');
+  test('serializers/openstack-deployment.js should pass jshint', function() { 
+    ok(true, 'serializers/openstack-deployment.js should pass jshint.'); 
   });
 
 });
@@ -39596,13 +43899,13 @@ define('fusor-ember-cli/tests/unit/serializers/pool-test.jshint', function () {
 /* jshint ignore:start */
 
 define('fusor-ember-cli/config/environment', ['ember'], function(Ember) {
-  return { 'default': {"modulePrefix":"fusor-ember-cli","environment":"development","baseURL":"/","locationType":"hash","EmberENV":{"FEATURES":{}},"contentSecurityPolicyHeader":"Disabled-Content-Security-Policy","APP":{"LOG_ACTIVE_GENERATION":true,"LOG_TRANSITIONS":true,"LOG_VIEW_LOOKUPS":true,"rootElement":"#ember-app","name":"fusor-ember-cli","version":"0.0.0.3a7ac3fc"},"contentSecurityPolicy":{"default-src":"'none'","script-src":"'self' 'unsafe-eval'","font-src":"'self'","connect-src":"'self'","img-src":"'self'","style-src":"'self'","media-src":"'self'"},"exportApplicationGlobal":true}};
+  return { 'default': {"modulePrefix":"fusor-ember-cli","environment":"development","baseURL":"/","locationType":"hash","EmberENV":{"FEATURES":{}},"contentSecurityPolicyHeader":"Disabled-Content-Security-Policy","APP":{"LOG_ACTIVE_GENERATION":true,"LOG_TRANSITIONS":true,"LOG_VIEW_LOOKUPS":true,"rootElement":"#ember-app","name":"fusor-ember-cli","version":"0.0.0.24314f19"},"contentSecurityPolicy":{"default-src":"'none'","script-src":"'self' 'unsafe-eval'","font-src":"'self'","connect-src":"'self'","img-src":"'self'","style-src":"'self'","media-src":"'self'"},"exportApplicationGlobal":true}};
 });
 
 if (runningTests) {
   require("fusor-ember-cli/tests/test-helper");
 } else {
-  require("fusor-ember-cli/app")["default"].create({"LOG_ACTIVE_GENERATION":true,"LOG_TRANSITIONS":true,"LOG_VIEW_LOOKUPS":true,"rootElement":"#ember-app","name":"fusor-ember-cli","version":"0.0.0.3a7ac3fc"});
+  require("fusor-ember-cli/app")["default"].create({"LOG_ACTIVE_GENERATION":true,"LOG_TRANSITIONS":true,"LOG_VIEW_LOOKUPS":true,"rootElement":"#ember-app","name":"fusor-ember-cli","version":"0.0.0.24314f19"});
 }
 
 /* jshint ignore:end */

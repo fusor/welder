@@ -5,7 +5,12 @@
         {{#if isRequired}}
           <span class='errorForValidation'>*</span>
         {{/if}}
-        {{label}}
+        <label class="class">
+          {{label}}
+        </label>
+        {{#if showHelpPopover}}
+          <button class="pficon fa fa-info-circle rhci-popover-button" data-original-title={{label}} data-toggle="popover" data-trigger="focus" data-html="true" data-content={{helpText}}></button>
+        {{/if}}
       </label>
 
       <div class="{{inputClassSize}}">
