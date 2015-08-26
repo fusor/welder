@@ -60006,34 +60006,21 @@ define("ember/resolver",
 
     if (fullName.parsedName === true) { return fullName; }
 
-    var prefix, type, name;
-    var fullNameParts = fullName.split('@');
+    var prefixParts = fullName.split('@');
+    var prefix;
 
-    // Htmlbars uses helper:@content-helper which collides
-    // with ember-cli namespace detection.
-    // This will be removed in a future release of Htmlbars.
-    if (fullName !== 'helper:@content-helper' &&
-        fullNameParts.length === 2) {
-      var prefixParts = fullNameParts[0].split(':');
-
-      if (prefixParts.length === 2) {
-        prefix = prefixParts[1];
-        type = prefixParts[0];
-        name = fullNameParts[1];
-      } else {
-        var nameParts = fullNameParts[1].split(':');
-
-        prefix = fullNameParts[0];
-        type = nameParts[0];
-        name = nameParts[1];
+    if (prefixParts.length === 2) {
+      if (prefixParts[0].split(':')[0] === 'view') {
+        prefixParts[0] = prefixParts[0].split(':')[1];
+        prefixParts[1] = 'view:' + prefixParts[1];
       }
-    } else {
-      fullNameParts = fullName.split(':');
-      type = fullNameParts[0];
-      name = fullNameParts[1];
+
+      prefix = prefixParts[0];
     }
 
-    var fullNameWithoutType = name;
+    var nameParts = prefixParts[prefixParts.length - 1].split(":");
+    var type = nameParts[0], fullNameWithoutType = nameParts[1];
+    var name = fullNameWithoutType;
     var namespace = get(this, 'namespace');
     var root = namespace;
 
@@ -74410,7 +74397,7 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
 }());
 
 ;//! moment.js
-//! version : 2.10.6
+//! version : 2.10.3
 //! authors : Tim Wood, Iskren Chernev, Moment.js contributors
 //! license : MIT
 //! momentjs.com
@@ -74505,7 +74492,6 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
                 flags.overflow < 0 &&
                 !flags.empty &&
                 !flags.invalidMonth &&
-                !flags.invalidWeekday &&
                 !flags.nullInput &&
                 !flags.invalidFormat &&
                 !flags.userInvalidated;
@@ -74586,7 +74572,7 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
     // Moment prototype object
     function Moment(config) {
         copyConfig(this, config);
-        this._d = new Date(config._d != null ? config._d.getTime() : NaN);
+        this._d = new Date(+config._d);
         // Prevent infinite loop in case updateOffset creates new moment
         // objects.
         if (updateInProgress === false) {
@@ -74600,20 +74586,16 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
         return obj instanceof Moment || (obj != null && obj._isAMomentObject != null);
     }
 
-    function absFloor (number) {
-        if (number < 0) {
-            return Math.ceil(number);
-        } else {
-            return Math.floor(number);
-        }
-    }
-
     function toInt(argumentForCoercion) {
         var coercedNumber = +argumentForCoercion,
             value = 0;
 
         if (coercedNumber !== 0 && isFinite(coercedNumber)) {
-            value = absFloor(coercedNumber);
+            if (coercedNumber >= 0) {
+                value = Math.floor(coercedNumber);
+            } else {
+                value = Math.ceil(coercedNumber);
+            }
         }
 
         return value;
@@ -74711,7 +74693,9 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
     function defineLocale (name, values) {
         if (values !== null) {
             values.abbr = name;
-            locales[name] = locales[name] || new Locale();
+            if (!locales[name]) {
+                locales[name] = new Locale();
+            }
             locales[name].set(values);
 
             // backwards compat for now: also set the locale
@@ -74815,14 +74799,16 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
     }
 
     function zeroFill(number, targetLength, forceSign) {
-        var absNumber = '' + Math.abs(number),
-            zerosToFill = targetLength - absNumber.length,
+        var output = '' + Math.abs(number),
             sign = number >= 0;
-        return (sign ? (forceSign ? '+' : '') : '-') +
-            Math.pow(10, Math.max(0, zerosToFill)).toString().substr(1) + absNumber;
+
+        while (output.length < targetLength) {
+            output = '0' + output;
+        }
+        return (sign ? (forceSign ? '+' : '') : '-') + output;
     }
 
-    var formattingTokens = /(\[[^\[]*\])|(\\)?(Mo|MM?M?M?|Do|DDDo|DD?D?D?|ddd?d?|do?|w[o|w]?|W[o|W]?|Q|YYYYYY|YYYYY|YYYY|YY|gg(ggg?)?|GG(GGG?)?|e|E|a|A|hh?|HH?|mm?|ss?|S{1,9}|x|X|zz?|ZZ?|.)/g;
+    var formattingTokens = /(\[[^\[]*\])|(\\)?(Mo|MM?M?M?|Do|DDDo|DD?D?D?|ddd?d?|do?|w[o|w]?|W[o|W]?|Q|YYYYYY|YYYYY|YYYY|YY|gg(ggg?)?|GG(GGG?)?|e|E|a|A|hh?|HH?|mm?|ss?|S{1,4}|x|X|zz?|ZZ?|.)/g;
 
     var localFormattingTokens = /(\[[^\[]*\])|(\\)?(LTS|LT|LL?L?L?|l{1,4})/g;
 
@@ -74890,7 +74876,10 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
         }
 
         format = expandFormat(format, m.localeData());
-        formatFunctions[format] = formatFunctions[format] || makeFormatFunction(format);
+
+        if (!formatFunctions[format]) {
+            formatFunctions[format] = makeFormatFunction(format);
+        }
 
         return formatFunctions[format](m);
     }
@@ -74934,15 +74923,8 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
 
     var regexes = {};
 
-    function isFunction (sth) {
-        // https://github.com/moment/moment/issues/2325
-        return typeof sth === 'function' &&
-            Object.prototype.toString.call(sth) === '[object Function]';
-    }
-
-
     function addRegexToken (token, regex, strictRegex) {
-        regexes[token] = isFunction(regex) ? regex : function (isStrict) {
+        regexes[token] = typeof regex === 'function' ? regex : function (isStrict) {
             return (isStrict && strictRegex) ? strictRegex : regex;
         };
     }
@@ -75150,11 +75132,12 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
     }
 
     function deprecate(msg, fn) {
-        var firstTime = true;
+        var firstTime = true,
+            msgWithStack = msg + '\n' + (new Error()).stack;
 
         return extend(function () {
             if (firstTime) {
-                warn(msg + '\n' + (new Error()).stack);
+                warn(msgWithStack);
                 firstTime = false;
             }
             return fn.apply(this, arguments);
@@ -75202,14 +75185,14 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
             getParsingFlags(config).iso = true;
             for (i = 0, l = isoDates.length; i < l; i++) {
                 if (isoDates[i][1].exec(string)) {
-                    config._f = isoDates[i][0];
+                    // match[5] should be 'T' or undefined
+                    config._f = isoDates[i][0] + (match[6] || ' ');
                     break;
                 }
             }
             for (i = 0, l = isoTimes.length; i < l; i++) {
                 if (isoTimes[i][1].exec(string)) {
-                    // match[6] should be 'T' or space
-                    config._f += (match[6] || ' ') + isoTimes[i][0];
+                    config._f += isoTimes[i][0];
                     break;
                 }
             }
@@ -75288,10 +75271,7 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
     addRegexToken('YYYYY',  match1to6, match6);
     addRegexToken('YYYYYY', match1to6, match6);
 
-    addParseToken(['YYYYY', 'YYYYYY'], YEAR);
-    addParseToken('YYYY', function (input, array) {
-        array[YEAR] = input.length === 2 ? utils_hooks__hooks.parseTwoDigitYear(input) : toInt(input);
-    });
+    addParseToken(['YYYY', 'YYYYY', 'YYYYYY'], YEAR);
     addParseToken('YY', function (input, array) {
         array[YEAR] = utils_hooks__hooks.parseTwoDigitYear(input);
     });
@@ -75418,18 +75398,18 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
 
     //http://en.wikipedia.org/wiki/ISO_week_date#Calculating_a_date_given_the_year.2C_week_number_and_weekday
     function dayOfYearFromWeeks(year, week, weekday, firstDayOfWeekOfYear, firstDayOfWeek) {
-        var week1Jan = 6 + firstDayOfWeek - firstDayOfWeekOfYear, janX = createUTCDate(year, 0, 1 + week1Jan), d = janX.getUTCDay(), dayOfYear;
-        if (d < firstDayOfWeek) {
-            d += 7;
-        }
+        var d = createUTCDate(year, 0, 1).getUTCDay();
+        var daysToAdd;
+        var dayOfYear;
 
-        weekday = weekday != null ? 1 * weekday : firstDayOfWeek;
-
-        dayOfYear = 1 + week1Jan + 7 * (week - 1) - d + weekday;
+        d = d === 0 ? 7 : d;
+        weekday = weekday != null ? weekday : firstDayOfWeek;
+        daysToAdd = firstDayOfWeek - d + (d > firstDayOfWeekOfYear ? 7 : 0) - (d < firstDayOfWeek ? 7 : 0);
+        dayOfYear = 7 * (week - 1) + (weekday - firstDayOfWeek) + daysToAdd + 1;
 
         return {
-            year: dayOfYear > 0 ? year : year - 1,
-            dayOfYear: dayOfYear > 0 ?  dayOfYear : daysInYear(year - 1) + dayOfYear
+            year      : dayOfYear > 0 ? year      : year - 1,
+            dayOfYear : dayOfYear > 0 ? dayOfYear : daysInYear(year - 1) + dayOfYear
         };
     }
 
@@ -75715,19 +75695,9 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
     }
 
     function createFromConfig (config) {
-        var res = new Moment(checkOverflow(prepareConfig(config)));
-        if (res._nextDay) {
-            // Adding is smart enough around DST
-            res.add(1, 'd');
-            res._nextDay = undefined;
-        }
-
-        return res;
-    }
-
-    function prepareConfig (config) {
         var input = config._i,
-            format = config._f;
+            format = config._f,
+            res;
 
         config._locale = config._locale || locale_locales__getLocale(config._l);
 
@@ -75751,7 +75721,14 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
             configFromInput(config);
         }
 
-        return config;
+        res = new Moment(checkOverflow(config));
+        if (res._nextDay) {
+            // Adding is smart enough around DST
+            res.add(1, 'd');
+            res._nextDay = undefined;
+        }
+
+        return res;
     }
 
     function configFromInput(config) {
@@ -75831,7 +75808,7 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
         }
         res = moments[0];
         for (i = 1; i < moments.length; ++i) {
-            if (!moments[i].isValid() || moments[i][fn](res)) {
+            if (moments[i][fn](res)) {
                 res = moments[i];
             }
         }
@@ -75943,6 +75920,7 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
         } else {
             return local__createLocal(input).local();
         }
+        return model._isUTC ? local__createLocal(input).zone(model._offset || 0) : local__createLocal(input).local();
     }
 
     function getDateOffset (m) {
@@ -76042,7 +76020,12 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
     }
 
     function hasAlignedHourOffset (input) {
-        input = input ? local__createLocal(input).utcOffset() : 0;
+        if (!input) {
+            input = 0;
+        }
+        else {
+            input = local__createLocal(input).utcOffset();
+        }
 
         return (this.utcOffset() - input) % 60 === 0;
     }
@@ -76055,24 +76038,12 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
     }
 
     function isDaylightSavingTimeShifted () {
-        if (typeof this._isDSTShifted !== 'undefined') {
-            return this._isDSTShifted;
+        if (this._a) {
+            var other = this._isUTC ? create_utc__createUTC(this._a) : local__createLocal(this._a);
+            return this.isValid() && compareArrays(this._a, other.toArray()) > 0;
         }
 
-        var c = {};
-
-        copyConfig(c, this);
-        c = prepareConfig(c);
-
-        if (c._a) {
-            var other = c._isUTC ? create_utc__createUTC(c._a) : local__createLocal(c._a);
-            this._isDSTShifted = this.isValid() &&
-                compareArrays(c._a, other.toArray()) > 0;
-        } else {
-            this._isDSTShifted = false;
-        }
-
-        return this._isDSTShifted;
+        return false;
     }
 
     function isLocal () {
@@ -76232,7 +76203,7 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
     var add_subtract__add      = createAdder(1, 'add');
     var add_subtract__subtract = createAdder(-1, 'subtract');
 
-    function moment_calendar__calendar (time, formats) {
+    function moment_calendar__calendar (time) {
         // We want to compare the start of today, vs this.
         // Getting start-of-today depends on whether we're local/utc/offset or not.
         var now = time || local__createLocal(),
@@ -76244,7 +76215,7 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
                 diff < 1 ? 'sameDay' :
                 diff < 2 ? 'nextDay' :
                 diff < 7 ? 'nextWeek' : 'sameElse';
-        return this.format(formats && formats[format] || this.localeData().calendar(format, this, local__createLocal(now)));
+        return this.format(this.localeData().calendar(format, this, local__createLocal(now)));
     }
 
     function clone () {
@@ -76288,6 +76259,14 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
         } else {
             inputMs = +local__createLocal(input);
             return +(this.clone().startOf(units)) <= inputMs && inputMs <= +(this.clone().endOf(units));
+        }
+    }
+
+    function absFloor (number) {
+        if (number < 0) {
+            return Math.ceil(number);
+        } else {
+            return Math.floor(number);
         }
     }
 
@@ -76481,19 +76460,6 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
         return [m.year(), m.month(), m.date(), m.hour(), m.minute(), m.second(), m.millisecond()];
     }
 
-    function toObject () {
-        var m = this;
-        return {
-            years: m.year(),
-            months: m.month(),
-            date: m.date(),
-            hours: m.hours(),
-            minutes: m.minutes(),
-            seconds: m.seconds(),
-            milliseconds: m.milliseconds()
-        };
-    }
-
     function moment_valid__isValid () {
         return valid__isValid(this);
     }
@@ -76665,20 +76631,18 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
     // HELPERS
 
     function parseWeekday(input, locale) {
-        if (typeof input !== 'string') {
-            return input;
+        if (typeof input === 'string') {
+            if (!isNaN(input)) {
+                input = parseInt(input, 10);
+            }
+            else {
+                input = locale.weekdaysParse(input);
+                if (typeof input !== 'number') {
+                    return null;
+                }
+            }
         }
-
-        if (!isNaN(input)) {
-            return parseInt(input, 10);
-        }
-
-        input = locale.weekdaysParse(input);
-        if (typeof input === 'number') {
-            return input;
-        }
-
-        return null;
+        return input;
     }
 
     // LOCALES
@@ -76701,7 +76665,9 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
     function localeWeekdaysParse (weekdayName) {
         var i, mom, regex;
 
-        this._weekdaysParse = this._weekdaysParse || [];
+        if (!this._weekdaysParse) {
+            this._weekdaysParse = [];
+        }
 
         for (i = 0; i < 7; i++) {
             // make the regex if we don't have it already
@@ -76848,26 +76814,12 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
         return ~~(this.millisecond() / 10);
     });
 
-    addFormatToken(0, ['SSS', 3], 0, 'millisecond');
-    addFormatToken(0, ['SSSS', 4], 0, function () {
-        return this.millisecond() * 10;
-    });
-    addFormatToken(0, ['SSSSS', 5], 0, function () {
-        return this.millisecond() * 100;
-    });
-    addFormatToken(0, ['SSSSSS', 6], 0, function () {
-        return this.millisecond() * 1000;
-    });
-    addFormatToken(0, ['SSSSSSS', 7], 0, function () {
-        return this.millisecond() * 10000;
-    });
-    addFormatToken(0, ['SSSSSSSS', 8], 0, function () {
-        return this.millisecond() * 100000;
-    });
-    addFormatToken(0, ['SSSSSSSSS', 9], 0, function () {
-        return this.millisecond() * 1000000;
-    });
+    function millisecond__milliseconds (token) {
+        addFormatToken(0, [token, 3], 0, 'millisecond');
+    }
 
+    millisecond__milliseconds('SSS');
+    millisecond__milliseconds('SSSS');
 
     // ALIASES
 
@@ -76878,19 +76830,11 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
     addRegexToken('S',    match1to3, match1);
     addRegexToken('SS',   match1to3, match2);
     addRegexToken('SSS',  match1to3, match3);
-
-    var token;
-    for (token = 'SSSS'; token.length <= 9; token += 'S') {
-        addRegexToken(token, matchUnsigned);
-    }
-
-    function parseMs(input, array) {
+    addRegexToken('SSSS', matchUnsigned);
+    addParseToken(['S', 'SS', 'SSS', 'SSSS'], function (input, array) {
         array[MILLISECOND] = toInt(('0.' + input) * 1000);
-    }
+    });
 
-    for (token = 'S'; token.length <= 9; token += 'S') {
-        addParseToken(token, parseMs);
-    }
     // MOMENTS
 
     var getSetMillisecond = makeGetSet('Milliseconds', false);
@@ -76937,7 +76881,6 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
     momentPrototype__proto.startOf      = startOf;
     momentPrototype__proto.subtract     = add_subtract__subtract;
     momentPrototype__proto.toArray      = toArray;
-    momentPrototype__proto.toObject     = toObject;
     momentPrototype__proto.toDate       = toDate;
     momentPrototype__proto.toISOString  = moment_format__toISOString;
     momentPrototype__proto.toJSON       = moment_format__toISOString;
@@ -77037,23 +76980,19 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
         LT   : 'h:mm A',
         L    : 'MM/DD/YYYY',
         LL   : 'MMMM D, YYYY',
-        LLL  : 'MMMM D, YYYY h:mm A',
-        LLLL : 'dddd, MMMM D, YYYY h:mm A'
+        LLL  : 'MMMM D, YYYY LT',
+        LLLL : 'dddd, MMMM D, YYYY LT'
     };
 
     function longDateFormat (key) {
-        var format = this._longDateFormat[key],
-            formatUpper = this._longDateFormat[key.toUpperCase()];
-
-        if (format || !formatUpper) {
-            return format;
+        var output = this._longDateFormat[key];
+        if (!output && this._longDateFormat[key.toUpperCase()]) {
+            output = this._longDateFormat[key.toUpperCase()].replace(/MMMM|MM|DD|dddd/g, function (val) {
+                return val.slice(1);
+            });
+            this._longDateFormat[key] = output;
         }
-
-        this._longDateFormat[key] = formatUpper.replace(/MMMM|MM|DD|dddd/g, function (val) {
-            return val.slice(1);
-        });
-
-        return this._longDateFormat[key];
+        return output;
     }
 
     var defaultInvalidDate = 'Invalid date';
@@ -77262,29 +77201,12 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
         return duration_add_subtract__addSubtract(this, input, value, -1);
     }
 
-    function absCeil (number) {
-        if (number < 0) {
-            return Math.floor(number);
-        } else {
-            return Math.ceil(number);
-        }
-    }
-
     function bubble () {
         var milliseconds = this._milliseconds;
         var days         = this._days;
         var months       = this._months;
         var data         = this._data;
-        var seconds, minutes, hours, years, monthsFromDays;
-
-        // if we have a mix of positive and negative values, bubble down first
-        // check: https://github.com/moment/moment/issues/2166
-        if (!((milliseconds >= 0 && days >= 0 && months >= 0) ||
-                (milliseconds <= 0 && days <= 0 && months <= 0))) {
-            milliseconds += absCeil(monthsToDays(months) + days) * 864e5;
-            days = 0;
-            months = 0;
-        }
+        var seconds, minutes, hours, years = 0;
 
         // The following code bubbles up values, see the tests for
         // examples of what that means.
@@ -77301,13 +77223,17 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
 
         days += absFloor(hours / 24);
 
-        // convert days to months
-        monthsFromDays = absFloor(daysToMonths(days));
-        months += monthsFromDays;
-        days -= absCeil(monthsToDays(monthsFromDays));
+        // Accurately convert days to years, assume start from year 0.
+        years = absFloor(daysToYears(days));
+        days -= absFloor(yearsToDays(years));
+
+        // 30 days to a month
+        // TODO (iskren): Use anchor date (like 1st Jan) to compute this.
+        months += absFloor(days / 30);
+        days   %= 30;
 
         // 12 months -> 1 year
-        years = absFloor(months / 12);
+        years  += absFloor(months / 12);
         months %= 12;
 
         data.days   = days;
@@ -77317,15 +77243,15 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
         return this;
     }
 
-    function daysToMonths (days) {
+    function daysToYears (days) {
         // 400 years have 146097 days (taking into account leap year rules)
-        // 400 years have 12 months === 4800
-        return days * 4800 / 146097;
+        return days * 400 / 146097;
     }
 
-    function monthsToDays (months) {
-        // the reverse of daysToMonths
-        return months * 146097 / 4800;
+    function yearsToDays (years) {
+        // years * 365 + absFloor(years / 4) -
+        //     absFloor(years / 100) + absFloor(years / 400);
+        return years * 146097 / 400;
     }
 
     function as (units) {
@@ -77337,11 +77263,11 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
 
         if (units === 'month' || units === 'year') {
             days   = this._days   + milliseconds / 864e5;
-            months = this._months + daysToMonths(days);
+            months = this._months + daysToYears(days) * 12;
             return units === 'month' ? months : months / 12;
         } else {
             // handle milliseconds separately because of floating point math errors (issue #1867)
-            days = this._days + Math.round(monthsToDays(this._months));
+            days = this._days + Math.round(yearsToDays(this._months / 12));
             switch (units) {
                 case 'week'   : return days / 7     + milliseconds / 6048e5;
                 case 'day'    : return days         + milliseconds / 864e5;
@@ -77391,7 +77317,7 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
         };
     }
 
-    var milliseconds = makeGetter('milliseconds');
+    var duration_get__milliseconds = makeGetter('milliseconds');
     var seconds      = makeGetter('seconds');
     var minutes      = makeGetter('minutes');
     var hours        = makeGetter('hours');
@@ -77469,36 +77395,13 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
     var iso_string__abs = Math.abs;
 
     function iso_string__toISOString() {
-        // for ISO strings we do not use the normal bubbling rules:
-        //  * milliseconds bubble up until they become hours
-        //  * days do not bubble at all
-        //  * months bubble up until they become years
-        // This is because there is no context-free conversion between hours and days
-        // (think of clock changes)
-        // and also not between days and months (28-31 days per month)
-        var seconds = iso_string__abs(this._milliseconds) / 1000;
-        var days         = iso_string__abs(this._days);
-        var months       = iso_string__abs(this._months);
-        var minutes, hours, years;
-
-        // 3600 seconds -> 60 minutes -> 1 hour
-        minutes           = absFloor(seconds / 60);
-        hours             = absFloor(minutes / 60);
-        seconds %= 60;
-        minutes %= 60;
-
-        // 12 months -> 1 year
-        years  = absFloor(months / 12);
-        months %= 12;
-
-
         // inspired by https://github.com/dordille/moment-isoduration/blob/master/moment.isoduration.js
-        var Y = years;
-        var M = months;
-        var D = days;
-        var h = hours;
-        var m = minutes;
-        var s = seconds;
+        var Y = iso_string__abs(this.years());
+        var M = iso_string__abs(this.months());
+        var D = iso_string__abs(this.days());
+        var h = iso_string__abs(this.hours());
+        var m = iso_string__abs(this.minutes());
+        var s = iso_string__abs(this.seconds() + this.milliseconds() / 1000);
         var total = this.asSeconds();
 
         if (!total) {
@@ -77535,7 +77438,7 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
     duration_prototype__proto.valueOf        = duration_as__valueOf;
     duration_prototype__proto._bubble        = bubble;
     duration_prototype__proto.get            = duration_get__get;
-    duration_prototype__proto.milliseconds   = milliseconds;
+    duration_prototype__proto.milliseconds   = duration_get__milliseconds;
     duration_prototype__proto.seconds        = seconds;
     duration_prototype__proto.minutes        = minutes;
     duration_prototype__proto.hours          = hours;
@@ -77573,7 +77476,7 @@ var Showdown={extensions:{}},forEach=Showdown.forEach=function(a,b){if(typeof a.
     // Side effect imports
 
 
-    utils_hooks__hooks.version = '2.10.6';
+    utils_hooks__hooks.version = '2.10.3';
 
     setHookCallback(local__createLocal);
 
@@ -77749,162 +77652,6 @@ define("ember-drag-drop", ["ember-drag-drop/index", "ember", "exports"], functio
   });
 });
 
-define('ember-drag-drop/components/draggable-object-target', ['exports', 'ember', 'ember-drag-drop/mixins/droppable'], function (exports, Ember, Droppable) {
-
-  'use strict';
-
-  exports['default'] = Ember['default'].Component.extend(Droppable['default'], {
-    classNames: ["draggable-object-target"],
-
-    handlePayload: function(payload) {
-      var obj = this.get('coordinator').getObject(payload,{target: this});
-      this.sendAction('action',obj,{target: this});
-    },
-
-    handleDrop: function(event) {
-      var dataTransfer = event.dataTransfer;
-      var payload = dataTransfer.getData("Text");
-      this.handlePayload(payload);
-    },
-
-    acceptDrop: function(event) {
-      this.handleDrop(event);
-      //Firefox is navigating to a url on drop sometimes, this prevents that from happening
-      event.preventDefault();
-    },
-
-    actions: {
-      acceptForDrop: function() {
-        var hashId = this.get('coordinator.clickedId');
-        this.handlePayload(hashId);
-      }
-    }
-  });
-
-});
-define('ember-drag-drop/components/draggable-object', ['exports', 'ember'], function (exports, Ember) {
-
-  'use strict';
-
-  exports['default'] = Ember['default'].Component.extend({
-    tagName: "div",
-    classNames: ["draggable-object"],
-    classNameBindings: ["isDraggingObject:is-dragging-object:"],
-    attributeBindings: ['draggable'],
-    isDraggable: true,
-
-    draggable: function() {
-      var isDraggable = this.get('isDraggable');
-
-      if (isDraggable) {
-        return true;
-      }
-      else {
-        return null;
-      }
-    }.property('isDraggable'),
-
-    handleDragStart: function(event) {
-
-      var dataTransfer = event.dataTransfer;
-
-      var obj = this.get('content');
-      var id = this.get('coordinator').setObject(obj, { source: this });
-
-      dataTransfer.setData('Text', id);
-
-      if (obj) {
-        Ember['default'].set(obj, 'isDraggingObject', true);
-      }
-      this.set('isDraggingObject', true);
-    }.on("dragStart"),
-
-    handleDragEnd: function() {
-      var obj = this.get('content');
-
-      if (obj) {
-        Ember['default'].set(obj, 'isDraggingObject', false);
-      }
-      this.set('isDraggingObject', false);
-    }.on("dragEnd"),
-
-    actions: {
-      selectForDrag: function() {
-        var obj = this.get('content');
-        var hashId = this.get('coordinator').setObject(obj, { source: this });
-        this.get('coordinator').set("clickedId", hashId);
-      }
-    }
-  });
-
-});
-define('ember-drag-drop/components/object-bin', ['exports', 'ember'], function (exports, Ember) {
-
-  'use strict';
-
-  var YieldLocalMixin = Ember['default'].Mixin.create({
-    _yield: function(context, options) {
-      var view = options.data.view;
-      var parentView = this._parentView;
-      var template = Ember['default'].get(this, 'template');
-
-      if (template) {
-        Ember['default'].assert("A Component must have a parent view in order to yield.", parentView);
-
-        view.appendChild(Ember['default'].View, {
-          isVirtual: true,
-          tagName: '',
-          _contextView: parentView,
-          template: template,
-          context: Ember['default'].get(view, 'context'),
-          controller: Ember['default'].get(view, 'controller'),
-          templateData: { keywords: {} }
-        });
-      }
-    }
-  });
-
-  var removeOne = function(arr,obj) {
-    var l = arr.get('length');
-    arr.removeObject(obj);
-    var l2 = arr.get('length');
-
-    if (l-1 !== l2) {
-      throw "bad length " + l + " " + l2;
-    }
-  };
-
-  exports['default'] = Ember['default'].Component.extend(YieldLocalMixin, {
-    model: [],
-    classNames: ['draggable-object-bin'],
-
-    manageList: true,
-
-    handleObjectMoved: function() {
-    }.on("objectMoved"),
-
-    actions: {
-      handleObjectDropped: function(obj) {
-        if (this.get('manageList')) {
-          this.get("model").pushObject(obj);
-        }
-
-        this.trigger("objectDroppedInternal",obj);
-        this.sendAction("objectDropped",{obj: obj, bin: this});
-      },
-
-      handleObjectDragged: function(obj) {
-        if (this.get('manageList')) {
-          removeOne(this.get('model'),obj);
-        }
-        this.trigger("objectDraggedInternal",obj);
-        this.sendAction("objectDragged");
-
-      }
-    }
-  });
-
-});
 define('ember-drag-drop/mixins/droppable', ['exports', 'ember'], function (exports, Ember) {
 
   'use strict';
@@ -79666,107 +79413,100 @@ define('ember-radio-button/components/labeled-radio-button', ['exports', 'ember'
 
   exports['default'] = Ember['default'].Component.extend({
     tagName: 'label',
-    attributeBindings: ['for'],
     classNameBindings: ['checked'],
     classNames: ['ember-radio-button'],
     defaultLayout: null, // ie8 support
 
-    checked: computed('groupValue', 'value', function () {
+    checked: computed('groupValue', 'value', function(){
       return this.get('groupValue') === this.get('value');
     }).readOnly(),
 
-    'for': computed.readOnly('radioId'),
-
     actions: {
-      innerRadioChanged: function innerRadioChanged(value) {
+      innerRadioChanged: function(value) {
         this.sendAction('changed', value);
       }
     }
   });
 
 });
-define('ember-radio-button/components/radio-button-input', ['exports', 'ember'], function (exports, Ember) {
+define('ember-radio-button/components/radio-button-base', ['exports', 'ember'], function (exports, Ember) {
 
   'use strict';
 
-  var computed = Ember['default'].computed;
+  var boundAttributeKeys = [
+    'checked',
+    'disabled',
+    'name',
+    'required',
+    'type',
+    'value'
+  ];
 
   exports['default'] = Ember['default'].Component.extend({
     tagName: 'input',
     type: 'radio',
-
-    // value - required
-    // groupValue - required
-
-    // disabled - optional
-    // name - optional
-    // required - optional
-    // radioClass - string
-    // radioId - string
-
+    value: null,
     defaultLayout: null, // ie8 support
 
-    attributeBindings: ['checked', 'disabled', 'name', 'required', 'type', 'value'],
-
-    checked: computed('groupValue', 'value', function () {
-      return this.get('groupValue') === this.get('value');
-    }).readOnly(),
-
-    sendChangedAction: function sendChangedAction() {
-      this.sendAction('changed', this.get('value'));
-    },
-
-    change: function change() {
-      var value = this.get('value');
-      var groupValue = this.get('groupValue');
-
-      if (groupValue !== value) {
-        this.set('groupValue', value); // violates DDAU
-        Ember['default'].run.once(this, 'sendChangedAction');
-      }
-    }
+    attributeBindings: boundAttributeKeys
   });
 
+  exports.boundAttributeKeys = boundAttributeKeys;
+
 });
-define('ember-radio-button/components/radio-button', ['exports', 'ember'], function (exports, Ember) {
+define('ember-radio-button/components/radio-button', ['exports', 'ember', 'ember-radio-button/components/radio-button-base'], function (exports, Ember, RadioButtonBase) {
 
   'use strict';
 
   var computed = Ember['default'].computed;
+  var on = Ember['default'].on;
 
-  exports['default'] = Ember['default'].Component.extend({
-    tagName: '',
-    // value - passed in, required, the value for this radio button
-    // groupValue - passed in, required, the currently selected value
+  exports['default'] = RadioButtonBase['default'].extend({
+    value: null,
+    groupValue: null,
 
-    // optionally passed in:
-    // disabled - boolean
-    // required - boolean
-    // name - string
-    // radioClass - string
-    // radioId - string
+    wrapInLabelIfUsedAsBlock: on('init', function() {
+      if (this.get('template')) {
+        this.set('tagName', 'label');
+        this.set('layoutName', 'components/labeled-radio-button');
 
-    // polyfill hasBlock for ember versions < 1.13
-    hasBlock: computed.bool('template').readOnly(),
+        // our change event handler becomes unused
+        this.set('change', undefined);
 
-    joinedClassNames: computed('classNames', function () {
-      var classNames = this.get('classNames');
-      if (classNames && classNames.length && classNames.join) {
-        return classNames.join(' ');
+        // don't bind name, type, etc to the label
+        var originalAttrs = this.get('attributeBindings');
+        var updatedAttrs = Ember['default'].copy(originalAttrs).removeObjects(
+          RadioButtonBase.boundAttributeKeys
+        );
+        this.set('attributeBindings', updatedAttrs);
+        this.get('classNameBindings').pushObject('checked');
+        this.get('classNames').pushObject('ember-radio-button');
       }
-      return classNames;
     }),
 
-    // is this needed here or just on radio-button-input?
-    defaultLayout: null, // ie8 support
-
-    checked: computed('groupValue', 'value', function () {
+    checked: computed('groupValue', 'value', function(){
       return this.get('groupValue') === this.get('value');
     }).readOnly(),
 
+    change: function() {
+      var value = this.get('value');
+      var groupValue = this.get('groupValue');
+
+      if (groupValue !== value){
+        this.set('groupValue', value);
+        Ember['default'].run.once(this, 'sendChangedAction');
+      }
+    },
+
+    sendChangedAction: function() {
+      this.sendAction('changed', this.get('value'));
+    },
+
     actions: {
-      changed: function changed(newValue) {
-        this.sendAction('changed', newValue);
+      // when used as a block, our layout wraps a non-block
+      // radio-button which maps changed to this
+      innerRadioChanged: function(value) {
+        this.sendAction('changed', value);
       }
     }
   });
@@ -79787,7 +79527,7 @@ define('ember-validations/errors', ['exports', 'ember'], function (exports, Embe
   var set = Ember['default'].set;
 
   exports['default'] = Ember['default'].Object.extend({
-    unknownProperty: function unknownProperty(property) {
+    unknownProperty: function(property) {
       set(this, property, Ember['default'].A());
       return get(this, property);
     }
@@ -79798,13 +79538,12 @@ define('ember-validations/index', ['exports', 'ember-validations/mixin'], functi
 
   'use strict';
 
-  exports.validator = validator;
-
-  exports['default'] = Mixin['default'];
-
-  function validator(callback) {
-    return { callback: callback };
-  }
+  exports['default'] = {
+    Mixin: Mixin['default'],
+    validator: function(callback) {
+      return { callback: callback };
+    }
+  };
 
 });
 define('ember-validations/messages', ['exports', 'ember'], function (exports, Ember) {
@@ -79812,7 +79551,7 @@ define('ember-validations/messages', ['exports', 'ember'], function (exports, Em
   'use strict';
 
   exports['default'] = {
-    render: function render(attribute, context) {
+    render: function(attribute, context) {
       if (Ember['default'].I18n) {
         return Ember['default'].I18n.t('errors.' + attribute, context);
       } else {
@@ -79859,9 +79598,9 @@ define('ember-validations/mixin', ['exports', 'ember', 'ember-validations/errors
   var set = Ember['default'].set;
 
   var setValidityMixin = Ember['default'].Mixin.create({
-    isValid: Ember['default'].computed('validators.@each.isValid', function () {
+    isValid: Ember['default'].computed('validators.@each.isValid', function() {
       var compactValidators = get(this, 'validators').compact();
-      var filteredValidators = compactValidators.filter(function (validator) {
+      var filteredValidators = Ember['default'].EnumerableUtils.filter(compactValidators, function(validator) {
         return !get(validator, 'isValid');
       });
 
@@ -79870,18 +79609,18 @@ define('ember-validations/mixin', ['exports', 'ember', 'ember-validations/errors
     isInvalid: Ember['default'].computed.not('isValid')
   });
 
-  var pushValidatableObject = function pushValidatableObject(model, property) {
+  var pushValidatableObject = function(model, property) {
     var content = get(model, property);
 
     model.removeObserver(property, pushValidatableObject);
     if (Ember['default'].isArray(content)) {
-      model.validators.pushObject(ArrayValidatorProxy.create({ model: model, property: property, contentBinding: 'model.' + property }));
+      model.validators.pushObject(ArrayValidatorProxy.create({model: model, property: property, contentBinding: 'model.' + property}));
     } else {
       model.validators.pushObject(content);
     }
   };
 
-  var lookupValidator = function lookupValidator(validatorName) {
+  var lookupValidator = function(validatorName) {
     var container = get(this, 'container');
     var service = container.lookup('service:validations');
     var validators = [];
@@ -79896,23 +79635,19 @@ define('ember-validations/mixin', ['exports', 'ember', 'ember-validations/errors
     if (cache[validatorName]) {
       validators = validators.concat(cache[validatorName]);
     } else {
-      var local = container.lookupFactory('validator:local/' + validatorName);
-      var remote = container.lookupFactory('validator:remote/' + validatorName);
+      var local = container.lookupFactory('validator:local/'+validatorName);
+      var remote = container.lookupFactory('validator:remote/'+validatorName);
 
-      if (local || remote) {
-        validators = validators.concat([local, remote]);
-      } else {
-        var base = container.lookupFactory('validator:' + validatorName);
+      if (local || remote) { validators = validators.concat([local, remote]); }
+      else {
+        var base = container.lookupFactory('validator:'+validatorName);
 
-        if (base) {
-          validators = validators.concat([base]);
-        } else {
-          local = container.lookupFactory('ember-validations@validator:local/' + validatorName);
-          remote = container.lookupFactory('ember-validations@validator:remote/' + validatorName);
+        if (base) { validators = validators.concat([base]); }
+        else {
+          local = container.lookupFactory('ember-validations@validator:local/'+validatorName);
+          remote = container.lookupFactory('ember-validations@validator:remote/'+validatorName);
 
-          if (local || remote) {
-            validators = validators.concat([local, remote]);
-          }
+          if (local || remote) { validators = validators.concat([local, remote]); }
         }
       }
 
@@ -79920,17 +79655,17 @@ define('ember-validations/mixin', ['exports', 'ember', 'ember-validations/errors
     }
 
     if (Ember['default'].isEmpty(validators)) {
-      Ember['default'].warn('Could not find the "' + validatorName + '" validator.');
+      Ember['default'].warn('Could not find the "'+validatorName+'" validator.');
     }
 
     return validators;
   };
 
   var ArrayValidatorProxy = Ember['default'].ArrayProxy.extend(setValidityMixin, {
-    validate: function validate() {
+    validate: function() {
       return this._validate();
     },
-    _validate: Ember['default'].on('init', function () {
+    _validate: Ember['default'].on('init', function() {
       var promises = get(this, 'content').invoke('_validate').without(undefined);
       return Ember['default'].RSVP.all(promises);
     }),
@@ -79938,7 +79673,7 @@ define('ember-validations/mixin', ['exports', 'ember', 'ember-validations/errors
   });
 
   exports['default'] = Ember['default'].Mixin.create(setValidityMixin, {
-    init: function init() {
+    init: function() {
       this._super();
       this.errors = Errors['default'].create();
       this.dependentValidationKeys = {};
@@ -79947,10 +79682,10 @@ define('ember-validations/mixin', ['exports', 'ember', 'ember-validations/errors
         this.validations = {};
       }
       this.buildValidators();
-      this.validators.forEach(function (validator) {
-        validator.addObserver('errors.[]', this, function (sender) {
+      this.validators.forEach(function(validator) {
+        validator.addObserver('errors.[]', this, function(sender) {
           var errors = Ember['default'].A();
-          this.validators.forEach(function (validator) {
+          this.validators.forEach(function(validator) {
             if (validator.property === sender.property) {
               errors.addObjects(validator.errors);
             }
@@ -79959,7 +79694,7 @@ define('ember-validations/mixin', ['exports', 'ember', 'ember-validations/errors
         });
       }, this);
     },
-    buildValidators: function buildValidators() {
+    buildValidators: function() {
       var property;
 
       for (property in this.validations) {
@@ -79970,10 +79705,10 @@ define('ember-validations/mixin', ['exports', 'ember', 'ember-validations/errors
         }
       }
     },
-    buildRuleValidator: function buildRuleValidator(property) {
-      var pushValidator = function pushValidator(validator) {
+    buildRuleValidator: function(property) {
+      var pushValidator = function(validator) {
         if (validator) {
-          this.validators.pushObject(validator.create({ model: this, property: property, options: this.validations[property][validatorName] }));
+          this.validators.pushObject(validator.create({model: this, property: property, options: this.validations[property][validatorName]}));
         }
       };
 
@@ -79981,9 +79716,9 @@ define('ember-validations/mixin', ['exports', 'ember', 'ember-validations/errors
         this.validations[property] = { inline: this.validations[property] };
       }
 
-      var createInlineClass = function createInlineClass(callback) {
+      var createInlineClass = function(callback) {
         return Base['default'].extend({
-          call: function call() {
+          call: function() {
             var errorMessage = this.callback.call(this);
 
             if (errorMessage) {
@@ -79998,28 +79733,28 @@ define('ember-validations/mixin', ['exports', 'ember', 'ember-validations/errors
         if (validatorName === 'inline') {
           pushValidator.call(this, createInlineClass(this.validations[property][validatorName].callback));
         } else if (this.validations[property].hasOwnProperty(validatorName)) {
-          lookupValidator.call(this, validatorName).forEach(pushValidator, this);
+          Ember['default'].EnumerableUtils.forEach(lookupValidator.call(this, validatorName), pushValidator, this);
         }
       }
     },
-    buildObjectValidator: function buildObjectValidator(property) {
+    buildObjectValidator: function(property) {
       if (Ember['default'].isNone(get(this, property))) {
         this.addObserver(property, this, pushValidatableObject);
       } else {
         pushValidatableObject(this, property);
       }
     },
-    validate: function validate() {
+    validate: function() {
       var self = this;
-      return this._validate().then(function (vals) {
+      return this._validate().then(function(vals) {
         var errors = get(self, 'errors');
-        if (vals.indexOf(false) > -1) {
+        if (Ember['default'].EnumerableUtils.indexOf(vals, false) > -1) {
           return Ember['default'].RSVP.reject(errors);
         }
         return errors;
       });
     },
-    _validate: Ember['default'].on('init', function () {
+    _validate: Ember['default'].on('init', function() {
       var promises = this.validators.invoke('_validate').without(undefined);
       return Ember['default'].RSVP.all(promises);
     })
@@ -80044,7 +79779,7 @@ define('ember-validations/validators/base', ['exports', 'ember'], function (expo
   var set = Ember['default'].set;
 
   exports['default'] = Ember['default'].Object.extend({
-    init: function init() {
+    init: function() {
       set(this, 'errors', Ember['default'].A());
       this.dependentValidationKeys = Ember['default'].A();
       this.conditionals = {
@@ -80053,22 +79788,22 @@ define('ember-validations/validators/base', ['exports', 'ember'], function (expo
       };
       this.model.addObserver(this.property, this, this._validate);
     },
-    addObserversForDependentValidationKeys: Ember['default'].on('init', function () {
-      this.dependentValidationKeys.forEach(function (key) {
+    addObserversForDependentValidationKeys: Ember['default'].on('init', function() {
+      this.dependentValidationKeys.forEach(function(key) {
         this.model.addObserver(key, this, this._validate);
       }, this);
     }),
-    pushDependentValidationKeyToModel: Ember['default'].on('init', function () {
+    pushDependentValidationKeyToModel: Ember['default'].on('init', function() {
       var model = get(this, 'model');
       if (model.dependentValidationKeys[this.property] === undefined) {
         model.dependentValidationKeys[this.property] = Ember['default'].A();
       }
       model.dependentValidationKeys[this.property].addObjects(this.dependentValidationKeys);
     }),
-    call: function call() {
+    call: function () {
       throw 'Not implemented!';
     },
-    unknownProperty: function unknownProperty(key) {
+    unknownProperty: function(key) {
       var model = get(this, 'model');
       if (model) {
         return get(model, key);
@@ -80076,9 +79811,9 @@ define('ember-validations/validators/base', ['exports', 'ember'], function (expo
     },
     isValid: Ember['default'].computed.empty('errors.[]'),
     isInvalid: Ember['default'].computed.not('isValid'),
-    validate: function validate() {
+    validate: function() {
       var self = this;
-      return this._validate().then(function (success) {
+      return this._validate().then(function(success) {
         // Convert validation failures to rejects.
         var errors = get(self, 'model.errors');
         if (success) {
@@ -80088,7 +79823,7 @@ define('ember-validations/validators/base', ['exports', 'ember'], function (expo
         }
       });
     },
-    _validate: Ember['default'].on('init', function () {
+    _validate: Ember['default'].on('init', function() {
       this.errors.clear();
       if (this.canValidate()) {
         this.call();
@@ -80099,23 +79834,23 @@ define('ember-validations/validators/base', ['exports', 'ember'], function (expo
         return Ember['default'].RSVP.resolve(false);
       }
     }),
-    canValidate: function canValidate() {
-      if (typeof this.conditionals === 'object') {
+    canValidate: function() {
+      if (typeof(this.conditionals) === 'object') {
         if (this.conditionals['if']) {
-          if (typeof this.conditionals['if'] === 'function') {
+          if (typeof(this.conditionals['if']) === 'function') {
             return this.conditionals['if'](this.model, this.property);
-          } else if (typeof this.conditionals['if'] === 'string') {
-            if (typeof this.model[this.conditionals['if']] === 'function') {
+          } else if (typeof(this.conditionals['if']) === 'string') {
+            if (typeof(this.model[this.conditionals['if']]) === 'function') {
               return this.model[this.conditionals['if']]();
             } else {
               return get(this.model, this.conditionals['if']);
             }
           }
         } else if (this.conditionals.unless) {
-          if (typeof this.conditionals.unless === 'function') {
+          if (typeof(this.conditionals.unless) === 'function') {
             return !this.conditionals.unless(this.model, this.property);
-          } else if (typeof this.conditionals.unless === 'string') {
-            if (typeof this.model[this.conditionals.unless] === 'function') {
+          } else if (typeof(this.conditionals.unless) === 'string') {
+            if (typeof(this.model[this.conditionals.unless]) === 'function') {
               return !this.model[this.conditionals.unless]();
             } else {
               return !get(this.model, this.conditionals.unless);
@@ -80128,22 +79863,15 @@ define('ember-validations/validators/base', ['exports', 'ember'], function (expo
         return true;
       }
     },
-    compare: function compare(a, b, operator) {
+    compare: function (a, b, operator) {
       switch (operator) {
-        case '==':
-          return a == b; // jshint ignore:line
-        case '===':
-          return a === b;
-        case '>=':
-          return a >= b;
-        case '<=':
-          return a <= b;
-        case '>':
-          return a > b;
-        case '<':
-          return a < b;
-        default:
-          return false;
+        case '==':  return a == b; // jshint ignore:line
+        case '===': return a === b;
+        case '>=':  return a >= b;
+        case '<=':  return a <= b;
+        case '>':   return a > b;
+        case '<':   return a < b;
+        default:    return false;
       }
     }
   });
@@ -80157,7 +79885,7 @@ define('ember-validations/validators/local/absence', ['exports', 'ember', 'ember
   var set = Ember['default'].set;
 
   exports['default'] = Base['default'].extend({
-    init: function init() {
+    init: function() {
       this._super();
       /*jshint expr:true*/
       if (this.options === true) {
@@ -80168,7 +79896,7 @@ define('ember-validations/validators/local/absence', ['exports', 'ember', 'ember
         set(this, 'options.message', Messages['default'].render('present', this.options));
       }
     },
-    call: function call() {
+    call: function() {
       if (!Ember['default'].isEmpty(get(this.model, this.property))) {
         this.errors.pushObject(this.options.message);
       }
@@ -80184,7 +79912,7 @@ define('ember-validations/validators/local/acceptance', ['exports', 'ember', 'em
   var set = Ember['default'].set;
 
   exports['default'] = Base['default'].extend({
-    init: function init() {
+    init: function() {
       this._super();
       /*jshint expr:true*/
       if (this.options === true) {
@@ -80195,7 +79923,7 @@ define('ember-validations/validators/local/acceptance', ['exports', 'ember', 'em
         set(this, 'options.message', Messages['default'].render('accepted', this.options));
       }
     },
-    call: function call() {
+    call: function() {
       if (this.options.accept) {
         if (get(this.model, this.property) !== this.options.accept) {
           this.errors.pushObject(this.options.message);
@@ -80215,7 +79943,7 @@ define('ember-validations/validators/local/confirmation', ['exports', 'ember', '
   var set = Ember['default'].set;
 
   exports['default'] = Base['default'].extend({
-    init: function init() {
+    init: function() {
       this.originalProperty = this.property;
       this.property = this.property + 'Confirmation';
       this._super();
@@ -80226,11 +79954,11 @@ define('ember-validations/validators/local/confirmation', ['exports', 'ember', '
         set(this, 'options', { message: Messages['default'].render('confirmation', this.options) });
       }
     },
-    call: function call() {
+    call: function() {
       var original = get(this.model, this.originalProperty);
       var confirmation = get(this.model, this.property);
 
-      if (!Ember['default'].isEmpty(original) || !Ember['default'].isEmpty(confirmation)) {
+      if(!Ember['default'].isEmpty(original) || !Ember['default'].isEmpty(confirmation)) {
         if (original !== confirmation) {
           this.errors.pushObject(this.options.message);
         }
@@ -80247,7 +79975,7 @@ define('ember-validations/validators/local/exclusion', ['exports', 'ember', 'emb
   var set = Ember['default'].set;
 
   exports['default'] = Base['default'].extend({
-    init: function init() {
+    init: function() {
       this._super();
       if (this.options.constructor === Array) {
         set(this, 'options', { 'in': this.options });
@@ -80257,7 +79985,7 @@ define('ember-validations/validators/local/exclusion', ['exports', 'ember', 'emb
         set(this, 'options.message', Messages['default'].render('exclusion', this.options));
       }
     },
-    call: function call() {
+    call: function() {
       /*jshint expr:true*/
       var lower, upper;
 
@@ -80289,17 +80017,17 @@ define('ember-validations/validators/local/format', ['exports', 'ember', 'ember-
   var set = Ember['default'].set;
 
   exports['default'] = Base['default'].extend({
-    init: function init() {
+    init: function() {
       this._super();
       if (this.options.constructor === RegExp) {
         set(this, 'options', { 'with': this.options });
       }
 
       if (this.options.message === undefined) {
-        set(this, 'options.message', Messages['default'].render('invalid', this.options));
+        set(this, 'options.message',  Messages['default'].render('invalid', this.options));
       }
-    },
-    call: function call() {
+     },
+     call: function() {
       if (Ember['default'].isEmpty(get(this.model, this.property))) {
         if (this.options.allowBlank === undefined) {
           this.errors.pushObject(this.options.message);
@@ -80321,7 +80049,7 @@ define('ember-validations/validators/local/inclusion', ['exports', 'ember', 'emb
   var set = Ember['default'].set;
 
   exports['default'] = Base['default'].extend({
-    init: function init() {
+    init: function() {
       this._super();
       if (this.options.constructor === Array) {
         set(this, 'options', { 'in': this.options });
@@ -80331,7 +80059,7 @@ define('ember-validations/validators/local/inclusion', ['exports', 'ember', 'emb
         set(this, 'options.message', Messages['default'].render('inclusion', this.options));
       }
     },
-    call: function call() {
+    call: function() {
       var lower, upper;
       if (Ember['default'].isEmpty(get(this.model, this.property))) {
         if (this.options.allowBlank === undefined) {
@@ -80361,11 +80089,11 @@ define('ember-validations/validators/local/length', ['exports', 'ember', 'ember-
   var set = Ember['default'].set;
 
   exports['default'] = Base['default'].extend({
-    init: function init() {
+    init: function() {
       var index, key;
       this._super();
       /*jshint expr:true*/
-      if (typeof this.options === 'number') {
+      if (typeof(this.options) === 'number') {
         set(this, 'options', { 'is': this.options });
       }
 
@@ -80380,56 +80108,53 @@ define('ember-validations/validators/local/length', ['exports', 'ember', 'ember-
         }
       }
 
-      this.options.tokenizer = this.options.tokenizer || function (value) {
-        return value.toString().split('');
-      };
+      this.options.tokenizer = this.options.tokenizer || function(value) { return value.toString().split(''); };
       // if (typeof(this.options.tokenizer) === 'function') {
-      // debugger;
-      // // this.tokenizedLength = new Function('value', 'return '
+        // debugger;
+        // // this.tokenizedLength = new Function('value', 'return '
       // } else {
-      // this.tokenizedLength = new Function('value', 'return (value || "").' + (this.options.tokenizer || 'split("")') + '.length');
+        // this.tokenizedLength = new Function('value', 'return (value || "").' + (this.options.tokenizer || 'split("")') + '.length');
       // }
     },
     CHECKS: {
-      'is': '==',
-      'minimum': '>=',
-      'maximum': '<='
+      'is'      : '==',
+      'minimum' : '>=',
+      'maximum' : '<='
     },
     MESSAGES: {
-      'is': 'wrongLength',
-      'minimum': 'tooShort',
-      'maximum': 'tooLong'
+      'is'      : 'wrongLength',
+      'minimum' : 'tooShort',
+      'maximum' : 'tooLong'
     },
-    getValue: function getValue(key) {
+    getValue: function(key) {
       if (this.options[key].constructor === String) {
         return get(this.model, this.options[key]) || 0;
       } else {
         return this.options[key];
       }
     },
-    messageKeys: function messageKeys() {
-      return Object.keys(this.MESSAGES);
+    messageKeys: function() {
+      return Ember['default'].keys(this.MESSAGES);
     },
-    checkKeys: function checkKeys() {
-      return Object.keys(this.CHECKS);
+    checkKeys: function() {
+      return Ember['default'].keys(this.CHECKS);
     },
-    renderMessageFor: function renderMessageFor(key) {
-      var options = { count: this.getValue(key) },
-          _key;
+    renderMessageFor: function(key) {
+      var options = {count: this.getValue(key)}, _key;
       for (_key in this.options) {
         options[_key] = this.options[_key];
       }
 
       return this.options.messages[this.MESSAGES[key]] || Messages['default'].render(this.MESSAGES[key], options);
     },
-    renderBlankMessage: function renderBlankMessage() {
+    renderBlankMessage: function() {
       if (this.options.is) {
         return this.renderMessageFor('is');
       } else if (this.options.minimum) {
         return this.renderMessageFor('minimum');
       }
     },
-    call: function call() {
+    call: function() {
       var key, comparisonResult;
 
       if (Ember['default'].isEmpty(get(this.model, this.property))) {
@@ -80442,7 +80167,11 @@ define('ember-validations/validators/local/length', ['exports', 'ember', 'ember-
             continue;
           }
 
-          comparisonResult = this.compare(this.options.tokenizer(get(this.model, this.property)).length, this.getValue(key), this.CHECKS[key]);
+          comparisonResult = this.compare(
+            this.options.tokenizer(get(this.model, this.property)).length,
+            this.getValue(key),
+            this.CHECKS[key]
+          );
           if (!comparisonResult) {
             this.errors.pushObject(this.renderMessageFor(key));
           }
@@ -80459,7 +80188,7 @@ define('ember-validations/validators/local/numericality', ['exports', 'ember', '
   var get = Ember['default'].get;
 
   exports['default'] = Base['default'].extend({
-    init: function init() {
+    init: function() {
       /*jshint expr:true*/
       var index, keys, key;
       this._super();
@@ -80481,8 +80210,8 @@ define('ember-validations/validators/local/numericality', ['exports', 'ember', '
         this.options.messages.onlyInteger = Messages['default'].render('notAnInteger', this.options);
       }
 
-      keys = Object.keys(this.CHECKS).concat(['odd', 'even']);
-      for (index = 0; index < keys.length; index++) {
+      keys = Ember['default'].keys(this.CHECKS).concat(['odd', 'even']);
+      for(index = 0; index < keys.length; index++) {
         key = keys[index];
 
         var prop = this.options[key];
@@ -80504,13 +80233,13 @@ define('ember-validations/validators/local/numericality', ['exports', 'ember', '
       }
     },
     CHECKS: {
-      equalTo: '===',
-      greaterThan: '>',
-      greaterThanOrEqualTo: '>=',
-      lessThan: '<',
-      lessThanOrEqualTo: '<='
+      equalTo              : '===',
+      greaterThan          : '>',
+      greaterThanOrEqualTo : '>=',
+      lessThan             : '<',
+      lessThanOrEqualTo    : '<='
     },
-    call: function call() {
+    call: function() {
       var check, checkValue, comparisonResult;
 
       if (Ember['default'].isEmpty(get(this.model, this.property))) {
@@ -80519,9 +80248,9 @@ define('ember-validations/validators/local/numericality', ['exports', 'ember', '
         }
       } else if (!Patterns['default'].numericality.test(get(this.model, this.property))) {
         this.errors.pushObject(this.options.messages.numericality);
-      } else if (this.options.onlyInteger === true && !/^[+\-]?\d+$/.test(get(this.model, this.property))) {
+      } else if (this.options.onlyInteger === true && !(/^[+\-]?\d+$/.test(get(this.model, this.property)))) {
         this.errors.pushObject(this.options.messages.onlyInteger);
-      } else if (this.options.odd && parseInt(get(this.model, this.property), 10) % 2 === 0) {
+      } else if (this.options.odd  && parseInt(get(this.model, this.property), 10) % 2 === 0) {
         this.errors.pushObject(this.options.messages.odd);
       } else if (this.options.even && parseInt(get(this.model, this.property), 10) % 2 !== 0) {
         this.errors.pushObject(this.options.messages.even);
@@ -80537,7 +80266,11 @@ define('ember-validations/validators/local/numericality', ['exports', 'ember', '
             checkValue = get(this.model, this.options[check]);
           }
 
-          comparisonResult = this.compare(get(this.model, this.property), checkValue, this.CHECKS[check]);
+          comparisonResult = this.compare(
+            get(this.model, this.property),
+            checkValue,
+            this.CHECKS[check]
+          );
 
           if (!comparisonResult) {
             this.errors.pushObject(this.options.messages[check]);
@@ -80555,7 +80288,7 @@ define('ember-validations/validators/local/presence', ['exports', 'ember', 'embe
   var get = Ember['default'].get;
 
   exports['default'] = Base['default'].extend({
-    init: function init() {
+    init: function() {
       this._super();
       /*jshint expr:true*/
       if (this.options === true) {
@@ -80566,7 +80299,7 @@ define('ember-validations/validators/local/presence', ['exports', 'ember', 'embe
         this.options.message = Messages['default'].render('blank', this.options);
       }
     },
-    call: function call() {
+    call: function() {
       if (Ember['default'].isBlank(get(this.model, this.property))) {
         this.errors.pushObject(this.options.message);
       }
