@@ -25,7 +25,7 @@ if [ $1 == "install" ]; then
   sed -i "s/Qpid::Messaging::Duration/1#Qpid::Messaging::Duration'/" app/lib/actions/candlepin/candlepin_listening_service.rb
 
   cd ../foreman
-  git checkout b131eda1464e57b978007e9dd5c5daeb5b90af10
+  git checkout efd68ba5f97db034b6f99d25668f7fe9fb556ea4
   sed -e 's/:locations_enabled: false/:locations_enabled: true/' config/settings.yaml.example > config/settings.yaml
   sed -i 's/:organizations_enabled: false/:organizations_enabled: true/' config/settings.yaml
   cp ../fusor/.foreman_database.yml config/database.yml
