@@ -346,15 +346,16 @@ export default Ember.Controller.extend({
     },
 
     editGlobalServiceConfig: function() {
-      var planParams = [];
+      var planParams = Ember.A();
       this.get('model.plan.parameters').forEach(function(param) {
-        if (param.get('id').indexOf('::') === -1) {
+        // only show parameters without :: in the name
+        if (param.get('id').indexOf('::') !== -1) {
           param.displayId = param.get('id').replace(/([a-z])([A-Z])/g, '$1 $2');
-/* Using boolean breaks saving...
+          /* Using boolean breaks saving...
           if (param.get('parameter_type') === 'boolean') {
             param.set('isBoolean', true);
           }
-*/
+          */
           if (param.get('hidden')) {
             param.set('inputType', 'password');
           }
