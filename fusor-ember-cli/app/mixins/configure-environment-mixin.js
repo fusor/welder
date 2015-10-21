@@ -4,6 +4,8 @@ export default Ember.Mixin.create({
 
   selectedEnvironment: Ember.computed.alias("model"),
 
+  step1DRouteName: 'satellite.content-provider',
+
   useDefaultOrgViewForEnv: function() {
     return Ember.isBlank(this.get('model'));
   }.property('model'),

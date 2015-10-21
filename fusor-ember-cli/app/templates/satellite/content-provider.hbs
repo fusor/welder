@@ -1,0 +1,45 @@
+<div class='row'>
+  <div class='col-md-9'>
+    <p>
+      Select a content provider for this RHCI deployment.
+    </p>
+    <div class='ident-radio'>
+      {{#radio-button value="redhat_cdn"
+                      groupValue=contentProviderType
+                      changed="providerTypeChanged"
+                      id='redhat_cdn'
+                      disabled=isStarted}}
+        <span class="{{if isStarted 'disabled'}}">
+          Red Hat CDN
+        </span>
+      {{/radio-button}}
+    </div>
+
+    <div class='ident-radio'>
+      {{#radio-button value="disconnected"
+                      groupValue=contentProviderType
+                      changed="providerTypeChanged"
+                      id='disconnected'
+                      disabled=isStarted}}
+      <span class="{{if isStarted 'disabled'}}">
+        Disconnected
+      </span>
+      {{/radio-button}}
+
+      {{#if isDisconnected}}
+          {{text-f label="Manifest Base URL" value=manifestUrl disabled=false}}
+          {{#base-f}}
+            {{button-f title='Upload' action='uploadManifest'}}
+          {{/base-f}}
+      {{/if}}
+    </div>
+
+  </div>
+</div>
+
+{{cancel-back-next backRouteName='configure-environment'
+                   disableBack=false
+                   nextRouteName=step2RouteName
+                   disableNext=false
+                   parentController=controller
+                   disableCancel=isStarted}}
