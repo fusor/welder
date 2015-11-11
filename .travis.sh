@@ -38,6 +38,10 @@ if [ $1 == "install" ]; then
   echo "gem 'logger'" >> bundler.d/local.rb
   echo "gem 'egon'" >> bundler.d/local.rb
   echo "gem 'coveralls', require: false" >> bundler.d/local.rb
+
+  # TODO: Remove once https://github.com/theforeman/foreman/pull/2898 is merged
+  echo "gem 'tins', '~> 1.4.2'" >> bundler.d/local.rb
+
   bundle install --retry 3
 
   # hacky, find a better way to do this...
