@@ -18,6 +18,11 @@ module Actions
       end
 
       def plan(deployment, skip_content = false)
+
+        # Create deployment specific log file.
+        Dir.mkdir("#{Rails.root}/log/#{deployment.name}")
+        Rails.logger.attach("#{Rails.root}/log/#{deployment.name}/deployment.log")
+
         fail _("Unable to locate fusor.yaml settings in config/settings.plugins.d") unless SETTINGS[:fusor]
         fail _("Unable to locate content settings in config/settings.plugins.d/fusor.yaml") unless SETTINGS[:fusor][:content]
         fail _("Unable to locate host group settings in config/settings.plugins.d/fusor.yaml") unless SETTINGS[:fusor][:host_groups]
@@ -43,6 +48,9 @@ module Actions
                         deployment)
           end
         end
+      end
+      def finalize(deployment)
+        Rails.logger.detach("#{Rails.root}/log/#{deployment.name}/deployment.log")
       end
     end
   end

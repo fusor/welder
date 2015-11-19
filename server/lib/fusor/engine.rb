@@ -8,6 +8,9 @@ module Fusor
     config.autoload_paths += Dir["#{config.root}/app/overrides"]
     config.autoload_paths += Dir["#{config.root}/app/serializers"]
 
+    require_relative "multilog"
+    Rails.logger = Logger.new("/var/log/foreman/production.log")
+
     initializer 'fusor.silenced_logger', :after => :build_middleware_stack do |app|
       # Add additional paths below if you want logging silenced
       #  we want the polling of ForemanTasksController#show silenced to reduce noise in logs
