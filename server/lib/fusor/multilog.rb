@@ -1,40 +1,45 @@
 require 'logger'
 
-class Logger
+#module Fusor
+#class MultiLogger < ::ActiveSupport::TaggedLogging
+class MultiLogger
+  attr_reader :logdev
+
+  def initialize(logger)
+    @original = logger
+  end
+
   # Creates and write to additional log file(s).
   def attach(name)
-    @logdev.attach(name)
+    @logdev ||= {}
+    @logdev[name] = Logger.new(name)
   end
 
   # Closes a secondary log file.
   def detach(name)
-    @logdev.detach(name)
+    @logdev ||= {}
+    if @logdev.has_key? name
+      @logdev[log].close
+      @logdev.delete(log)
+    end
   end
 
-  class LogDevice 
-    attr_reader :devs
+  #def write(message)
+  #  @original.write(message)
+  #
+  #  @logdev ||= {}
+  #  @logdev.each do |name, dev|
+  #    dev.write(message)
+  #  end
+  #end
 
-    def attach(log)
-      @devs ||= {}
-      @devs[log] = open_logfile(log)
-    end
+  def method_missing(method, *args)
+    @original.send(method, *args)
 
-    def detach(log)
-      @devs ||= {}
-      if @devs.has_key? log
-        @devs[log].close
-        @devs.delete(log)
-      end
-    end
-
-    alias_method :old_write, :write
-    def write(message)
-      old_write(message)
-
-      @devs ||= {}
-      @devs.each do |log, dev|
-        dev.write(message)
-      end
+    @logdev ||= {}
+    @logdev.each do |name, dev|
+      dev.send(method, *args)
     end
   end
 end
+#end

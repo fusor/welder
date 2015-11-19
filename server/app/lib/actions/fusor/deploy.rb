@@ -20,8 +20,8 @@ module Actions
       def plan(deployment, skip_content = false)
 
         # Create deployment specific log file.
-        Dir.mkdir("#{Rails.root}/log/#{deployment.name}")
-        Rails.logger.attach("#{Rails.root}/log/#{deployment.name}/deployment.log")
+        Dir.mkdir("#{Rails.root}/log/#{deployment.name}-#{deployment.id}")
+        Rails.logger.attach("#{Rails.root}/log/#{deployment.name}-#{deployment.id}/deployment.log")
 
         fail _("Unable to locate fusor.yaml settings in config/settings.plugins.d") unless SETTINGS[:fusor]
         fail _("Unable to locate content settings in config/settings.plugins.d/fusor.yaml") unless SETTINGS[:fusor][:content]
@@ -50,7 +50,7 @@ module Actions
         end
       end
       def finalize(deployment)
-        Rails.logger.detach("#{Rails.root}/log/#{deployment.name}/deployment.log")
+        Rails.logger.detach("#{Rails.root}/log/#{deployment.name}-#{deployment.id}/deployment.log")
       end
     end
   end

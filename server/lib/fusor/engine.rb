@@ -8,8 +8,14 @@ module Fusor
     config.autoload_paths += Dir["#{config.root}/app/overrides"]
     config.autoload_paths += Dir["#{config.root}/app/serializers"]
 
-    require_relative "multilog"
-    Rails.logger = Logger.new("/var/log/foreman/production.log")
+    #require_relative "multilog"
+    #Rails.logger = Logger.new("/var/log/foreman/production.log")
+    #Rails.logger = ::Fusor::MultiLogger(Rails.logger)
+
+     
+    initializer 'fusor.multiple_logger', :after => :build_middleware_stack do |app|
+      Rails.logger = ::MultiLogger.new(Rails.logger)
+    end
 
     initializer 'fusor.silenced_logger', :after => :build_middleware_stack do |app|
       # Add additional paths below if you want logging silenced
