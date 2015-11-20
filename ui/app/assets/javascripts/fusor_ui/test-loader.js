@@ -1,1 +1,1 @@
-/git/RHCI/fusor/fusor-ember-cli/dist/assets/test-loader.js
+/home/dgao/Work/rhci/fusor/fusor-ember-cli/dist/assets/test-loader.js
