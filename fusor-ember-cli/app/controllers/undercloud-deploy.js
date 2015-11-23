@@ -106,7 +106,7 @@ export default Ember.Controller.extend(DeploymentControllerMixin, NeedsDeploymen
                 console.log(response);
                 if (self.get('applicationController.isEmberCliMode')) {
                   // only used for develoment to enabled OSP tabs (disableOspTab: false)
-                  model.set('openstack_undercloud_password', 'this-passwd-is-populated by fusor/server')
+                  model.set('openstack_undercloud_password', 'this-passwd-is-populated by fusor/server');
                   model.save();
                 }
                 Ember.run.later(checkForDone, 3000);
