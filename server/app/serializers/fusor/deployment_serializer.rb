@@ -24,6 +24,7 @@ module Fusor
                :openstack_overcloud_autogenerate_password,
                :openstack_overcloud_address,
                :openstack_overcloud_password,
+               :openstack_overcloud_interface,
                :openstack_overcloud_private_net,
                :openstack_overcloud_float_net,
                :openstack_overcloud_float_gateway,

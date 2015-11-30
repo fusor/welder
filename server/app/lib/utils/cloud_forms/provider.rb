@@ -18,7 +18,8 @@ module Utils
   module CloudForms
     class Provider
       def self.add(cfme_ip, provider_params, deployment)
-        Rails.logger.debug "Adding the RHEV provider at #{provider_params[:ip]} to the CloudForms VM at #{cfme_ip}"
+        #Rails.logger.debug "Adding the RHEV provider at #{provider_params[:ip]} to the CloudForms VM at #{cfme_ip}"
+        ::Fusor.log.debug "Adding the RHEV provider at #{provider_params[:ip]} to the CloudForms VM at #{cfme_ip}"
 
         data = {
           :action => "create",

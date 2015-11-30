@@ -10,24 +10,13 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
-module Actions::Fusor::Deployment::OpenStack
-  class DeployAsSubPlan < Actions::Fusor::FusorBaseAction
-    def humanized_name
-      _("Deploy Red Hat OpenStack Platform overcloud as Sub Plan")
-    end
-
-    input_format do
-      param :deployment_id, Integer
-    end
-
-    def plan(deployment)
-      super(deployment)
-      plan_self(:deployment_id => deployment.id)
-    end
-
-    def create_sub_plans
-      trigger(::Actions::Fusor::Deployment::OpenStack::Deploy,
-              ::Fusor::Deployment.find(input[:deployment_id]))
+module Actions
+  module Fusor
+    class FusorActionWithSubPlans < Actions::ActionWithSubPlans
+      def plan(deployment=nil)
+        # Create deployment specific log file.
+        ::Fusor.log_change_deployment(deployment)
+      end
     end
   end
 end

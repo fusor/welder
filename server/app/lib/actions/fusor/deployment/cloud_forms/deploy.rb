@@ -14,13 +14,15 @@ module Actions
   module Fusor
     module Deployment
       module CloudForms
-        class Deploy < Actions::Base
+        class Deploy < Actions::Fusor::FusorBaseAction
           def humanized_name
             _("Deploy CloudForms Management Engine")
           end
 
           def plan(deployment)
-            Rails.logger.info "================ Planning CFME Deployment ===================="
+            super(deployment)
+            #Rails.logger.info "================ Planning CFME Deployment ===================="
+            ::Fusor.log.info "================ Planning CFME Deployment ===================="
 
             # VERIFY PARAMS HERE
             if deployment.deploy_cfme
@@ -31,7 +33,8 @@ module Actions
               fail _("Unable to locate a suitable host for CloudForms deployment") unless deployment.rhev_engine_host
               fail _("RHEV engine admin password not configured properly") unless deployment.rhev_engine_admin_password
             else
-              Rails.logger.warn "Deploy CloudForms action scheduled but deploy_cfme was NOT selected. Please file a bug."
+              #Rails.logger.warn "Deploy CloudForms action scheduled but deploy_cfme was NOT selected. Please file a bug."
+              ::Fusor.log.warn "Deploy CloudForms action scheduled but deploy_cfme was NOT selected. Please file a bug."
               return
             end
 

@@ -23,6 +23,12 @@ module Fusor
       end
     end
 
+    #initializer 'fusor.multiple_logger' do |app|
+    #  ::Fusor.log = ::MultiLogger.new(Rails.logger)
+    #  ::Fusor.log.info("dgao 0")
+    #  ::Fusor.log.info(::Fusor.log.object_id << 1)
+    #end
+
     # Add any db migrations
     initializer "fusor.load_app_instance_data" do |app|
       app.config.paths['db/migrate'] += Fusor::Engine.paths['db/migrate'].existent

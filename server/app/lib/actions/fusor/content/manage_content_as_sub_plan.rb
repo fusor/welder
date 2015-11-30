@@ -13,7 +13,7 @@
 module Actions
   module Fusor
     module Content
-      class ManageContentAsSubPlan < Actions::ActionWithSubPlans
+      class ManageContentAsSubPlan < Actions::Fusor::FusorActionWithSubPlans
         def humanized_name
           _("Manage Content as Sub Plan")
         end
@@ -23,6 +23,7 @@ module Actions
         end
 
         def plan(deployment)
+          super(deployment)
           plan_self(:deployment_id => deployment.id)
         end
 

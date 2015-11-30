@@ -12,12 +12,13 @@
 
 module Actions
   module Fusor
-    class ConfigureHostGroups < Actions::Base
+    class ConfigureHostGroups < Actions::Fusor::FusorBaseAction
       def humanized_name
         _("Configure Host Groups")
       end
 
       def plan(deployment, product_type, hostgroup_settings)
+        super(deployment)
         unless hostgroup_settings && hostgroup_settings[:host_groups]
           fail _("Unable to locate host group settings in config/settings.plugins.d/fusor.yaml")
         end

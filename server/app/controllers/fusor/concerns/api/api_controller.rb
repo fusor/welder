@@ -32,7 +32,8 @@ module Fusor
 
       def process_action(method_name, *args)
         super(method_name, *args)
-        Rails.logger.debug "With body: #{response.body}\n"
+        #Rails.logger.debug "With body: #{response.body}\n"
+        ::Fusor.log.debug "With body: #{response.body}\n"
       end
 
       def resource
