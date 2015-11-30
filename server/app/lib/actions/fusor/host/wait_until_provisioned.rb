@@ -13,8 +13,7 @@
 module Actions
   module Fusor
     module Host
-
-      class WaitUntilProvisioned < Actions::Base
+      class WaitUntilProvisioned < Actions::Fusor::FusorBaseAction
 
         TIMEOUT = 7200
 
@@ -25,6 +24,7 @@ module Actions
         middleware.use Actions::Fusor::Middleware::Timeout
 
         def plan(host)
+          super()
           plan_self host_id: host.id
         end
 

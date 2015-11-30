@@ -15,18 +15,20 @@ module Actions
   module Fusor
     module Deployment
       module CloudForms
-        class UpdateRootPassword < Actions::Base
+        class UpdateRootPassword < Actions::Fusor::FusorBaseAction
           def humanized_name
             _("Update Root Password on CloudForms Appliance")
           end
 
           def plan(deployment, vm_ip)
+            super(deployment)
             plan_self(deployment_id: deployment.id,
                       vm_ip: vm_ip)
           end
 
           def run
-            Rails.logger.info "================ UpdateRootPassword run method ===================="
+            #Rails.logger.info "================ UpdateRootPassword run method ===================="
+            ::Fusor.log.info "================ UpdateRootPassword run method ===================="
             begin
 
               ssh_user = "root"
@@ -49,7 +51,8 @@ module Actions
               # retry if necessary
               sleep_seconds = 20
               if !@success && @retry
-                Rails.logger.info "UpdateRootPassword will retry again once in #{sleep_seconds}."
+                #Rails.logger.info "UpdateRootPassword will retry again once in #{sleep_seconds}."
+                ::Fusor.log.info "UpdateRootPassword will retry again once in #{sleep_seconds}."
 
                 # pause for station identification, actually pausing to give
                 # cfme time to start ssh or whatever caused the original timeout
@@ -68,33 +71,41 @@ module Actions
               @io.close if @io && !@io.closed?
               fail _("Failed to update root password on appliance. Error message: #{e.message}")
             end
-            Rails.logger.info "================ Leaving UpdateRootPassword run method ===================="
+            #Rails.logger.info "================ Leaving UpdateRootPassword run method ===================="
+            ::Fusor.log.info "================ Leaving UpdateRootPassword run method ===================="
           end
 
           def update_root_password_completed
-            Rails.logger.debug "=========== completed entered ============="
+            #Rails.logger.debug "=========== completed entered ============="
+            ::Fusor.log.debug "=========== completed entered ============="
             if @io.string.include? "passwd: all authentication tokens updated successfully."
               @success = true
               @retry = false
-              Rails.logger.info "Password updated successfully. #{@io.string}"
+              #Rails.logger.info "Password updated successfully. #{@io.string}"
+              ::Fusor.log.info "Password updated successfully. #{@io.string}"
             else
               @success = false
-              Rails.logger.error "Password was not updated. Error: #{@io.string}"
+              #Rails.logger.error "Password was not updated. Error: #{@io.string}"
+              ::Fusor.log.error "Password was not updated. Error: #{@io.string}"
             end
-            Rails.logger.debug "=========== completed exited ============="
+            #Rails.logger.debug "=========== completed exited ============="
+            ::Fusor.log.debug "=========== completed exited ============="
           end
 
           def update_root_password_failed
-            Rails.logger.debug "=========== failed entered ============="
+            #Rails.logger.debug "=========== failed entered ============="
+            ::Fusor.log.debug "=========== failed entered ============="
             if !@success
               if @io.string.include? "execution expired"
                 @retry = true
               end
               # SSH connection assumes if something is written to stderr it's a
               # problem. We only care about that if we actually failed.
-              Rails.logger.error "Probable error. Will we retry? #{@retry}. Error message: #{@io.string}"
+              #Rails.logger.error "Probable error. Will we retry? #{@retry}. Error message: #{@io.string}"
+              ::Fusor.log.error "Probable error. Will we retry? #{@retry}. Error message: #{@io.string}"
             end
-            Rails.logger.debug "=========== failed exited ============="
+            #Rails.logger.debug "=========== failed exited ============="
+            ::Fusor.log.debug "=========== failed exited ============="
           end
         end
       end

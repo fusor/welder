@@ -15,18 +15,20 @@ module Actions
   module Fusor
     module Deployment
       module CloudForms
-        class UpdateAdminPassword < Actions::Base
+        class UpdateAdminPassword < Actions::Fusor::FusorBaseAction
           def humanized_name
             _("Update Admin Password on CloudForms Appliance")
           end
 
           def plan(deployment, vm_ip)
+            super(deployment)
             plan_self(deployment_id: deployment.id,
                       vm_ip: vm_ip)
           end
 
           def run
-            Rails.logger.info "================ UpdateAdminPassword run method ===================="
+            #Rails.logger.info "================ UpdateAdminPassword run method ===================="
+            ::Fusor.log.info "================ UpdateAdminPassword run method ===================="
             begin
 
               ssh_user = "root"
@@ -46,7 +48,8 @@ module Actions
               @io.close if @io && !@io.closed?
               fail _("Failed to update admin password on appliance. Error message: #{e.message}")
             end
-            Rails.logger.info "================ Leaving UpdateAdminPassword run method ===================="
+            #Rails.logger.info "================ Leaving UpdateAdminPassword run method ===================="
+            ::Fusor.log.info "================ Leaving UpdateAdminPassword run method ===================="
           end
 
           def upload_script(deployment, vm_ip)

@@ -12,16 +12,13 @@
 
 module Actions
   module Fusor
-    class Deploy < Actions::EntryAction
+    class Deploy < Actions::Fusor::FusorEntryAction
       def humanized_name
         _("Deploy")
       end
 
       def plan(deployment, skip_content = false)
-
-        # Create deployment specific log file.
-        Dir.mkdir("#{Rails.root}/log/#{deployment.name}-#{deployment.id}")
-        Rails.logger.attach("#{Rails.root}/log/#{deployment.name}-#{deployment.id}/deployment.log")
+        super(deployment)
 
         fail _("Unable to locate fusor.yaml settings in config/settings.plugins.d") unless SETTINGS[:fusor]
         fail _("Unable to locate content settings in config/settings.plugins.d/fusor.yaml") unless SETTINGS[:fusor][:content]
@@ -50,9 +47,6 @@ module Actions
                         deployment)
           end
         end
-      end
-      def finalize(deployment)
-        Rails.logger.detach("#{Rails.root}/log/#{deployment.name}-#{deployment.id}/deployment.log")
       end
     end
   end

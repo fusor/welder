@@ -17,7 +17,8 @@ module Utils
   module CloudForms
     class Provider
       def self.add(cfme_ip, provider_params, deployment)
-        Rails.logger.debug "Adding the RHEV provider at #{provider_params[:ip]} to the CloudForms VM at #{cfme_ip}"
+        #Rails.logger.debug "Adding the RHEV provider at #{provider_params[:ip]} to the CloudForms VM at #{cfme_ip}"
+        ::Fusor.log.debug "Adding the RHEV provider at #{provider_params[:ip]} to the CloudForms VM at #{cfme_ip}"
 
         agent = Mechanize.new
         agent.verify_mode = OpenSSL::SSL::VERIFY_NONE
@@ -78,10 +79,12 @@ module Utils
         host_add_counter = 0
         while get_host_links(cfme_ip, agent).count != provider_params[:hypervisors].count && host_add_counter < 10
           host_add_counter += 1
-          Rails.logger.info "Waiting 30 seconds to discover provider hosts. Try #{host_add_counter} of 10."
+          #Rails.logger.info "Waiting 30 seconds to discover provider hosts. Try #{host_add_counter} of 10."
+          ::Fusor.log.info "Waiting 30 seconds to discover provider hosts. Try #{host_add_counter} of 10."
           sleep(30)
         end
-        Rails.logger.info "#{get_host_links(cfme_ip, agent).count} hosts discovered."
+        #Rails.logger.info "#{get_host_links(cfme_ip, agent).count} hosts discovered."
+        ::Fusor.log.info "#{get_host_links(cfme_ip, agent).count} hosts discovered."
         get_host_links(cfme_ip, agent)
       end
 

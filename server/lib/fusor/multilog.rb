@@ -19,8 +19,16 @@ class MultiLogger
   def detach(name)
     @logdev ||= {}
     if @logdev.has_key? name
-      @logdev[log].close
-      @logdev.delete(log)
+      @logdev[name].close
+      @logdev.delete(name)
+    end
+  end
+
+  def detach_all
+    @logdev ||= {}
+
+    @logdev.each do |name, dev|
+      detach(name)
     end
   end
 
@@ -32,6 +40,7 @@ class MultiLogger
   #    dev.write(message)
   #  end
   #end
+  #
 
   def method_missing(method, *args)
     @original.send(method, *args)

@@ -14,18 +14,20 @@ module Actions
   module Fusor
     module Deployment
       module CloudForms
-        class AddRhevProvider < Actions::Base
+        class AddRhevProvider < Actions::Fusor::FusorBaseAction
           def humanized_name
             _("Add RHEV Provider")
           end
 
           def plan(deployment, vm_ip)
+            super(deployment)
             plan_self(deployment_id: deployment.id,
                       vm_ip: vm_ip)
           end
 
           def run
-            Rails.logger.info "================ AddRhevProvider run method ===================="
+            #Rails.logger.info "================ AddRhevProvider run method ===================="
+            ::Fusor.log.info "================ AddRhevProvider run method ===================="
 
             deployment = ::Fusor::Deployment.find(input[:deployment_id])
 
@@ -39,7 +41,8 @@ module Actions
             }
 
             Utils::CloudForms::Provider.add(input[:vm_ip], provider, deployment)
-            Rails.logger.info "================ Leaving AddRhevProvider run method ===================="
+            #Rails.logger.info "================ Leaving AddRhevProvider run method ===================="
+            ::Fusor.log.info "================ Leaving AddRhevProvider run method ===================="
           end
         end
       end

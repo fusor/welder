@@ -49,7 +49,8 @@ module Fusor
     end
 
     def upload
-      Rails.logger.debug "XXX upload params #{params}"
+      #Rails.logger.debug "XXX upload params #{params}"
+      ::Fusor.log.debug "XXX upload params #{params}"
       fail ::Katello::HttpErrors::BadRequest, _("No manifest file uploaded") if params[:manifest_file][:file].blank?
       fail ::Katello::HttpErrors::BadRequest, _("No deployment specified") if params[:manifest_file][:deployment_id].blank?
 

@@ -15,18 +15,20 @@ module Actions
     module Deployment
       module Rhev
         module VirtualMachine
-          class Create < Actions::Base
+          class Create < Actions::Fusor::FusorBaseAction
             def humanized_name
               _("Create Virtual Machine")
             end
 
             def plan(deployment, template_name)
+              super(deployment)
               plan_self(deployment_id: deployment.id,
                         template_name: template_name)
             end
 
             def run
-              Rails.logger.info "================ VirtualMachine::Create run method ===================="
+              #Rails.logger.info "================ VirtualMachine::Create run method ===================="
+              ::Fusor.log.info "================ VirtualMachine::Create run method ===================="
 
               deployment = ::Fusor::Deployment.find(input[:deployment_id])
               script_dir = "/usr/share/fusor_ovirt/bin/"
@@ -49,15 +51,18 @@ module Actions
 
               output[:vm_id] = cmd_output.first.rstrip
 
-              Rails.logger.info "================ Leaving VirtualMachine::Create run method ===================="
+              #Rails.logger.info "================ Leaving VirtualMachine::Create run method ===================="
+              ::Fusor.log.info "================ Leaving VirtualMachine::Create run method ===================="
             end
 
             private
 
             def run_command(cmd)
-              Rails.logger.info "Running: #{cmd}"
+              #Rails.logger.info "Running: #{cmd}"
+              ::Fusor.log.info "Running: #{cmd}"
               status, output = Utils::Fusor::CommandUtils.run_command(cmd)
-              Rails.logger.debug "Status: #{status}, output: #{output}"
+              #Rails.logger.debug "Status: #{status}, output: #{output}"
+              ::Fusor.log.debug "Status: #{status}, output: #{output}"
               return status, output
             end
           end

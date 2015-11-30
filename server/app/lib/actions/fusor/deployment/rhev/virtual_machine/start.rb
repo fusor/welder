@@ -15,18 +15,20 @@ module Actions
     module Deployment
       module Rhev
         module VirtualMachine
-          class Start < Actions::Base
+          class Start < Actions::Fusor::FusorBaseAction
             def humanized_name
               _("Start Virtual Machine")
             end
 
             def plan(deployment, vm_id)
+              super(deployment)
               plan_self(deployment_id: deployment.id,
                         vm_id: vm_id)
             end
 
             def run
-              Rails.logger.info "================ VirtualMachine::Start run method ===================="
+              #Rails.logger.info "================ VirtualMachine::Start run method ===================="
+              ::Fusor.log.info "================ VirtualMachine::Start run method ===================="
 
               deployment = ::Fusor::Deployment.find(input[:deployment_id])
               script_dir = "/usr/share/fusor_ovirt/bin/"
@@ -42,15 +44,18 @@ module Actions
                 fail _("Unable to start virtual machine: %{output}") % { :output => cmd_output.join('; ') }
               end
 
-              Rails.logger.info "================ Leaving VirtualMachine::Start run method ===================="
+              #Rails.logger.info "================ Leaving VirtualMachine::Start run method ===================="
+              ::Fusor.log.info "================ Leaving VirtualMachine::Start run method ===================="
             end
 
             private
 
             def run_command(cmd)
-              Rails.logger.info "Running: #{cmd}"
+              #Rails.logger.info "Running: #{cmd}"
+              ::Fusor.log.info "Running: #{cmd}"
               status, output = Utils::Fusor::CommandUtils.run_command(cmd)
-              Rails.logger.debug "Status: #{status}, output: #{output}"
+              #Rails.logger.debug "Status: #{status}, output: #{output}"
+              ::Fusor.log.debug "Status: #{status}, output: #{output}"
               return status, output
             end
           end

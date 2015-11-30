@@ -46,6 +46,10 @@ module Fusor
     end
 
     def deploy
+      #Dir.mkdir("#{Rails.root}/log/#{@deployment.name}-#{@deployment.id}") unless File.exists?("#{Rails.root}/log/#{@deployment.name}-#{@deployment.id}")
+      #::Fusor.log.attach("#{Rails.root}/log/#{@deployment.name}-#{@deployment.id}/init.log")
+      ::Fusor.log_change_deployment(@deployment)
+
       # If we're deploying then the deployment object needs to be valid.
       # This should be the only time we run the DeploymentValidator.
       if @deployment.invalid?
@@ -53,7 +57,8 @@ module Fusor
       end
 
       # update the provider with the url
-      Rails.logger.debug "XXX setting provider url to #{@deployment.cdn_url}"
+      #Rails.logger.debug "XXX setting provider url to #{@deployment.cdn_url}"
+      ::Fusor.log.debug "XXX setting provider url to #{@deployment.cdn_url}"
       provider = @deployment.organization.redhat_provider
       # just in case save it on the @deployment.org as well
       @deployment.organization.redhat_provider.repository_url = @deployment.cdn_url
@@ -73,6 +78,8 @@ module Fusor
                           params[:skip_content])
       end
       respond_for_async :resource => task
+
+      ::Fusor.log.detach("#{Rails.root}/log/#{@deployment.name}-#{@deployment.id}/init.log")
     end
 
     private

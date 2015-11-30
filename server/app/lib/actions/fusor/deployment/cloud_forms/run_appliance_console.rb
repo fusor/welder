@@ -14,18 +14,20 @@ module Actions
   module Fusor
     module Deployment
       module CloudForms
-        class RunApplianceConsole < Actions::Base
+        class RunApplianceConsole < Actions::Fusor::FusorBaseAction
           def humanized_name
             _("Run CloudForms Appliance Console")
           end
 
           def plan(deployment, vm_ip)
+            super(deployment)
             plan_self(deployment_id: deployment.id,
                       vm_ip: vm_ip)
           end
 
           def run
-            Rails.logger.info "================ RunApplianceConsole run method ===================="
+            #Rails.logger.info "================ RunApplianceConsole run method ===================="
+            ::Fusor.log.info "================ RunApplianceConsole run method ===================="
 
             script_dir = "/usr/share/fusor_ovirt/bin/"
             db_password = "changeme" # TODO: we may want to make this configurable in the future
@@ -38,7 +40,8 @@ module Actions
             # We need to use the default password of 'smartvm' until we add support.
             #
             #ssh_password = "smartvm" # TODO: need to update to use deployment.cfme_root_password; however, that means it must also be set on VM during/after creation
-            Rails.logger.warn "XXX using cfme_root_password"
+            #Rails.logger.warn "XXX using cfme_root_password"
+            ::Fusor.log.warn "XXX using cfme_root_password"
             ssh_password = deployment.cfme_root_password
 
             cmd = "#{script_dir}miq_run_appliance_console.py "\
@@ -58,7 +61,8 @@ module Actions
             #cmd = "appliance_console_cli --region 1 --internal --force-key -p #{db_password} --verbose"
             #client.execute(cmd)
 
-            Rails.logger.info "================ Leaving RunApplianceConsole run method ===================="
+            #Rails.logger.info "================ Leaving RunApplianceConsole run method ===================="
+            ::Fusor.log.info "================ Leaving RunApplianceConsole run method ===================="
           end
 
           # TODO: temporarily commenting out the SSHConnection callbacks.  See above.
@@ -75,9 +79,11 @@ module Actions
           private
 
           def run_command(cmd)
-            Rails.logger.info "Running: #{cmd}"
+            #Rails.logger.info "Running: #{cmd}"
+            ::Fusor.log.info "Running: #{cmd}"
             status, output = Utils::Fusor::CommandUtils.run_command(cmd)
-            Rails.logger.debug "Status: #{status}, output: #{output}"
+            #Rails.logger.debug "Status: #{status}, output: #{output}"
+            ::Fusor.log.debug "Status: #{status}, output: #{output}"
             return status, output
           end
         end

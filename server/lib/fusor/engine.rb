@@ -8,15 +8,6 @@ module Fusor
     config.autoload_paths += Dir["#{config.root}/app/overrides"]
     config.autoload_paths += Dir["#{config.root}/app/serializers"]
 
-    #require_relative "multilog"
-    #Rails.logger = Logger.new("/var/log/foreman/production.log")
-    #Rails.logger = ::Fusor::MultiLogger(Rails.logger)
-
-     
-    initializer 'fusor.multiple_logger', :after => :build_middleware_stack do |app|
-      Rails.logger = ::MultiLogger.new(Rails.logger)
-    end
-
     initializer 'fusor.silenced_logger', :after => :build_middleware_stack do |app|
       # Add additional paths below if you want logging silenced
       #  we want the polling of ForemanTasksController#show silenced to reduce noise in logs
@@ -31,6 +22,12 @@ module Fusor
         Rails.logger.warn "fusor_server did not find 'Katello.config.logging.ignored_paths' available, skipping silence of logs for '#{silenced_paths}'"
       end
     end
+
+    #initializer 'fusor.multiple_logger' do |app|
+    #  ::Fusor.log = ::MultiLogger.new(Rails.logger)
+    #  ::Fusor.log.info("dgao 0")
+    #  ::Fusor.log.info(::Fusor.log.object_id << 1)
+    #end
 
     # Add any db migrations
     initializer "fusor.load_app_instance_data" do |app|

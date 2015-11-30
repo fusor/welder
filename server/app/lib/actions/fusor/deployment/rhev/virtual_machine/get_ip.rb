@@ -15,18 +15,20 @@ module Actions
     module Deployment
       module Rhev
         module VirtualMachine
-          class GetIp < Actions::Base
+          class GetIp < Actions::Fusor::FusorBaseAction
             def humanized_name
               _("Get IP for Virtual Machine")
             end
 
             def plan(deployment, vm_id)
+              super(deployment)
               plan_self(deployment_id: deployment.id,
                         vm_id: vm_id)
             end
 
             def run
-              Rails.logger.info "================ VirtualMachine::GetIp run method ===================="
+              #Rails.logger.info "================ VirtualMachine::GetIp run method ===================="
+              ::Fusor.log.info "================ VirtualMachine::GetIp run method ===================="
 
               deployment = ::Fusor::Deployment.find(input[:deployment_id])
               script_dir = "/usr/share/fusor_ovirt/bin/"
@@ -43,15 +45,18 @@ module Actions
               end
 
               output[:ip] = cmd_output.first.rstrip
-              Rails.logger.info "================ Leaving VirtualMachine::GetIp run method ===================="
+              #Rails.logger.info "================ Leaving VirtualMachine::GetIp run method ===================="
+              ::Fusor.log.info "================ Leaving VirtualMachine::GetIp run method ===================="
             end
 
             private
 
             def run_command(cmd)
-              Rails.logger.info "Running: #{cmd}"
+              #Rails.logger.info "Running: #{cmd}"
+              ::Fusor.log.info "Running: #{cmd}"
               status, output = Utils::Fusor::CommandUtils.run_command(cmd)
-              Rails.logger.debug "Status: #{status}, output: #{output}"
+              #Rails.logger.debug "Status: #{status}, output: #{output}"
+              ::Fusor.log.debug "Status: #{status}, output: #{output}"
               return status, output
             end
           end
