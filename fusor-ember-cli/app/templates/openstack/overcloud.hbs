@@ -8,13 +8,12 @@
       </p>
 
       {{text-f label="External Network Interface"
-               value=model.openstack_overcloud_interface
+               value=neutronPublicInterface
                cssId="external-osp-interface"
                isRequired=true
                disabled=isStarted
                placeholder="Enter External Network Interface"
                }}
-
 
       <br />
       <p>
@@ -23,7 +22,7 @@
 
 
       {{text-f label="Private Network"
-               value=model.openstack_overcloud_private_net
+               value=model.deployment.openstack_overcloud_private_net
                cssId="osp-private-network"
                isRequired=true
                disabled=isStarted
@@ -32,8 +31,8 @@
                isNetworkRange=true
                }}
 
-      {{text-f label="Floating IP Addresses"
-               value=model.openstack_overcloud_float_net
+      {{text-f label="Floating IP Network"
+               value=model.deployment.openstack_overcloud_float_net
                cssId="osp-floating-network"
                isRequired=true
                disabled=isStarted
@@ -41,6 +40,52 @@
                help-inline="CIDR notation, 192.168.253.0/24"
                isNetworkRange=true
                }}
+
+      {{text-f label="Floating IP Network Gateway"
+               value=model.deployment.openstack_overcloud_float_gateway
+               cssId="osp-float-gatewway"
+               isRequired=true
+               disabled=isStarted
+               }}
+
+      <br />
+      <p>
+      Create an administrative password for the overcloud.
+      </p>
+
+      <div class='ident-radio'>
+        {{#radio-button value="autogenerate" groupValue=pwdType changed="pwdTypeChanged" id='selfhost' disabled=deploymentController.isStarted}}
+          <span class="{{if deploymentController.isStarted 'disabled'}}">
+            Auto-generate password during deployment
+          </span>
+          <div class='osp-autogeneric-label help-block'>
+            After deployment, generated passwords can be seen on Installation Progress screen or in /root/keystonerc_admin
+          </div>
+        {{/radio-button}}
+      </div>
+
+      <div class='ident-radio'>
+        {{#radio-button value="specify" groupValue=pwdType changed="pwdTypeChanged" id='selfhost' disabled=deploymentController.isStarted}}
+          <span class="{{if deploymentController.isStarted 'disabled'}}">
+            Specify password
+          </span>
+        {{/radio-button}}
+      </div>
+
+      {{#unless isAutoPwd}}
+          {{text-f label="Admin Password" type="password" value=overcloudPassword
+                   cssId="osp_overcloud_password"
+                   isRequired=true
+                   disabled=isStarted
+                   }}
+
+          {{text-f label="Confirm Password" type="password" value=confirmOvercloudPassword
+                   cssId="confirm_osp_overcloud_password"
+                   isRequired=true
+                   mustMatch=overcloudPassword
+                   disabled=isStarted
+                   placeholder="Must match admin password"}}
+      {{/unless}}
     </form>
   </div>
 </div>

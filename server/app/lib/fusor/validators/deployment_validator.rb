@@ -47,6 +47,8 @@ module Fusor
               if !deployment.rhev_share_path.ascii_only?
                 deployment.errors[:rhev_share_path] << _('NFS path specified contains non-ascii characters, which is invalid')
               end
+
+              validate_nfs_share(deployment)
             end
           end
 
@@ -95,6 +97,61 @@ module Fusor
             deployment.errors[:cfme_root_password] << _('CloudForms deployments must specify a root password for the CloudForms machines')
           end
         end
+      end
+
+      private
+
+      def validate_nfs_share(deployment)
+        address = Shellwords.shellescape(deployment.rhev_storage_address)
+        path = Shellwords.shellescape(deployment.rhev_share_path)
+
+        # validate that the NFS server exists
+        # don't proceed if it doesn't
+        return unless validate_nfs_server(deployment, address)
+
+        # validate that the NFS share exists and is clean
+        validate_nfs_mount(deployment, address, path)
+      end
+
+      def validate_nfs_server(deployment, address)
+        cmd = "showmount #{address}"
+        status, output = Utils::Fusor::CommandUtils.run_command(cmd)
+
+        if status != 0
+          message = _("Could not connect to address '%s'. " \
+                      "Make sure the NFS server exists and is up.") % "#{address}"
+          add_warning(deployment, message, output)
+          return false
+        end
+
+        return true
+      end
+
+      def validate_nfs_mount(deployment, address, path)
+        cmd = "sudo safe-mount.sh '#{deployment.id}' '#{address}' '#{path}'"
+        status, output = Utils::Fusor::CommandUtils.run_command(cmd)
+
+        if status != 0
+          add_warning(deployment, _("Could not mount the NFS share '%s' in order to inspect it. " \
+                                    "Please check that the NFS share exists.") % "#{address}:#{path}",
+                      output)
+          return
+        end
+
+        files = Dir["#{output}/*"] # this may return [] if it can't read the share
+        Utils::Fusor::CommandUtils.run_command("sudo safe-umount.sh #{deployment.id}")
+
+        if files.length > 0
+          add_warning(deployment, _("NFS file share '%s' is not empty. This could cause deployment problems.") %
+                      "#{address}:#{path}"
+                     )
+        end
+      end
+
+      def add_warning(deployment, warning, other_info = "")
+        deployment.warnings << warning
+        full_warning = other_info.blank? ? warning : "#{warning} #{other_info}"
+        Rails.logger.warn("#{full_warning}")
       end
     end
   end

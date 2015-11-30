@@ -14,30 +14,64 @@ export default Ember.Controller.extend(DeploymentControllerMixin, NeedsDeploymen
     }
   }),
 
-  isValidPrivateNetworkRange: Ember.computed('model.openstack_overcloud_private_net', function() {
+  isValidPrivateNetworkRange: Ember.computed('model.deployment.openstack_overcloud_private_net', function() {
       // TODO
       return true;
   }),
 
-  isValidPrivateFloatRange: Ember.computed('model.openstack_overcloud_float_net', function() {
+  isValidPrivateFloatRange: Ember.computed('model.deployment.openstack_overcloud_float_net', function() {
       // TODO
       return true;
   }),
 
-  validOvercloudNetworks: Ember.computed('model.openstack_overcloud_interface',
-                                         'model.openstack_overcloud_private_net',
-                                         'model.openstack_overcloud_float_net',
+  isValidOvercloudPassword: Ember.computed('isAutoPwd', 'overcloudPassword','confirmOvercloudPassword', function () {
+      if (this.get('isAutoPwd')) {
+          return true;
+      } else {
+          return Ember.isPresent(this.get('overcloudPassword')) &&
+                 this.get('overcloudPassword') === this.get('confirmOvercloudPassword');
+      }
+    }
+  ),
+
+  validOvercloudNetworks: Ember.computed('neutronPublicInterface',
+                                         'model.deployment.openstack_overcloud_private_net',
+                                         'model.deployment.openstack_overcloud_float_net',
+                                         'model.deployment.openstack_overcloud_float_gateway',
                                          'isValidPrivateNetworkRange',
                                          'isValidPrivateFloatRange',
+                                         'isValidOvercloudPassword',
                                           function() {
-    return (Ember.isPresent(this.get('model.openstack_overcloud_interface')) &&
-            Ember.isPresent(this.get('model.openstack_overcloud_private_net')) &&
-            Ember.isPresent(this.get('model.openstack_overcloud_float_net')) &&
+    return (Ember.isPresent(this.get('neutronPublicInterface')) &&
+            Ember.isPresent(this.get('model.deployment.openstack_overcloud_private_net')) &&
+            Ember.isPresent(this.get('model.deployment.openstack_overcloud_float_net')) &&
+            Ember.isPresent(this.get('model.deployment.openstack_overcloud_float_gateway')) &&
             this.get('isValidPrivateNetworkRange') &&
-            this.get('isValidPrivateFloatRange')
+            this.get('isValidPrivateFloatRange') &&
+            this.get('isValidOvercloudPassword')
            );
   }),
 
-  disableNextOvercloud: Ember.computed.not('validOvercloudNetworks')
+  disableNextOvercloud: Ember.computed.not('validOvercloudNetworks'),
+
+  overcloudPassword: Ember.computed.alias("deploymentController.model.openstack_overcloud_password"),
+  confirmOvercloudPassword: Ember.computed.alias("deploymentController.confirmOvercloudPassword"),
+
+  isAutoPwd: Ember.computed.alias("deploymentController.model.openstack_overcloud_autogenerate_password"),
+
+  pwdType: Ember.computed('isAutoPwd', function() {
+    return (this.get('isAutoPwd') ? "autogenerate" : "specify");
+  }),
+
+  isAutoSelected: Ember.computed('pwdType', function() {
+    return (this.get('pwdType') === 'autogenerate');
+  }),
+  isPwdSpecified: Ember.computed.not('isAutoSelected'),
+
+  actions: {
+    pwdTypeChanged() {
+      return this.get('deploymentController').set('model.openstack_overcloud_autogenerate_password', this.get('isAutoSelected'));
+    }
+  }
 
 });

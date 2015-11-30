@@ -21,11 +21,13 @@ module Fusor
                :openstack_undercloud_ip_addr,
                :openstack_undercloud_user,
                :openstack_undercloud_user_password,
+               :openstack_overcloud_autogenerate_password,
                :openstack_overcloud_address,
                :openstack_overcloud_password,
                :openstack_overcloud_interface,
                :openstack_overcloud_private_net,
                :openstack_overcloud_float_net,
+               :openstack_overcloud_float_gateway,
                :is_disconnected,
                :cdn_url, :manifest_file,
                :created_at, :updated_at

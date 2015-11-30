@@ -53,10 +53,11 @@ export default DS.Model.extend({
   openstack_undercloud_user: DS.attr('string'),
   openstack_undercloud_user_password: DS.attr('string'),
   openstack_overcloud_address: DS.attr('string'),
+  openstack_overcloud_autogenerate_password: DS.attr('boolean'),
   openstack_overcloud_password: DS.attr('string'),
-  openstack_overcloud_interface: DS.attr('string'),
   openstack_overcloud_private_net: DS.attr('string'),
   openstack_overcloud_float_net: DS.attr('string'),
+  openstack_overcloud_float_gateway: DS.attr('string'),
 
   cdn_url: DS.attr('string'),
   manifest_file: DS.attr('string'),
@@ -95,6 +96,14 @@ export default DS.Model.extend({
   // also put these in model rather than controller so it is accessible
   progress: null,
   state: null,
+
+  isComplete: Ember.computed('progress', function() {
+    return this.get('progress') === '1';
+  }),
+
+  isInProgress: Ember.computed('isStarted', 'isComplete', function() {
+    return this.get('isStarted') && !this.get('isComplete');
+  }),
 
   // TODO-REFACTOR return foreman_task in API response and create belongsTo assocation
   // foreman_task: DS.belongsTo('foreman-task')

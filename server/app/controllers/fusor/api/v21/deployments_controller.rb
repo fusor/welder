@@ -13,7 +13,8 @@
 module Fusor
   class Api::V21::DeploymentsController < Api::V2::DeploymentsController
 
-    before_filter :find_deployment, :only => [:destroy, :show, :update, :deploy]
+    before_filter :find_deployment, :only => [:destroy, :show, :update,
+                                              :deploy, :validate, :log]
 
     rescue_from Encoding::UndefinedConversionError, :with => :ignore_it
 
@@ -40,8 +41,7 @@ module Fusor
       # controller (after it has validated them), never by directly updating
       # the deployment object.
 
-      # commented out :openstack_undercloud_password since mock UI application needs to set this value
-      # params[:deployment].delete :openstack_undercloud_password
+      params[:deployment].delete :openstack_undercloud_password
       params[:deployment].delete :openstack_undercloud_ip_addr
       params[:deployment].delete :openstack_undercloud_user
       params[:deployment].delete :openstack_undercloud_user_password
@@ -61,6 +61,27 @@ module Fusor
         super
       rescue ::ActiveRecord::RecordInvalid
         render json: {errors: @deployment.errors}, status: 422
+      end
+    end
+
+    def validate
+      status = @deployment.valid? ? 200 : 422
+
+      render status: status, json: {
+        :errors => @deployment.errors.full_messages,
+        :warnings => @deployment.warnings
+      }
+    end
+
+    def log
+      reader = Fusor::Logging::LogReader.new
+      log_path = '/var/log/foreman/production.log'
+      # TODO when fusor log is available
+      # log_path = "#{Rails.root}/log/#{@deployment.name}-#{@deployment.id}/deployment.log"
+      if params[:date_time_gte]
+        render :json => {log: reader.tail_log_since(log_path, DateTime.iso8601(params[:date_time_gte]))}
+      else
+        render :json => {log: reader.read_full_log(log_path)}
       end
     end
 

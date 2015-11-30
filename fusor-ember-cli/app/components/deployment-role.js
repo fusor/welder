@@ -8,13 +8,15 @@ export default Ember.Component.extend({
 
   getParamValue(paramName, params) {
     var paramValue = null;
-    var numParams = params.get('length');
-    for (var i=0; i<numParams; i++) {
-      var param = params.objectAt(i);
-      if (param.get('id') === paramName) {
-        paramValue = param.get('value');
-        break;
-      }
+    if (params) {
+        var numParams = params.get('length');
+        for (var i=0; i<numParams; i++) {
+          var param = params.objectAt(i);
+          if (param.get('id') === paramName) {
+            paramValue = param.get('value');
+            break;
+          }
+        }
     }
     return paramValue;
   },
@@ -70,6 +72,11 @@ export default Ember.Component.extend({
     return avail;
   }),
 
+  // NOTE .on('didInsertElement')
+  updateRoleCountonDeployment: Ember.on('didInsertElement', function() {
+    return this.send('setRoleCountOnController', this.get('role').get('roleType'), this.get('roleNodeCount'));
+  }),
+
   actions: {
     updateNodeCount() {
       var nodeCount = parseInt(this.$('select').val());
@@ -78,6 +85,10 @@ export default Ember.Component.extend({
 
     editRole() {
       this.sendAction('edit', this.get('role'));
+    },
+
+    setRoleCountOnController(roleType, count) {
+      this.sendAction('setRoleCountOnController', roleType, count);
     },
 
     removeRole() {
