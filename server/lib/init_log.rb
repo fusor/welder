@@ -28,7 +28,7 @@ module Fusor
     FileUtils.mkdir_p(self.log_file_dir(deployment)) unless File.exist?(self.log_file_dir(deployment))
     @log.collect(self.log_file_dir(deployment))
   end
-  
+
   def self.stop_collect_satellite_logs
     @log.stop_collect
   end

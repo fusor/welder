@@ -20,6 +20,7 @@ module Actions
         #Follow and append satellite specific logging
         ::Fusor.start_collect_satellite_logs(@deployment)
       end
+
       def finalize
         ::Fusor.stop_collect_satellite_logs
       end

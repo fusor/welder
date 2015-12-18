@@ -42,7 +42,7 @@ class MultiLogger
         file = entry[:file]
 
         # make containing folder
-        *x, y = file.split("/")
+        *x, _ = file.split("/")
         path = File.join(base_path, x.join("/"))
         FileUtils.mkdir_p(path) unless File.exist?(path)
 
