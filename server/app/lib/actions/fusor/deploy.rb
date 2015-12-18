@@ -48,6 +48,10 @@ module Actions
         end
         plan_self(:deployment_name => deployment.name)
       end
+      
+      def finalize
+        super
+      end
     end
   end
 end

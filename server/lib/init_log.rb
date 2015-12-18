@@ -22,6 +22,17 @@ module Fusor
     end
   end
 
+  def self.start_collect_satellite_logs(deployment)
+    self.log
+
+    FileUtils.mkdir_p(self.log_file_dir(deployment)) unless File.exist?(self.log_file_dir(deployment))
+    @log.collect(self.log_file_dir(deployment))
+  end
+  
+  def self.stop_collect_satellite_logs
+    @log.stop_collect
+  end
+
   def self.log_file_dir(deployment)
     return File.join(Rails.root, 'log') if deployment.nil?
     File.join(Rails.root, 'log', 'deployments', "#{deployment.name.gsub(/[^0-9A-Za-z\-]/, '_')}-#{deployment.id}")
