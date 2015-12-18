@@ -19,6 +19,8 @@ module Actions
 
       def plan(deployment, skip_content = false)
         super(deployment)
+        #Follow and append satellite specific logging
+        ::Fusor.start_collect_satellite_logs(deployment)
         fail _("Unable to locate fusor.yaml settings in config/settings.plugins.d") unless SETTINGS[:fusor]
         fail _("Unable to locate content settings in config/settings.plugins.d/fusor.yaml") unless SETTINGS[:fusor][:content]
         fail _("Unable to locate host group settings in config/settings.plugins.d/fusor.yaml") unless SETTINGS[:fusor][:host_groups]
@@ -50,7 +52,7 @@ module Actions
       end
 
       def finalize
-        super
+        ::Fusor.stop_collect_satellite_logs
       end
     end
   end
