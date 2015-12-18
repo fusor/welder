@@ -17,12 +17,6 @@ module Actions
       def plan(deployment = nil)
         #Create deployment specific log file.
         ::Fusor.log_change_deployment(deployment)
-        #Follow and append satellite specific logging
-        ::Fusor.start_collect_satellite_logs(@deployment)
-      end
-
-      def finalize
-        ::Fusor.stop_collect_satellite_logs
       end
     end
   end

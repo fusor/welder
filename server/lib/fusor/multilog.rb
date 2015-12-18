@@ -6,7 +6,7 @@ class MultiLogger
   def initialize(logger)
     @original = logger
     @default_log_level ||= Logger::DEBUG
-    @watchlist ||= []
+    @watchlist ||= {}
   end
 
   # Creates and write to additional log file(s).
@@ -41,14 +41,16 @@ class MultiLogger
       SETTINGS[:fusor][:system][:logging][:watch].each do |entry|
         file = entry[:file]
 
-        # make containing folder
-        *x, _ = file.split("/")
-        path = File.join(base_path, x.join("/"))
-        FileUtils.mkdir_p(path) unless File.exist?(path)
+        if !@watchlist.key? file
+          # make containing folder
+          *x, _ = file.split("/")
+          path = File.join(base_path, x.join("/"))
+          FileUtils.mkdir_p(path) unless File.exist?(path)
 
-        # spawn tail process and add to @watchlist
-        pid = Process.spawn("tail -f #{file} >> " + File.join(base_path, file))
-        @watchlist << {:file => file, :path => File.join(base_path, file), :pid => pid}
+          # spawn tail process and add to @watchlist
+          pid = Process.spawn("tail -f #{file} >> " + File.join(base_path, file))
+          @watchlist[file] = {:path => File.join(base_path, file), :pid => pid}
+        end
       end
     else
       self.info("No log watchlist defined in configuration, nothing to do...")
