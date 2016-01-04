@@ -6,6 +6,8 @@ export default Ember.Controller.extend(NeedsDeploymentMixin, {
   storageController: Ember.inject.controller('storage'),
   rhevSetupController: Ember.inject.controller('rhev-setup'),
   rhevOptionsController: Ember.inject.controller('rhev-options'),
+  engineDiscoveredHostController: Ember.inject.controller('engine/discovered-host'),
+  hypervisorDiscoveredHostController: Ember.inject.controller('hypervisor/discovered-host'),
 
   rhevSetup: Ember.computed.alias("rhevSetupController.rhevSetup"),
 
@@ -35,8 +37,11 @@ export default Ember.Controller.extend(NeedsDeploymentMixin, {
   disableTabRhevHypervisors: Ember.computed(
     'deploymentController.model.rhev_is_self_hosted',
     'hasNoEngine',
+    'engineDiscoveredHostController.isHostnameInvalid',
     function() {
-      return (!this.get('deploymentController.model.rhev_is_self_hosted') && this.get('hasNoEngine'));
+      return ((!this.get('deploymentController.model.rhev_is_self_hosted') && this.get('hasNoEngine')) ||
+              (!this.get('hasNoEngine') && this.get('engineDiscoveredHostController.isHostnameInvalid'))
+             );
     }
   ),
 
@@ -44,9 +49,11 @@ export default Ember.Controller.extend(NeedsDeploymentMixin, {
     'deploymentController.model.rhev_is_self_hosted',
     'hasNoEngine',
     'hasNoHypervisor',
+    'hypervisorDiscoveredHostController.isHostnameInvalid',
     function() {
       return ((this.get('deploymentController.model.rhev_is_self_hosted') && this.get('hasNoEngine')) ||
-              (!this.get('deploymentController.model.rhev_is_self_hosted') && this.get('hasNoHypervisor'))
+              (!this.get('deploymentController.model.rhev_is_self_hosted') && this.get('hasNoHypervisor')) ||
+               (!this.get('hasNoHypervisor') && this.get('hypervisorDiscoveredHostController.isHostnameInvalid'))
              );
     }
   ),
