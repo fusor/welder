@@ -43,8 +43,7 @@ class MultiLogger
 
         if !@watchlist.key? file
           # make containing folder
-          *x, _ = file.split("/")
-          path = File.join(base_path, x.join("/"))
+          path = File.join(base_path, File.dirname(file))
           FileUtils.mkdir_p(path) unless File.exist?(path)
 
           # spawn tail process and add to @watchlist
