@@ -25,7 +25,7 @@ export default Ember.Controller.extend(NeedsDeploymentMixin, {
 
   actions: {
     registerNewSatellite() {
-      this.set('openRegisterNewSatelliteModal', true);
+      this.set('openModal', true);
     },
 
     selectManagementApp(managementApp) {
@@ -39,10 +39,11 @@ export default Ember.Controller.extend(NeedsDeploymentMixin, {
       return this.transitionTo('subscriptions.management-application.consumer', managementApp.get('id'));
     },
 
-    createSatellite() {
+    createSatellite(newSatelliteName) {
+      // set controller variable newSatelliteName passed in from component since modal is no longer a partial
+      this.set('newSatelliteName', newSatelliteName);
       this.set('showWaitingMessage', true);
       var token = Ember.$('meta[name="csrf-token"]').attr('content');
-      var newSatelliteName = this.get('newSatelliteName');
       var ownerKey = this.get('sessionPortal').get('ownerKey');
       var self = this;
 
