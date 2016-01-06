@@ -23,7 +23,13 @@ module.exports = function(environment) {
     // },
     //contentSecurityPolicyHeader: 'Content-Security-Policy',
     contentSecurityPolicyHeader: 'Disabled-Content-Security-Policy',
-    emberDevTools: {global: true},
+    'ember-devtools': {
+      global: true,
+      enabled: environment === 'development'
+    },
+    moment: {
+      outputFormat: 'll'
+    },
 
     APP: {
       // Here you can pass flags/options to your application instance
