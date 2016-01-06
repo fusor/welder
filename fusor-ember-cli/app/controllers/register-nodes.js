@@ -57,9 +57,6 @@ export default Ember.Controller.extend(ProgressBarMixin, NeedsDeploymentMixin, {
   registrationInProgress: false,
   initRegInProcess: false,
   introspectionInProgress: false,
-  registerNodesModalOpened: false,
-  registerNodesModalClosed: true,
-  modalOpen: false,
 
   registrationError: Ember.computed('errorNodes.[]', function() {
     return this.get('errorNodes.length') > 0;
@@ -130,18 +127,6 @@ export default Ember.Controller.extend(ProgressBarMixin, NeedsDeploymentMixin, {
     // do nothing, this overrides the closing of the dialog when clicked outside of it
   },
 
-  openRegDialog() {
-    this.set('registerNodesModalOpened', true);
-    this.set('registerNodesModalClosed', false);
-    this.set('modalOpen', true);
-  },
-
-  closeRegDialog() {
-    this.set('registerNodesModalOpened', false);
-    this.set('registerNodesModalClosed', true);
-    this.set('modalOpen', false);
-  },
-
   getCSVFileInput() {
     return $('#regNodesUploadFileInput')[0];
   },
@@ -188,11 +173,11 @@ export default Ember.Controller.extend(ProgressBarMixin, NeedsDeploymentMixin, {
 
       this.set('edittedNodes', edittedNodes);
       this.updateNodeSelection(edittedNodes[0]);
-      this.openRegDialog();
+      this.set('openModal', true);
     },
 
     registerNodes() {
-      this.closeRegDialog();
+      this.set('openModal', false);
       // restart polling after closing modal
       this.startPolling();
       var edittedNodes = this.get('edittedNodes');
@@ -214,7 +199,7 @@ export default Ember.Controller.extend(ProgressBarMixin, NeedsDeploymentMixin, {
     },
 
     cancelRegisterNodes() {
-      this.closeRegDialog();
+      this.set('openModal', false);
       this.set('edittedNodes', Ember.A());
     },
 
