@@ -93,4 +93,7 @@
                    disableCancel=isStarted
                    deploymentName=deploymentName}}
 
-{{partial 'new-node-registration'}}
+{{new-node-registration-modal openModal=openModal
+                              registerNodes='registerNodes'
+                              edittedNodes=edittedNodes
+                              }}

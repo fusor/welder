@@ -64,5 +64,10 @@
                    deploymentName=deploymentName}}
 
 {{partial 'edit-deployment-role'}}
-{{partial 'edit-global-service-config'}}
+
+{{osp-global-config-modal openModal=openModalGlobalConfig
+                          edittedPlanParameters=edittedPlanParameters
+                          saveGlobalServiceConfig=saveGlobalServiceConfig
+                          }}
+
 {{loading-spinner show=showLoadingSpinner text=loadingSpinnerText}}

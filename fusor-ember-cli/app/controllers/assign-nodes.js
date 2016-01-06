@@ -175,13 +175,11 @@ export default Ember.Controller.extend(DeploymentControllerMixin, NeedsDeploymen
   },
 
   openGlobalServiceConfigDialog() {
-    this.set('editGlobalServiceConfigModalOpened', true);
-    this.set('editGlobalServiceConfigModalClosed', false);
+    this.set('openModalGlobalConfig', true);
   },
 
   closeGlobalServiceConfigDialog() {
-    this.set('editGlobalServiceConfigModalOpened', false);
-    this.set('editGlobalServiceConfigModalClosed', true);
+    this.set('openModalGlobalConfig', false);
   },
 
   settingsTabActiveClass: Ember.computed('showSettings', function() {
@@ -217,7 +215,6 @@ export default Ember.Controller.extend(DeploymentControllerMixin, NeedsDeploymen
         if (paramId.indexOf(role.get('parameterPrefix')) === 0) {
           param.displayId = paramId.substring(role.get('parameterPrefix').length);
           param.displayId = param.displayId.replace(/([a-z])([A-Z])/g, '$1 $2');
-
           /* Using boolean breaks saving...
                     if (param.get('parameter_type') === 'boolean') {
                       param.set('isBoolean', true);
@@ -335,7 +332,7 @@ export default Ember.Controller.extend(DeploymentControllerMixin, NeedsDeploymen
       var planParams = Ember.A();
       this.get('model.plan.parameters').forEach(function(param) {
         if (param.get('id').indexOf('::') === -1) {
-          param.displayId = param.get('id').replace(/([a-z])([A-Z])/g, '$1 $2');
+            param.set('displayId', param.get('id').replace(/([a-z])([A-Z])/g, '$1 $2'));
 /* Using boolean breaks saving...
           if (param.get('parameter_type') === 'boolean') {
             param.set('isBoolean', true);
@@ -357,7 +354,8 @@ export default Ember.Controller.extend(DeploymentControllerMixin, NeedsDeploymen
       this.openGlobalServiceConfigDialog();
     },
 
-    saveGlobalServiceConfig() {
+    saveGlobalServiceConfig(edittedPlanParameters) {
+      this.set('edittedPlanParameters', edittedPlanParameters);
       var params = Ember.A();
       this.get('edittedPlanParameters').forEach(function(param) {
         params.push({'name': param.get('id'), 'value': param.get('value')});
@@ -365,7 +363,6 @@ export default Ember.Controller.extend(DeploymentControllerMixin, NeedsDeploymen
       var token = Ember.$('meta[name="csrf-token"]').attr('content');
 
       this.send('updatePlanParameters', params);
-      this.closeGlobalServiceConfigDialog();
     },
 
     cancelGlobalServiceConfig() {

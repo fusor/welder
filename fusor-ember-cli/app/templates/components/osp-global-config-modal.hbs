@@ -1,16 +1,9 @@
-{{#em-modal configName="bs" id="editGlobalServiceConfigModal" closeIfClickedOutside=handleOutsideClick open-if=editGlobalServiceConfigModalOpened close-if=editGlobalServiceConfigModalClosed in-async=async}}
 
-    {{#em-modal-title}}
-        {{#em-modal-toggler class="close"}}
-            <span aria-hidden="true" {{action "cancelGlobalServiceConfig"}}>×</span><span class="sr-only">Close</span>
-        {{/em-modal-toggler}}
-        <h4 class="modal-title">Edit Global Configuration</h4>
-    {{/em-modal-title}}
+{{#pf-modal-base idModal='editGlobalServiceConfigModal'
+                 openModal=openModal
+                 title="Edit Global Configuration"}}
 
-    {{#em-modal-body}}
-        {{#if async}}
-            Submitting, please wait...
-        {{else}}
+      {{#pf-modal-body}}
           <div role="tabpanel" class="tab-pane active global-config-settings-content">
               <div class="form-horizontal">
                   <fieldset>
@@ -29,12 +22,12 @@
                       </div>
                   </fieldset>
               </div>
-          </div>
-        {{/if}}
-    {{/em-modal-body}}
+          </div>      {{/pf-modal-body}}
 
-    {{#em-modal-footer class="modal-button-bar"}}
-        <button type="cancel" class="btn btn-default" disabled="{{async}}" {{action "cancelGlobalServiceConfig"}}>Cancel</button>
-        <button type="submit" class="btn btn-primary" disabled="{{async}}" {{action "saveGlobalServiceConfig"}}>Save</button>
-    {{/em-modal-footer}}
-{{/em-modal}}
+      {{#pf-modal-footer}}
+          <button {{action 'saveGlobalServiceConfig'}} class="btn btn-primary">
+              Submit
+          </button>
+      {{/pf-modal-footer}}
+
+{{/pf-modal-base}}
