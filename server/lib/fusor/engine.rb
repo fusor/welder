@@ -62,6 +62,8 @@ module Fusor
           }, :resource_type => 'Fusor::Deployment'
         end
 
+        apipie_documented_controllers ["#{Fusor::Engine.root}/server/app/controllers/api/v21/*.rb"]
+
         # Add a new role called 'Fusor' if it doesn't exist
         # role "Fusor", [:view_fusor]
 
