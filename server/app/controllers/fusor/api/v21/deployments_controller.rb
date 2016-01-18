@@ -117,7 +117,7 @@ module Fusor
     end
 
     def get_log_path(log_type_param)
-      dir = ::Fusor.log_file_dir(@deployment.name, @deployment.id)
+      dir = ::Fusor.log_file_dir(@deployment.label, @deployment.id)
       case log_type_param
         when 'messages_log'
           File.join(dir, 'var/log/messages')
@@ -128,7 +128,7 @@ module Fusor
         when 'foreman_proxy_log'
           File.join(dir, 'var/log/foreman-proxy/proxy.log')
         else
-          ::Fusor.log_file_path(@deployment.name, @deployment.id)
+          ::Fusor.log_file_path(@deployment.label, @deployment.id)
       end
     end
   end
