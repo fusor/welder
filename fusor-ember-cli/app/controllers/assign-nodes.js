@@ -373,8 +373,7 @@ export default Ember.Controller.extend(DeploymentControllerMixin, NeedsDeploymen
         computeRoleCount = this.get('openStack.plan.computeRoleCount'),
         controllerRoleCount = this.get('openStack.plan.controllerRoleCount');
 
-      return unassignedRoleTypes.contains('controller') ||
-        unassignedRoleTypes.contains('compute') ||
+      return !unassignedRoleTypes || unassignedRoleTypes.length !== 0 ||
         !computeRoleCount || computeRoleCount === '0' ||
         !controllerRoleCount || controllerRoleCount === '0';
     })
