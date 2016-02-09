@@ -28,18 +28,20 @@ export default Ember.Route.extend(DeploymentRouteMixin, {
     var orgID = model.get('organization.id');
     var url = '/katello/api/v2/organizations/' + orgID;
     Ember.$.getJSON(url).then(function(results) {
-      if (Ember.isPresent(results.owner_details.upstreamConsumer)) {
-        controller.set('organizationUpstreamConsumerUUID', results.owner_details.upstreamConsumer.uuid);
-        controller.set('organizationUpstreamConsumerName', results.owner_details.upstreamConsumer.name);
-        // if no UUID for deployment, assign it from org UUID
-        if (Ember.isBlank(controller.get('model.upstream_consumer_uuid'))) {
-          controller.set('model.upstream_consumer_uuid', results.owner_details.upstreamConsumer.uuid);
-          controller.set('model.upstream_consumer_name', results.owner_details.upstreamConsumer.name);
+      Ember.run(function(){
+        if (Ember.isPresent(results.owner_details.upstreamConsumer)) {
+          controller.set('organizationUpstreamConsumerUUID', results.owner_details.upstreamConsumer.uuid);
+          controller.set('organizationUpstreamConsumerName', results.owner_details.upstreamConsumer.name);
+          // if no UUID for deployment, assign it from org UUID
+          if (Ember.isBlank(controller.get('model.upstream_consumer_uuid'))) {
+            controller.set('model.upstream_consumer_uuid', results.owner_details.upstreamConsumer.uuid);
+            controller.set('model.upstream_consumer_name', results.owner_details.upstreamConsumer.name);
+          }
+        } else {
+          controller.set('organizationUpstreamConsumerUUID', null);
+          controller.set('organizationUpstreamConsumerName', null);
         }
-      } else {
-        controller.set('organizationUpstreamConsumerUUID', null);
-        controller.set('organizationUpstreamConsumerName', null);
-      }
+      });
     });
 
   },
