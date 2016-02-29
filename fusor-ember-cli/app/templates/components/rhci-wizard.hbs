@@ -17,6 +17,10 @@
     {{wizard-item num=stepNumberCloudForms name=nameCloudForms routeName='cloudforms' isDisabled=isDisabledCloudForms currentStepNumber=currentStepNumber fullname=fullnameCloudForms}}
   {{/if}}
 
+  {{#if isOpenShift}}
+    {{wizard-item num=stepNumberOpenShift name=nameOpenShift routeName='openshift' isDisabled=isDisabledOpenShift currentStepNumber=currentStepNumber fullname=fullnameOpenShift}}
+  {{/if}}
+
   {{#if isSubscriptions}}
     {{wizard-item num=stepNumberSubscriptions name='Subscriptions' routeName='subscriptions'
     isDisabled=isDisabledSubscriptions currentStepNumber=currentStepNumber}}

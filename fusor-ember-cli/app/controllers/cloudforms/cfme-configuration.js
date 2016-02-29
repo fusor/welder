@@ -4,6 +4,8 @@ import { EqualityValidator, PasswordValidator } from '../../utils/validators';
 
 export default Ember.Controller.extend(NeedsDeploymentMixin, {
 
+  isOpenShift: Ember.computed.alias("deploymentController.isOpenShift"),
+
   cfmeRootPassword: Ember.computed.alias("deploymentController.model.cfme_root_password"),
   cfmeAdminPassword: Ember.computed.alias("deploymentController.model.cfme_admin_password"),
   confirmCfmeRootPassword: Ember.computed.alias("deploymentController.confirmCfmeRootPassword"),
@@ -12,7 +14,9 @@ export default Ember.Controller.extend(NeedsDeploymentMixin, {
   isSubscriptions: Ember.computed.alias("deploymentController.isSubscriptions"),
 
   nextRouteNameAfterCFME: Ember.computed('isSubscriptions', function () {
-    if (this.get('isSubscriptions')) {
+    if (this.get('isOpenShift')) {
+      return 'openshift';
+    } else if (this.get('isSubscriptions')) {
       return 'subscriptions';
     } else {
       return 'review';

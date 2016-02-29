@@ -8,6 +8,7 @@ export default Ember.Controller.extend(DeploymentControllerMixin, DisableTabMixi
   configureEnvironmentController: Ember.inject.controller('configure-environment'),
   rhevController: Ember.inject.controller('rhev'),
   openstackController: Ember.inject.controller('openstack'),
+  openshiftController: Ember.inject.controller('openshift'),
   cloudformsController: Ember.inject.controller('cloudforms'),
   credentialsController: Ember.inject.controller('subscriptions/credentials'),
   selectSubscriptionsController: Ember.inject.controller('subscriptions/select-subscriptions'),
@@ -21,6 +22,7 @@ export default Ember.Controller.extend(DeploymentControllerMixin, DisableTabMixi
 
   validRhev: Ember.computed.alias("rhevController.validRhev"),
   validOpenStack: Ember.computed.alias("openstackController.validOpenStack"),
+  validOpenshift: Ember.computed.alias("openshiftController.validOpenshift"),
   validCloudforms: Ember.computed.alias("cloudformsController.validCloudforms"),
   disableNextOnSelectSubscriptions: Ember.computed.alias("selectSubscriptionsController.disableNextOnSelectSubscriptions"),
   isDisconnected: Ember.computed.alias("model.is_disconnected"),
@@ -47,7 +49,7 @@ export default Ember.Controller.extend(DeploymentControllerMixin, DisableTabMixi
     }
   ),
 
-  isDisabledSubscriptions: Ember.computed(
+  isDisabledOpenShift: Ember.computed(
     "satelliteInvalid",
     'isRhev',
     'isOpenStack',
@@ -60,10 +62,30 @@ export default Ember.Controller.extend(DeploymentControllerMixin, DisableTabMixi
               (this.get('isRhev') && !(this.get('validRhev'))) ||
               (this.get('isOpenStack') && !(this.get('validOpenStack'))) ||
               (this.get('isCloudForms') && !(this.get('validCloudforms')))
-             );
+              );
     }
   ),
 
+
+  isDisabledSubscriptions: Ember.computed(
+    "satelliteInvalid",
+    'isRhev',
+    'isOpenStack',
+    'isOpenShift',
+    'validRhev',
+    'validOpenStack',
+    'validOpenshift',
+    'isCloudForms',
+    'validCloudforms',
+    function() {
+      return (this.get('satelliteInvalid') ||
+              (this.get('isRhev') && !(this.get('validRhev'))) ||
+              (this.get('isOpenStack') && !(this.get('validOpenStack'))) ||
+              (this.get('isOpenShift') && !(this.get('validOpenshift'))) ||
+              (this.get('isCloudForms') && !(this.get('validCloudforms')))
+             );
+    }
+  ),
 
   hasSubscriptionUUID: Ember.computed(
     'organizationUpstreamConsumerUUID',
