@@ -194,7 +194,8 @@ module Actions
                   :name => "ovirt",
                   :parameters =>
                   [
-                    { :name => "deploy_cfme", :value => deployment.deploy_cfme }
+                    { :name => "deploy_cfme", :value => deployment.deploy_cfme },
+                    { :name => "deploy_openshift", :value => deployment.deploy_openshift }
                   ]
                 },
                 {
