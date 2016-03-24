@@ -1,0 +1,14 @@
+{{#text-f label="Content Mirror URL" value=cdnUrl disabled=false}}
+  <div style="margin-top: 5px; margin-left: 3px">
+    {{#if isVerifyingContentMirror}}
+      <span>Verifying mirror...</span>
+      <span class="spinner spinner-md spinner-inline" style="margin-left: 5px; width: 15px; height: 15px"></span>
+    {{else}}
+      {{#if isContentMirrorValid}}
+        <span style="color: green; font-weight: bold">{{contentMirrorValidationMsg}}</span>
+      {{else}}
+        <span style="color: red; font-weight: bold">{{contentMirrorValidationMsg}}</span>
+      {{/if}}
+    {{/if}}
+  </div>
+{{/text-f}}
