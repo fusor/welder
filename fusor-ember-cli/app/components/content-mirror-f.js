@@ -44,7 +44,7 @@ export default TextFComponent.extend({
         const deploymentId = this.get('deploymentId');
 
         request({
-          url: `/fusor/api/v21/deployments/${deploymentId}/validate`,
+          url: `/fusor/api/v21/deployments/${deploymentId}/validate_cdn`,
           headers: {
             "Accept": "application/json",
             "X-CSRF-Token": token
