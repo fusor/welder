@@ -12,7 +12,7 @@ function setAdvancedTimeout(f, delay) {
   };
   var callfunc = function() { obj.called = true; f(); };
   obj.reset = function(ms) {
-    if (obj.called || obj.canceled) return false;
+    if (obj.called || obj.canceled) { return false; }
     clearTimeout(obj.timeout);
     obj.timeout = setTimeout(callfunc, ms);
     return obj;
