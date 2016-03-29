@@ -93,7 +93,7 @@ module Fusor
 
     def validate_cdn
       begin
-        if params.key?("cdn_url")
+        if params.key?('cdn_url')
           def ad_hoc_req(uri_str)
             uri = URI.parse(uri_str)
             http = Net::HTTP.new(uri.host, uri.port)
@@ -110,15 +110,17 @@ module Fusor
 
           response = ad_hoc_req(full_uri_str)
           # Follow a 301 once in case redirect /content -> /content/
-          final_code = response.code == "301" ?
-            ad_hoc_req(response["location"]).code : response.code
+          final_code = response.code == '301' ?
+            ad_hoc_req(response['location']).code : response.code
 
           render json: { :cdn_url_code => final_code }, status: 200
         else
-          raise "cdn_url parameter missing"
+          raise 'cdn_url parameter missing'
         end
       rescue => error
-        render json: { :error => error.message }, status: 400
+        message = error.respond_to?(:message) ?
+          error.message : 'Malformed request'
+        render json: { :error => message }, status: 400
       end
     end
 
