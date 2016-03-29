@@ -22,7 +22,7 @@ module Actions
           def plan(deployment)
             super(deployment)
 
-            if deployment.self_hosted
+            if deployment.rhev_is_self_hosted
               fail _("Unable to locate a RHEV Hypervisor Host") unless (deployment.discovered_hosts.length > 0)
               # Do self-hosted stuff
               sequence do
@@ -69,6 +69,7 @@ module Actions
                           deployment)
 
               plan_action(::Actions::Fusor::Deployment::Rhev::CreateCr, deployment)
+            end
           end
 
           private
