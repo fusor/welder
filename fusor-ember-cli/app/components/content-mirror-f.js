@@ -6,6 +6,7 @@ import request from 'ic-ajax';
 const CDN_VERIFY_TIMEOUT = 3000;
 
 export default TextFComponent.extend({
+  responseCounter: 0,
   validationTrigger: null,
   isVerifyingContentMirror: false,
 
@@ -43,6 +44,12 @@ export default TextFComponent.extend({
         const token = Ember.$('meta[name="csrf-token"]').attr('content');
         const deploymentId = this.get('deploymentId');
 
+        // Guard against race condition of newer responses returning faster
+        // than old responses that could result in valid content mirrors
+        // being marked invalid, or vice versa
+        responseCounter = this.get('responseCounter') + 1;
+        this.set('responseCounter', responseCounter);
+
         request({
           url: `/fusor/api/v21/deployments/${deploymentId}/validate_cdn`,
           headers: {
@@ -53,12 +60,22 @@ export default TextFComponent.extend({
             cdn_url: encodeURIComponent(cdnUrl)
           }
         }).then((res) => {
-          this.setContentMirrorValidation(res.cdn_url_code === "200");
+          // If this response is not the newest response (the closed over
+          // responseCounter will be less than the responseCounter field),
+          // we want throw away the result because we know a more accurate
+          // result is incoming or already has updated our state
+          if(responseCounter === this.get('responseCounter')) {
+            this.setContentMirrorValidation(res.cdn_url_code === "200");
+          }
         }).catch((err) => {
-          this.setContentMirrorValidation(false);
+          if(responseCounter === this.get('responseCounter')) {
+            this.setContentMirrorValidation(false);
+          }
         }).finally(() => {
-          this.setIsVerifyingContentMirror(false);
-          this.set('validationTrigger', null);
+          if(responseCounter === this.get('responseCounter')) {
+            this.setIsVerifyingContentMirror(false);
+            this.set('validationTrigger', null);
+          }
         });
 
       }, CDN_VERIFY_TIMEOUT); // End advancedTimeout def
