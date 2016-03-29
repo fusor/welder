@@ -47,7 +47,7 @@ export default TextFComponent.extend({
         // Guard against race condition of newer responses returning faster
         // than old responses that could result in valid content mirrors
         // being marked invalid, or vice versa
-        responseCounter = this.get('responseCounter') + 1;
+        let responseCounter = this.get('responseCounter') + 1;
         this.set('responseCounter', responseCounter);
 
         request({
