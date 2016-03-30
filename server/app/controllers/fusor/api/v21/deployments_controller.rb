@@ -105,34 +105,21 @@ module Fusor
           # Best we can reasonably do here is to check to make sure we get
           # back a 200 when we hit $URL/content, since we can be reasonably
           # certain a repo needs to have the /content path
-          full_uri_str =
-            if unescaped_uri_str =~ /\/$/
-              "#{unescaped_uri_str}content"
-            else
-              "#{unescaped_uri_str}/content"
-            end
+          full_uri_str = "#{unescaped_uri_str}/content"
+          full_uri_str = "#{unescaped_uri_str}content" if unescaped_uri_str =~ /\/$/
 
           response = ad_hoc_req.call(full_uri_str)
           # Follow a 301 once in case redirect /content -> /content/
-          final_code =
-            if response.code == '301'
-              ad_hoc_req.call(response['location']).code
-            else
-              response.code
-            end
+          final_code = response.code
+          final_code = ad_hoc_req.call(response['location']).code if response.code == '301'
 
           render json: { :cdn_url_code => final_code }, status: 200
         else
           raise 'cdn_url parameter missing'
         end
       rescue => error
-        message =
-          if error.respond_to?(:message)
-            error.message
-          else
-            'Malformed request'
-          end
-
+        message = 'Malformed request'
+        message = error.message if error.respond_to?(:message)
         render json: { :error => message }, status: 400
       end
     end
