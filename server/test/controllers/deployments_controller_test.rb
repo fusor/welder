@@ -278,7 +278,8 @@ module Fusor
         def redirect_res.code
           "301"
         end
-        def redirect_res.[](key)
+
+        def redirect_res.[](_)
           # Mock object only ever needs to return uri_with_slash, expecting
           # we'll receive key == 'location', no other case is valid
           # Method definition does not close over initial_uri, end up with
@@ -291,12 +292,12 @@ module Fusor
         # the path, since that is available.
         Net::HTTP.any_instance
           .stubs(:request)
-          .with{ |request| request.path == '/pub/sat-import/content' }
+          .with { |request| request.path == '/pub/sat-import/content' }
           .returns(redirect_res)
 
         Net::HTTP.any_instance
           .stubs(:request)
-          .with{ |request| request.path == '/pub/sat-import/content/' }
+          .with { |request| request.path == '/pub/sat-import/content/' }
           .returns(valid_res)
 
         response = JSON.parse(get(

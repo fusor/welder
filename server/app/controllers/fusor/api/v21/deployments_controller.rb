@@ -94,7 +94,7 @@ module Fusor
     def validate_cdn
       begin
         if params.key?('cdn_url')
-          def ad_hoc_req(uri_str)
+          ad_hoc_req = lambda do |uri_str|
             uri = URI.parse(uri_str)
             http = Net::HTTP.new(uri.host, uri.port)
             request = Net::HTTP::Head.new(uri.request_uri)
@@ -105,21 +105,34 @@ module Fusor
           # Best we can reasonably do here is to check to make sure we get
           # back a 200 when we hit $URL/content, since we can be reasonably
           # certain a repo needs to have the /content path
-          full_uri_str = unescaped_uri_str =~ /\/$/ ?
-            "#{unescaped_uri_str}content" : "#{unescaped_uri_str}/content"
+          full_uri_str =
+            if unescaped_uri_str =~ /\/$/
+              "#{unescaped_uri_str}content"
+            else
+              "#{unescaped_uri_str}/content"
+            end
 
-          response = ad_hoc_req(full_uri_str)
+          response = ad_hoc_req.call(full_uri_str)
           # Follow a 301 once in case redirect /content -> /content/
-          final_code = response.code == '301' ?
-            ad_hoc_req(response['location']).code : response.code
+          final_code =
+            if response.code == '301'
+              ad_hoc_req.call(response['location']).code
+            else
+              response.code
+            end
 
           render json: { :cdn_url_code => final_code }, status: 200
         else
           raise 'cdn_url parameter missing'
         end
       rescue => error
-        message = error.respond_to?(:message) ?
-          error.message : 'Malformed request'
+        message =
+          if error.respond_to?(:message)
+            error.message
+          else
+            'Malformed request'
+          end
+
         render json: { :error => message }, status: 400
       end
     end
