@@ -9,84 +9,91 @@ export default TextFComponent.extend({
   responseCounter: 0,
   validationTrigger: null,
   isVerifyingContentMirror: false,
+  dirty: false,
 
   didInsertElement: function (){
     if(this.get('cdnUrl')) {
-      this.validateContentMirrorUrl();
+      this.queueValidation();
     }
   },
-  nskObserver: Ember.observer('cdnUrl', function() {
-    this.validateContentMirrorUrl();
+
+  contentMirrorObserver: Ember.observer('cdnUrl', function() {
+    this.queueValidation();
   }),
-  validateContentMirrorUrl: function() {
+
+  queueValidation: function() {
+    if(this.get('isVerifyingContentMirror') === false) {
+      this.setIsVerifyingContentMirror(true);
+    }
+
+    this.set('dirty', true);
     const validationTrigger = this.get('validationTrigger');
 
-    if(!validationTrigger) {
-      if(this.get('isVerifyingContentMirror') === false) {
-        this.setIsVerifyingContentMirror(true);
-      }
-
-      // If there's no outstanding trigger and cdn has changed, set up trigger
-      const trigger = setAdvancedTimeout(() => {
-        const cdnUrl = this.get('cdnUrl');
-
-        // == Protocol Check ==
-        // Confirm the protocol is present
-        // NOTE: This will need to be altered if file:// needs to be supported
-        const protocolCheckRx = /^https?:\/\//;
-        if(!protocolCheckRx.test(cdnUrl)) {
-          this.setIsVerifyingContentMirror(false);
-          this.setContentMirrorValidation(false, 'Missing http protocol');
-          this.set('validationTrigger', null);
-          return;
-        }
-
-        const token = Ember.$('meta[name="csrf-token"]').attr('content');
-        const deploymentId = this.get('deploymentId');
-
-        // Guard against race condition of newer responses returning faster
-        // than old responses that could result in valid content mirrors
-        // being marked invalid, or vice versa
-        let responseCounter = this.get('responseCounter') + 1;
-        this.set('responseCounter', responseCounter);
-
-        request({
-          url: `/fusor/api/v21/deployments/${deploymentId}/validate_cdn`,
-          headers: {
-            "Accept": "application/json",
-            "X-CSRF-Token": token
-          },
-          data: {
-            cdn_url: encodeURIComponent(cdnUrl)
-          }
-        }).then((res) => {
-          // If this response is not the newest response (the closed over
-          // responseCounter will be less than the responseCounter field),
-          // we want throw away the result because we know a more accurate
-          // result is incoming or already has updated our state
-          if(responseCounter === this.get('responseCounter')) {
-            this.setContentMirrorValidation(res.cdn_url_code === "200");
-          }
-        }).catch((err) => {
-          if(responseCounter === this.get('responseCounter')) {
-            this.setContentMirrorValidation(false);
-          }
-        }).finally(() => {
-          if(responseCounter === this.get('responseCounter')) {
-            this.setIsVerifyingContentMirror(false);
-            this.set('validationTrigger', null);
-          }
-        });
-
-      }, CDN_VERIFY_TIMEOUT); // End advancedTimeout def
-
-      this.set('validationTrigger', trigger);
-
-    } else if(!validationTrigger.called){
-      // If trigger exists but hasn't been called yet, extend timeout
-      validationTrigger.reset(CDN_VERIFY_TIMEOUT);
+    if(validationTrigger) {
+      Ember.run.cancel(validationTrigger);
     }
+
+    this.set(
+      'validationTrigger',
+      Ember.run.later(this, () => this.onValidate(), CDN_VERIFY_TIMEOUT)
+    );
   },
+
+  onValidate: function() {
+    const cdnUrl = this.get('cdnUrl');
+    const protocolCheckRx = /^https?:\/\//;
+
+    if(!protocolCheckRx.test(cdnUrl)) {
+      this.setIsVerifyingContentMirror(false);
+      this.setContentMirrorValidation(false, 'Missing http protocol');
+      return;
+    }
+
+    // Guard against race condition of newer responses returning faster
+    // than old responses that could result in valid content mirrors
+    // being marked invalid, or vice versa
+    const responseCounter = this.get('responseCounter') + 1;
+    this.set('responseCounter', responseCounter);
+
+    const token = Ember.$('meta[name="csrf-token"]').attr('content');
+    const deploymentId = this.get('deploymentId');
+
+    const shouldUpdate = () => {
+      return responseCounter === this.get('responseCounter') &&
+        !this.get('dirty');
+    };
+
+    this.set('dirty', false);
+    this.set('validationTrigger', null);
+
+    request({
+      url: `/fusor/api/v21/deployments/${deploymentId}/validate_cdn`,
+      headers: {
+        "Accept": "application/json",
+        "X-CSRF-Token": token
+      },
+      data: {
+        cdn_url: encodeURIComponent(cdnUrl)
+      }
+    }).then((res) => {
+      // If the response is not the newest response local responseCounter
+      // will be less than the responseCounter member field),
+      // we want throw away the result since we know a more accurate
+      // result is incoming or already has updated our state
+      if(shouldUpdate()) {
+        this.setContentMirrorValidation(res.cdn_url_code === '200');
+      }
+    }).catch((err) => {
+      if(shouldUpdate()) {
+        this.setContentMirrorValidation(false);
+      }
+    }).finally(() => {
+      if(shouldUpdate()) {
+       this.setIsVerifyingContentMirror(false);
+      }
+    });
+  },
+
   setContentMirrorValidation: function(isValid, validationMsg) {
     this.set('isContentMirrorValid', isValid);
 
