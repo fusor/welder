@@ -99,7 +99,7 @@ export default Ember.Controller.extend(NeedsDeploymentMixin, {
     'validRhevOptions',
     'validRhevStorage',
     function() {
-      return this.get('validRhevSetup') && this.get('validRhevEngine') && this.get('validRhevHypervisor') &&
+      return this.get('validRhevSetup') && this.get('validRhevEngine') && (this.get('validRhevHypervisor') || this.get('isSelfHost')) &&
              this.get('validRhevOptions') && this.get('validRhevStorage');
     }
   )
