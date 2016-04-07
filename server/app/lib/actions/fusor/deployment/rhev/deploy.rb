@@ -23,20 +23,16 @@ module Actions
             super(deployment)
 
             if deployment.rhev_is_self_hosted
-              fail _("Unable to locate a RHEV Hypervisor Host") unless (deployment.discovered_hosts.length > 0)
+              # fail _("Unable to locate a RHEV Hypervisor Host" + deployment.inspect) unless (deployment.discovered_hosts.length > 0)
               # Do self-hosted stuff
               sequence do
-                deployment.discovered_hosts.each do |host|
-                  plan_action(::Actions::Fusor::Host::TriggerProvisioning,
-                              deployment,
-                              "RHEV-Self-hosted",
-                              host)
-                end
+                plan_action(::Actions::Fusor::Host::TriggerProvisioning,
+                            deployment,
+                            "RHEV-Self-hosted",
+                            deployment.rhev_engine_host)
                 concurrence do
-                  deployment.discovered_hosts.each do |host|
-                    plan_action(::Actions::Fusor::Host::WaitUntilProvisioned,
-                                host)
-                  end
+                  plan_action(::Actions::Fusor::Host::WaitUntilProvisioned,
+                              deployment.rhev_engine_host)
                 end
               end
             else
