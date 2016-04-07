@@ -80,34 +80,32 @@
 
     # TODO(fabianvf)
     :rhevsh:
-      # rhel-7-server-rpms
-      # rhel-7-server-rhev-mgmt-rpms
       - :product_name: "Red Hat Enterprise Linux Server"
         :product_id: "69"
-        :repository_set_id: "168"
-        :repository_set_name: "Red Hat Enterprise Linux 6 Server (RPMs)"
+        :repository_set_id: "2456"
+        :repository_set_name: "Red Hat Enterprise Linux 7 Server (RPMs)"
         :basearch: "x86_64"
-        :releasever: "6Server"
+        :releasever: "7Server"
 
       - :product_name: "Red Hat Enterprise Linux Server"
         :product_id: "69"
-        :repository_set_id: "1952"
-        :repository_set_name: "Red Hat Enterprise Linux 6 Server (Kickstart)"
+        :repository_set_id: "2455"
+        :repository_set_name: "Red Hat Enterprise Linux 7 Server (Kickstart)"
         :basearch: "x86_64"
-        :releasever: "6.7"
+        :releasever: "7.1"
 
       - :product_name: "Red Hat Enterprise Linux Server"
         :product_id: "69"
-        :repository_set_id: "4185"
-        :repository_set_name: "Red Hat Satellite Tools 6.1 (for RHEL 6 Server) (RPMs)"
+        :repository_set_id: "4188"
+        :repository_set_name: "Red Hat Satellite Tools 6.1 (for RHEL 7 Server) (RPMs)"
         :basearch: "x86_64"
 
       - :product_name: "Red Hat Enterprise Virtualization"
         :product_id: "150"
-        :repository_set_id: "1099"
-        :repository_set_name: "Red Hat Enterprise Virtualization Management Agents (RPMs)"
+        :repository_set_id: "3109"
+        :repository_set_name: "Red Hat Enterprise Virtualization Management Agents for RHEL 7 (RPMs)"
         :basearch: "x86_64"
-        :releasever: "6Server"
+        :releasever: "7Server"
 
     :cloudforms:
       - :product_name: "Red Hat CloudForms"
@@ -244,10 +242,11 @@
            :subscription_descriptions:
              - "Red Hat Cloud Infrastructure"
 
-      - :name: "RHEV-Self-Hosted"
+       - :name: "RHEV-Self-hosted"
          :os: "RedHat"
          :major: "7"
-         :minor: "2"
+         :minor: "1"
+         :ptable: "rhev_self_hosted"
          :parent: :root_deployment
          :puppet_classes:
            - :name: "ovirt"
