@@ -95,7 +95,14 @@ module Actions
               operating_system = ::Redhat.where(:name => hostgroup_settings[:os], :major => hostgroup_settings[:major], :minor => hostgroup_settings[:minor]).first
               hostgroup_params[:operatingsystem_id] = operating_system.try(:id)
               hostgroup_params[:medium_id] = operating_system.try(:media).try(:first).try(:id)
-              hostgroup_params[:ptable_id] = operating_system.try(:ptables).try(:first).try(:id)
+              if (hostgroup_settings[:ptable].nil?)
+                hostgroup_params[:ptable_id] = operating_system.try(:ptables).try(:first).try(:id)
+              else
+                ptable = ::Ptable.where(:name => hostgroup_settings[:ptable])
+                hostgroup_params[:ptable_id] = ptable.try(:first).try(:id)
+                operating_system.try(:ptables) << ptable
+                operating_system.save
+              end
               hostgroup_params[:architecture_id] = operating_system.try(:architectures).try(:first).try(:id)
               hostgroup_params[:root_pass] = root_password(deployment, product_type)
             end
@@ -184,6 +191,7 @@ module Actions
         # unclear which one the deployment attribute is associated with
         # :name => , :value => deployment.rhev_storage_type,
 
+        # TODO(fabianvf): Add overrides for rhev-self-hosted
         deployment_overrides =
           [
             {
