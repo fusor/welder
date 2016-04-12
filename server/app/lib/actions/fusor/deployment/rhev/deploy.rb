@@ -61,11 +61,12 @@ module Actions
                             deployment.rhev_engine_host)
 
               end
-              plan_action(::Actions::Fusor::Deployment::Rhev::WaitForDataCenter,
+            end
+            plan_action(::Actions::Fusor::Deployment::Rhev::WaitForDataCenter,
                           deployment)
 
-              plan_action(::Actions::Fusor::Deployment::Rhev::CreateCr, deployment)
-            end
+            plan_action(::Actions::Fusor::Deployment::Rhev::CreateCr, deployment)
+
           end
 
           private
