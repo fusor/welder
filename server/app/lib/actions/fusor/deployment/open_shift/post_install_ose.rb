@@ -70,7 +70,7 @@ module Actions
             # Reusing installation user and hardcoded password for OSE login credentials
             # Workaround for https://trello.com/c/js4E9th5
             opts[:ose_user] = deployment.openshift_username
-            opts[:ose_password] = "dog8code"
+            opts[:ose_password] = deployment.opensift_userpass
 
             opts[:subdomain_name] = deployment.openshift_subdomain_name
 
