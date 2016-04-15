@@ -83,7 +83,7 @@ module Actions
 
             # Reusing installation user and hardcoded password for OSE login credentials
             opts[:ose_user] = deployment.openshift_username
-            opts[:ose_password] = deployment.openshift_userpass
+            opts[:ose_password] = deployment.openshift_user_password
 
             opts[:subdomain_name] = deployment.openshift_subdomain_name
 
