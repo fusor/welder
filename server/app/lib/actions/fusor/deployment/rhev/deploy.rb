@@ -22,41 +22,23 @@ module Actions
           def plan(deployment)
             super(deployment)
 
-            if deployment.rhev_is_self_hosted
-              require 'apipie-bindings'
-              @foreman = ApipieBindings::API::new({:uri => 'https://sat61devg.example.com', :username => 'admin', :password => 'changeme'})
-              host = {
-                :name => 'rhevm',
-                :environment_id => 1, # deployment.rhev_engine_host.environment_id,
-                :location_id => 1, # deployment.rhev_engine_host.location_id,
-                :organization_id => 1, # deployment.rhev_engine_host.organization_id,
-                :root_pass =>  'dog8code', # deployment.rhev_root_password,
-                :subnet_id => @foreman.resource(:subnets).action(:show).call({:id => 'default', :encoding => 'utf-8'})['id'],
-                :mac => '00:11:22:33:44:55',
-                :architecture_id => 1,
-                :domain_id => 1,
-                :puppet_proxy_id => 1,
-                :operatingsystem_id => 3,
-                :ptable_id => 7,
-                :medium_id => 7,
-                :build => 0
-              }
-              response = @foreman.resource(:hosts).action(:create).call({:host => host, :encoding => 'utf-8'})
-              fail _("Unable to locate a RHEV Hypervisor Host") unless deployment.rhev_engine_host
-              # Do self-hosted stuff
-              sequence do
+            sequence do
+              if deployment.rhev_is_self_hosted
+                # Self-hosted RHEV
+                fail _("Unable to locate a RHEV Hypervisor Host") unless deployment.rhev_engine_host
+
+                plan_action(::Actions::Fusor::Deployment::Rhev::CreateEngineHostRecord, deployment)
                 plan_action(::Actions::Fusor::Host::TriggerProvisioning,
                             deployment,
                             "RHEV-Self-hosted",
                             deployment.rhev_engine_host)
-                concurrence do
-                  plan_action(::Actions::Fusor::Host::WaitUntilProvisioned,
-                              deployment.rhev_engine_host)
-                end
-              end
-            else
-              fail _("Unable to locate a RHEV Engine Host") unless deployment.rhev_engine_host
-              sequence do
+                plan_action(::Actions::Fusor::Host::WaitUntilProvisioned,
+                            deployment.rhev_engine_host)
+              else
+                # Hypervisor + Engine separate
+
+                fail _("Unable to locate a RHEV Engine Host") unless deployment.rhev_engine_host
+
                 deployment.discovered_hosts.each do |host|
                   plan_action(::Actions::Fusor::Host::TriggerProvisioning,
                               deployment,
@@ -75,16 +57,15 @@ module Actions
                             deployment,
                             "RHEV-Engine",
                             deployment.rhev_engine_host)
-
                 plan_action(::Actions::Fusor::Host::WaitUntilProvisioned,
                             deployment.rhev_engine_host)
 
               end
-            end
-            plan_action(::Actions::Fusor::Deployment::Rhev::WaitForDataCenter,
-                          deployment)
 
-            plan_action(::Actions::Fusor::Deployment::Rhev::CreateCr, deployment)
+              plan_action(::Actions::Fusor::Deployment::Rhev::WaitForDataCenter,
+                            deployment)
+              plan_action(::Actions::Fusor::Deployment::Rhev::CreateCr, deployment)
+            end
 
           end
 
