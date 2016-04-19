@@ -95,7 +95,14 @@ module Actions
               operating_system = ::Redhat.where(:name => hostgroup_settings[:os], :major => hostgroup_settings[:major], :minor => hostgroup_settings[:minor]).first
               hostgroup_params[:operatingsystem_id] = operating_system.try(:id)
               hostgroup_params[:medium_id] = operating_system.try(:media).try(:first).try(:id)
-              hostgroup_params[:ptable_id] = operating_system.try(:ptables).try(:first).try(:id)
+              if (hostgroup_settings[:ptable].nil?)
+                hostgroup_params[:ptable_id] = operating_system.try(:ptables).try(:first).try(:id)
+              else
+                ptable = ::Ptable.where(:name => hostgroup_settings[:ptable])
+                hostgroup_params[:ptable_id] = ptable.try(:first).try(:id)
+                operating_system.try(:ptables) << ptable
+                operating_system.save
+              end
               hostgroup_params[:architecture_id] = operating_system.try(:architectures).try(:first).try(:id)
               hostgroup_params[:root_pass] = root_password(deployment, product_type)
             end
@@ -184,6 +191,7 @@ module Actions
         # unclear which one the deployment attribute is associated with
         # :name => , :value => deployment.rhev_storage_type,
 
+        # TODO(fabianvf): Add overrides for rhev-self-hosted
         deployment_overrides =
           [
             {
@@ -224,6 +232,40 @@ module Actions
                   [
                     { :name => "storage_type", :value => deployment.rhev_storage_type },
                     { :name => "admin_password", :value => deployment.rhev_engine_admin_password }
+                  ]
+                }
+              ]
+            }, {
+              :hostgroup_name => "RHEV-Self-hosted",
+              :puppet_classes =>
+              [
+                {
+                  :name => "ovirt",
+                  :parameters =>
+                  [
+                    { :name => "deploy_cfme", :value => deployment.deploy_cfme }
+                  ]
+                },
+                {
+                  :name => "ovirt::self_hosted::setup",
+                  :parameters =>
+                  [
+                    # Setting root password based upon the deployment vs the hostgroup.  This is
+                    # necessary because the puppet parameter needs to store it in clear text and
+                    # the hostgroup stores it using one-time encryption.
+                    { :name => "root_password", :value => root_password(deployment, product_type) },
+                    # { :name => "dc_name", :value => deployment.rhev_database_name },
+                    # { :name => "cluster_name", :value => deployment.rhev_cluster_name },
+                    # { :name => "storage_name", :value => deployment.rhev_storage_name },
+                    { :name => "storage_address", :value => deployment.rhev_storage_address },
+                    { :name => "storage_type", :value => deployment.rhev_storage_type },
+                    { :name => "storage_path", :value => deployment.rhev_share_path },
+                    { :name => "engine_admin_password", :value => deployment.rhev_engine_admin_password },
+                    { :name => "engine_activation_key", :value => hostgroup.params['kt_activation_keys'] },
+                    # { :name => "cpu_type", :value => deployment.rhev_cpu_type },
+                    # { :name => "export_name", :value => deployment.rhev_export_domain_name },
+                    # { :name => "export_address", :value => deployment.rhev_export_domain_address },
+                    # { :name => "export_path", :value => deployment.rhev_export_domain_path }
                   ]
                 }
               ]

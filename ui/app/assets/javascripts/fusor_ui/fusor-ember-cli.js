@@ -4578,7 +4578,7 @@ define('fusor-ember-cli/controllers/rhev', ['exports', 'ember', 'fusor-ember-cli
     validRhevStorage: _ember['default'].computed.alias("storageController.validRhevStorage"),
 
     validRhev: _ember['default'].computed('validRhevSetup', 'validRhevEngine', 'validRhevHypervisor', 'validRhevOptions', 'validRhevStorage', function () {
-      return this.get('validRhevSetup') && this.get('validRhevEngine') && this.get('validRhevHypervisor') && this.get('validRhevOptions') && this.get('validRhevStorage');
+      return this.get('validRhevSetup') && this.get('validRhevEngine') && (this.get('validRhevHypervisor') || this.get('isSelfHost')) && this.get('validRhevOptions') && this.get('validRhevStorage');
     })
   });
 });
@@ -41233,10 +41233,11 @@ define("fusor-ember-cli/templates/rhev-setup", ["exports"], function (exports) {
           var el0 = dom.createDocumentFragment();
           var el1 = dom.createTextNode("        ");
           dom.appendChild(el0, el1);
-          var el1 = dom.createElement("span");
-          dom.setAttribute(el1, "class", "disabled");
-          var el2 = dom.createTextNode("\n          Self-hosted\n        ");
-          dom.appendChild(el1, el2);
+          var el1 = dom.createComment(" <span class=\"disabled\"> ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createTextNode("\n          Self-hosted\n        ");
+          dom.appendChild(el0, el1);
+          var el1 = dom.createComment(" </span> ");
           dom.appendChild(el0, el1);
           var el1 = dom.createTextNode("\n");
           dom.appendChild(el0, el1);
@@ -41374,7 +41375,7 @@ define("fusor-ember-cli/templates/rhev-setup", ["exports"], function (exports) {
         morphs[2] = dom.createMorphAt(fragment, 4, 4, contextualElement);
         return morphs;
       },
-      statements: [["block", "radio-button", [], ["value", "selfhost", "groupValue", ["subexpr", "@mut", [["get", "rhevSetup", ["loc", [null, [8, 50], [8, 59]]]]], [], []], "changed", "rhevSetupChanged", "id", "selfhost", "disabled", true], 0, null, ["loc", [null, [8, 6], [12, 23]]]], ["block", "radio-button", [], ["value", "rhevhost", "groupValue", ["subexpr", "@mut", [["get", "rhevSetup", ["loc", [null, [16, 50], [16, 59]]]]], [], []], "changed", "rhevSetupChanged", "id", "rhevhost", "disabled", ["subexpr", "@mut", [["get", "isStarted", ["loc", [null, [16, 110], [16, 119]]]]], [], []]], 1, null, ["loc", [null, [16, 6], [20, 23]]]], ["inline", "cancel-back-next", [], ["backRouteName", "satellite.access-insights", "disableBack", false, "nextRouteName", "engine.discovered-host", "disableNext", false, "disableCancel", ["subexpr", "@mut", [["get", "isStarted", ["loc", [null, [32, 33], [32, 42]]]]], [], []], "deploymentName", ["subexpr", "@mut", [["get", "deploymentName", ["loc", [null, [33, 34], [33, 48]]]]], [], []]], ["loc", [null, [28, 0], [33, 50]]]]],
+      statements: [["block", "radio-button", [], ["value", "selfhost", "groupValue", ["subexpr", "@mut", [["get", "rhevSetup", ["loc", [null, [8, 50], [8, 59]]]]], [], []], "changed", "rhevSetupChanged", "id", "selfhost", "disabled", ["subexpr", "@mut", [["get", "isStarted", ["loc", [null, [8, 110], [8, 119]]]]], [], []]], 0, null, ["loc", [null, [8, 6], [12, 23]]]], ["block", "radio-button", [], ["value", "rhevhost", "groupValue", ["subexpr", "@mut", [["get", "rhevSetup", ["loc", [null, [16, 50], [16, 59]]]]], [], []], "changed", "rhevSetupChanged", "id", "rhevhost", "disabled", ["subexpr", "@mut", [["get", "isStarted", ["loc", [null, [16, 110], [16, 119]]]]], [], []]], 1, null, ["loc", [null, [16, 6], [20, 23]]]], ["inline", "cancel-back-next", [], ["backRouteName", "satellite.access-insights", "disableBack", false, "nextRouteName", "engine.discovered-host", "disableNext", false, "disableCancel", ["subexpr", "@mut", [["get", "isStarted", ["loc", [null, [32, 33], [32, 42]]]]], [], []], "deploymentName", ["subexpr", "@mut", [["get", "deploymentName", ["loc", [null, [33, 34], [33, 48]]]]], [], []]], ["loc", [null, [28, 0], [33, 50]]]]],
       locals: [],
       templates: [child0, child1]
     };
@@ -46712,11 +46713,11 @@ define('fusor-ember-cli/utils/validators', ['exports', 'ember'], function (expor
 /* jshint ignore:start */
 
 define('fusor-ember-cli/config/environment', ['ember'], function(Ember) {
-  return { 'default': {"modulePrefix":"fusor-ember-cli","environment":"development","baseURL":"/","locationType":"hash","EmberENV":{"FEATURES":{}},"contentSecurityPolicyHeader":"Disabled-Content-Security-Policy","emberDevTools":{"global":true},"APP":{"LOG_ACTIVE_GENERATION":true,"LOG_TRANSITIONS":true,"LOG_VIEW_LOOKUPS":true,"rootElement":"#ember-app","name":"fusor-ember-cli","version":"0.0.0+9477d428"},"ember-cli-mirage":{"enabled":false,"usingProxy":false},"contentSecurityPolicy":{"default-src":"'none'","script-src":"'self' 'unsafe-eval'","font-src":"'self'","connect-src":"'self'","img-src":"'self'","style-src":"'self'","media-src":"'self'"},"ember-devtools":{"enabled":true,"global":false},"exportApplicationGlobal":true}};
+  return { 'default': {"modulePrefix":"fusor-ember-cli","environment":"development","baseURL":"/","locationType":"hash","EmberENV":{"FEATURES":{}},"contentSecurityPolicyHeader":"Disabled-Content-Security-Policy","emberDevTools":{"global":true},"APP":{"LOG_ACTIVE_GENERATION":true,"LOG_TRANSITIONS":true,"LOG_VIEW_LOOKUPS":true,"rootElement":"#ember-app","name":"fusor-ember-cli","version":"0.0.0+da1d98a9"},"ember-cli-mirage":{"enabled":false,"usingProxy":false},"contentSecurityPolicy":{"default-src":"'none'","script-src":"'self' 'unsafe-eval'","font-src":"'self'","connect-src":"'self'","img-src":"'self'","style-src":"'self'","media-src":"'self'"},"ember-devtools":{"enabled":true,"global":false},"exportApplicationGlobal":true}};
 });
 
 if (!runningTests) {
-  require("fusor-ember-cli/app")["default"].create({"LOG_ACTIVE_GENERATION":true,"LOG_TRANSITIONS":true,"LOG_VIEW_LOOKUPS":true,"rootElement":"#ember-app","name":"fusor-ember-cli","version":"0.0.0+9477d428"});
+  require("fusor-ember-cli/app")["default"].create({"LOG_ACTIVE_GENERATION":true,"LOG_TRANSITIONS":true,"LOG_VIEW_LOOKUPS":true,"rootElement":"#ember-app","name":"fusor-ember-cli","version":"0.0.0+da1d98a9"});
 }
 
 /* jshint ignore:end */
