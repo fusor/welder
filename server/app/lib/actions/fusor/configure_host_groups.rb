@@ -261,6 +261,7 @@ module Actions
                     { :name => "storage_type", :value => deployment.rhev_storage_type },
                     { :name => "storage_path", :value => deployment.rhev_share_path },
                     { :name => "engine_admin_password", :value => deployment.rhev_engine_admin_password },
+                    { :name => "engine_activation_key", :value => hostgroup.params['kt_activation_keys'] },
                     # { :name => "cpu_type", :value => deployment.rhev_cpu_type },
                     # { :name => "export_name", :value => deployment.rhev_export_domain_name },
                     # { :name => "export_address", :value => deployment.rhev_export_domain_address },
