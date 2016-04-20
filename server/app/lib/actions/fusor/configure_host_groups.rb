@@ -247,6 +247,16 @@ module Actions
                   ]
                 },
                 {
+                  :name => "ovirt::self_hosted::config",
+                  :parameters =>
+                  [
+                    { :name => "hosts_addresses", :value => [deployment.rhev_engine_host] },
+                    { :name => "dc_name", :value => deployment.rhev_database_name },
+                    { :name => "cluster_name", :value => deployment.rhev_cluster_name },
+                    { :name => "cpu_type", :value => deployment.rhev_cpu_type },
+                  ]
+                },
+                {
                   :name => "ovirt::self_hosted::setup",
                   :parameters =>
                   [
@@ -254,18 +264,15 @@ module Actions
                     # necessary because the puppet parameter needs to store it in clear text and
                     # the hostgroup stores it using one-time encryption.
                     { :name => "root_password", :value => root_password(deployment, product_type) },
-                    # { :name => "dc_name", :value => deployment.rhev_database_name },
-                    # { :name => "cluster_name", :value => deployment.rhev_cluster_name },
-                    # { :name => "storage_name", :value => deployment.rhev_storage_name },
+                    { :name => "storage_name", :value => deployment.rhev_storage_name },
                     { :name => "storage_address", :value => deployment.rhev_storage_address },
                     { :name => "storage_type", :value => deployment.rhev_storage_type },
                     { :name => "storage_path", :value => deployment.rhev_share_path },
                     { :name => "engine_admin_password", :value => deployment.rhev_engine_admin_password },
                     { :name => "engine_activation_key", :value => hostgroup.params['kt_activation_keys'] },
-                    # { :name => "cpu_type", :value => deployment.rhev_cpu_type },
-                    # { :name => "export_name", :value => deployment.rhev_export_domain_name },
-                    # { :name => "export_address", :value => deployment.rhev_export_domain_address },
-                    # { :name => "export_path", :value => deployment.rhev_export_domain_path }
+                    { :name => "export_name", :value => deployment.rhev_export_domain_name },
+                    { :name => "export_address", :value => deployment.rhev_export_domain_address },
+                    { :name => "export_path", :value => deployment.rhev_export_domain_path }
                   ]
                 }
               ]

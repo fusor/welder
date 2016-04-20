@@ -195,7 +195,10 @@
     - :name: "ovirt::engine::run_vm"
     - :name: "ovirt::hypervisor::packages"
     - :name: "ovirt::self_hosted::setup"
+    - :name: "ovirt::self_hosted::config"
     - :name: "ovirt::self_hosted::packages"
+    - :name: "ovirt::self_hosted::import_template"
+    - :name: "ovirt::self_hosted::run_vm"
 
   :host_groups:
     :rhev:
@@ -253,7 +256,7 @@
              :parameters:
              - :name: "product"
                :override: "RHEV"
-           # - :name: "ovirt::self_hosted::config"
+           - :name: "ovirt::self_hosted::config"
            - :name: "ovirt::self_hosted::packages"
            - :name: "ovirt::self_hosted::setup"
          # TODO (fabianvf)
