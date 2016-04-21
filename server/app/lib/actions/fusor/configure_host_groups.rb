@@ -268,6 +268,7 @@ module Actions
                     { :name => "storage_address", :value => deployment.rhev_storage_address },
                     { :name => "storage_type", :value => deployment.rhev_storage_type },
                     { :name => "storage_path", :value => deployment.rhev_share_path },
+                    { :name => "engine_fqdn", :value => "#{deployment.label.tr('_', '-')}-rhev-engine" },
                     { :name => "engine_admin_password", :value => deployment.rhev_engine_admin_password },
                     { :name => "engine_activation_key", :value => hostgroup.params['kt_activation_keys'] },
                     { :name => "export_name", :value => deployment.rhev_export_domain_name },
