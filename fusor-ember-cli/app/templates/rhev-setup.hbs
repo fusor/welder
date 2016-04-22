@@ -6,9 +6,7 @@
 
     <div class='ident-radio'>
       {{#radio-button value="selfhost" groupValue=rhevSetup changed="rhevSetupChanged" id='selfhost' disabled=isStarted}}
-        <!-- <span class="disabled"> -->
           Self-hosted
-        <!-- </span> -->
       {{/radio-button}}
     </div>
 
@@ -27,7 +25,7 @@
 
 {{cancel-back-next backRouteName='satellite.access-insights'
                    disableBack=false
-                   nextRouteName='engine.discovered-host'
+                   nextRouteName=setupNextRouteName
                    disableNext=false
                    disableCancel=isStarted
                    deploymentName=deploymentName}}

@@ -67,8 +67,12 @@
         {{review-link label='Setup Type' routeName='rhev-setup' isRequired=true
                           value=rhevSetupController.rhevSetupTitle}}
         {{#if isSelfHosted}}
-            {{review-link label='Engine/Hypervisor' routeName='engine.discovered-host' isRequired=true
-                          value=engineNamePlusDomain}}
+            {{#review-link label='Engine/Hypervisor Host Name' routeName='hypervisor.discovered-host' isRequired=true value=selectedHypervisorHosts useYieldInstead=true}}
+                {{#each selectedHypervisorHosts as |host|}}
+                   {{hypervisor-name host=host hypervisorDomain=hypervisorDomain}}
+                {{/each}}
+            {{/review-link}}
+
         {{else}}
             {{review-link label='Engine Host Name' routeName='engine.discovered-host' isRequired=true
                           value=engineNamePlusDomain}}
