@@ -25,15 +25,17 @@ module Actions
             sequence do
               if deployment.rhev_is_self_hosted
                 # Self-hosted RHEV
-                fail _("Unable to locate a RHEV Hypervisor Host") unless deployment.rhev_engine_host
+                fail _("Unable to locate a RHEV Hypervisor Host") unless (deployment.discovered_hosts.count > 0)
+                # TODO(fabianvf): additional hypervisors
+                hypervisor = deployment.discovered_hosts[0]
 
                 plan_action(::Actions::Fusor::Deployment::Rhev::CreateEngineHostRecord, deployment)
                 plan_action(::Actions::Fusor::Host::TriggerProvisioning,
                             deployment,
                             "RHEV-Self-hosted",
-                            deployment.rhev_engine_host)
+                            hypervisor)
                 plan_action(::Actions::Fusor::Host::WaitUntilProvisioned,
-                            deployment.rhev_engine_host)
+                            hypervisor)
               else
                 # Hypervisor + Engine separate
 

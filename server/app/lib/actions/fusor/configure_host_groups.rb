@@ -250,7 +250,7 @@ module Actions
                   :name => "ovirt::self_hosted::config",
                   :parameters =>
                   [
-                    { :name => "hosts_addresses", :value => [deployment.rhev_engine_host.name, hostgroup.domain.name].join('.') },
+                    { :name => "hosts_addresses", :value => host_addresses(deployment, hostgroup) },
                     { :name => "dc_name", :value => deployment.rhev_database_name },
                     { :name => "cluster_name", :value => deployment.rhev_cluster_name },
                     { :name => "cpu_type", :value => deployment.rhev_cpu_type },
