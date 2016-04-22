@@ -31,7 +31,8 @@ module Actions
             ::Fusor.log.debug '====== CreateEngineHostRecord run method ======'
             deployment = ::Fusor::Deployment.find(input[:deployment_id])
             # ignoring return value for now
-            create_host(deployment)
+            deployment.rhev_engine_host = create_host(deployment)
+            deployment.save!
             ::Fusor.log.debug '====== Leaving CreateEngineHostRecord run method ======'
           end
 
