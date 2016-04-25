@@ -251,10 +251,7 @@ module Actions
                   :parameters =>
                   [
                     { :name => "hosts_addresses", :value => host_addresses(deployment, hostgroup) },
-                    { :name => "dc_name", :value => deployment.rhev_database_name },
-                    { :name => "cluster_name", :value => deployment.rhev_cluster_name },
-                    { :name => "cpu_type", :value => deployment.rhev_cpu_type },
-                  ]
+                                      ]
                 },
                 {
                   :name => "ovirt::self_hosted::setup",
@@ -264,6 +261,9 @@ module Actions
                     # necessary because the puppet parameter needs to store it in clear text and
                     # the hostgroup stores it using one-time encryption.
                     { :name => "root_password", :value => root_password(deployment, product_type) },
+                    { :name => "dc_name", :value => deployment.rhev_database_name },
+                    { :name => "cluster_name", :value => deployment.rhev_cluster_name },
+                    { :name => "cpu_type", :value => deployment.rhev_cpu_type },
                     { :name => "storage_name", :value => deployment.rhev_storage_name },
                     { :name => "storage_address", :value => deployment.rhev_storage_address },
                     { :name => "storage_type", :value => deployment.rhev_storage_type },
