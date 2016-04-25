@@ -13,8 +13,8 @@ export default Ember.Mixin.create({
   satelliteTabRouteName: null,
 
   // disable Next button if none selected
-  disableNextOnStart: Ember.computed('isRhev', 'isOpenStack', 'isCloudForms', function () {
-    return (!(this.get('isRhev') || this.get('isOpenStack') || this.get('isCloudForms')));
+  disableNextOnStart: Ember.computed('isRhev', 'isOpenStack', 'isCloudForms', 'isOpenShift', function () {
+    return (!(this.get('isRhev') || this.get('isOpenStack') || this.get('isCloudForms') || this.get('isOpenShift')));
   }),
 
   // names
@@ -35,24 +35,28 @@ export default Ember.Mixin.create({
   }),
 
   nameOpenStack: Ember.computed('isUpstream', function() {
-    if (this.get('isUpstream')) { return "RDO"; } else { return "RHELOSP"; }
+    if (this.get('isUpstream')) { return "RDO"; } else { return "RHOSP"; }
   }),
 
   nameCloudForms: Ember.computed('isUpstream', function() {
     if (this.get('isUpstream')) { return "ManageIQ"; } else { return "CloudForms"; }
   }),
 
-  // images
-  imgRhev: Ember.computed('isUpstream', function() {
-    if (this.get('isUpstream')) { return "/assets/r/ovirt-640-210.png"; } else { return "/assets/r/rhci-rhev-640-210.png"; }
+  nameOpenShift: "OpenShift",
+
+  // TODO DRY names mixins
+  fullnameRhev: Ember.computed('isUpstream', function() {
+    if (this.get('isUpstream')) { return "oVirt Project"; } else { return "Red Hat Enterprise Virtualization"; }
   }),
 
-  imgOpenStack: Ember.computed('isUpstream', function() {
-    if (this.get('isUpstream')) { return "/assets/r/rdo-640-210.png"; } else { return "/assets/r/rhci-openstack-640-210.png"; }
+  fullnameOpenStack: Ember.computed('isUpstream', function() {
+    if (this.get('isUpstream')) { return "RDO Project"; } else { return "Red Hat OpenStack Platform"; }
   }),
 
-  imgCloudForms: Ember.computed('isUpstream', function() {
-    if (this.get('isUpstream')) { return "/assets/r/manageiq-640-210.png"; } else { return "/assets/r/rhci-cloudforms-640-210.png"; }
-  })
+  fullnameCloudForms: Ember.computed('isUpstream', function() {
+    if (this.get('isUpstream')) { return "ManageIQ"; } else { return "Red Hat CloudForms"; }
+  }),
+
+  fullnameOpenShift: "OpenShift Enterprise by Red Hat",
 
 });

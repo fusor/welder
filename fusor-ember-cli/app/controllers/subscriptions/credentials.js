@@ -2,6 +2,12 @@ import Ember from 'ember';
 import request from 'ic-ajax';
 import NeedsDeploymentMixin from "../../mixins/needs-deployment-mixin";
 
+const MirrorStatus = {
+  VALID: 1,
+  INVALID: 2,
+  VALIDATING: 3
+};
+
 export default Ember.Controller.extend(NeedsDeploymentMixin, {
 
   deploymentId: Ember.computed.alias("deploymentController.model.id"),
@@ -13,6 +19,7 @@ export default Ember.Controller.extend(NeedsDeploymentMixin, {
   isRhev: Ember.computed.alias("deploymentController.model.deploy_rhev"),
   isOpenStack: Ember.computed.alias("deploymentController.model.deploy_openstack"),
   isCloudForms: Ember.computed.alias("deploymentController.model.deploy_cfme"),
+  isOpenShift: Ember.computed.alias("deploymentController.model.deploy_openshift"),
 
   //overwritten by setupController
   organizationUpstreamConsumerUUID: null,
@@ -36,9 +43,11 @@ export default Ember.Controller.extend(NeedsDeploymentMixin, {
     return Ember.isPresent(this.get('organizationUpstreamConsumerUUID'));
   }),
 
-  backRouteNameonCredentials: Ember.computed('isRhev', 'isOpenStack', 'isCloudForms', function() {
+  backRouteNameonCredentials: Ember.computed('isRhev', 'isOpenStack', 'isOpenShift', 'isCloudForms', function() {
     if (this.get('isCloudForms')) {
       return 'cloudforms.cfme-configuration';
+    } else if (this.get('isOpenShift')) {
+      return 'openshift.openshift-configuration';
     } else if (this.get('isOpenStack')) {
       return 'openstack.overcloud';
     } else if (this.get('isRhev')) {
@@ -62,6 +71,17 @@ export default Ember.Controller.extend(NeedsDeploymentMixin, {
   hasManifestFile: Ember.computed.notEmpty('manifestFile'),
   noManifestFile: Ember.computed.empty('manifestFile'),
 
+  disableNextDisconnected: Ember.computed(
+    'noManifestFile',
+    'currentMirrorStatus',
+    function()
+  {
+    // If currentMirrorStatus is not VALID, disable next
+    let retVal = this.get('noManifestFile') ||
+      this.get('currentMirrorStatus') !== this.get('MirrorStatus').VALID;
+    return retVal;
+  }),
+
   contentProviderType: Ember.computed('isDisconnected', function() {
     return (this.get('isDisconnected') ? "disconnected" : "redhat_cdn");
   }),
@@ -73,6 +93,9 @@ export default Ember.Controller.extend(NeedsDeploymentMixin, {
   isDisconnectedSelected: Ember.computed('contentProviderType', function() {
     return (this.get('contentProviderType') === 'disconnected');
   }),
+
+  MirrorStatus: MirrorStatus,
+  currentMirrorStatus: MirrorStatus.INVALID,
 
   actions: {
     providerTypeChanged() {
@@ -112,8 +135,11 @@ export default Ember.Controller.extend(NeedsDeploymentMixin, {
 
     uploadDifferentManifest() {
       return this.set("manifestFile", null);
+    },
+
+    mirrorStatusUpdate(newStatus) {
+      this.set('currentMirrorStatus', newStatus);
     }
   }
-
 
 });

@@ -36,6 +36,29 @@
         {{/accordion-item}}
     {{/if}}
 
+    {{#if isOpenShift}}
+        {{#accordion-item name="OpenShift Enterprise" isOpen=isOpenShiftOpen}}
+          {{#each model.openshift_master_hosts as |masterHost|}}
+            {{ose-host-review-link oseHost=masterHost}}
+          {{/each}}
+
+          {{#each model.openshift_worker_hosts as |workerHost|}}
+            {{ose-host-review-link oseHost=workerHost}}
+          {{/each}}
+
+          {{review-link label='Example Application'
+                        value=exampleAppUrl
+                        isExternalURL=true}}
+
+          {{review-link
+            label='WebUI Username '
+            value=model.openshift_username}}
+          {{review-link
+            label='WebUI Password'
+            value=model.openshift_user_password}}
+        {{/accordion-item}}
+    {{/if}}
+
     {{#if isCloudForms}}
       {{#accordion-item name="Cloud Forms Management Engine" isOpen=true}}
 

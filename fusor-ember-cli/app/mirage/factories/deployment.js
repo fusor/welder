@@ -12,7 +12,7 @@ export default Mirage.Factory.extend({
   is_disconnected: false,
   rhev_is_self_hosted: false,
   rhev_engine_admin_password: '12345678',
-  rhev_database_name: 'Default',
+  rhev_data_center_name: 'Default',
   rhev_cluster_name: 'Default',
   rhev_storage_name: 'my_storage',
   rhev_storage_type: 'NFS',
@@ -33,6 +33,13 @@ export default Mirage.Factory.extend({
   openstack_overcloud_autogenerate_password: false,
   upstream_consumer_uuid: "7ffddefd-aacb-4192-a999-01beb7c2e473",
   upstream_consumer_name: "tsanders-rhci",
+  openshift_storage_type: "NFS",
+  openshift_storage_name: "openshift-storage",
+  openshift_export_path: "/share/openshift/path",
+  cloudforms_vcpu: 4,
+  cloudforms_ram: 6,
+  cloudforms_vm_disk_size: 40,
+  cloudforms_db_disk_size: 40
 
 });
 

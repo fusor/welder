@@ -10,6 +10,9 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
+require "net/http"
+require "uri"
+
 module Fusor
   class Api::V21::DeploymentsController < Api::V2::DeploymentsController
 
@@ -20,15 +23,21 @@ module Fusor
 
     def index
       @deployments = Deployment.search_for(params[:search], :order => params[:order]).by_id(params[:id])
-      render :json => @deployments, :each_serializer => Fusor::DeploymentSerializer
+      render :json => @deployments, :each_serializer => Fusor::DeploymentSerializer, :serializer => RootArraySerializer
     end
 
     def show
+      begin
+        sync_openstack if params[:sync_openstack] == 'true'
+      rescue => e
+        Rails.logger.error "Error syncing openstack for deployment #{e.message}"
+      end
+
       render :json => @deployment, :serializer => Fusor::DeploymentSerializer
     end
 
     def create
-      @deployment = Deployment.new(params[:deployment])
+      @deployment = Deployment.new(deployment_params)
       if @deployment.save
         render :json => @deployment, :serializer => Fusor::DeploymentSerializer
       else
@@ -45,7 +54,7 @@ module Fusor
       params[:deployment].delete :openstack_undercloud_ip_addr
       params[:deployment].delete :openstack_undercloud_user
       params[:deployment].delete :openstack_undercloud_user_password
-      @deployment.attributes = params[:deployment]
+      @deployment.attributes = deployment_params
       @deployment.save(:validate => false)
       render :json => @deployment, :serializer => Fusor::DeploymentSerializer
     end
@@ -67,7 +76,7 @@ module Fusor
     def redeploy
       begin
         if @deployment.invalid?
-          raise ::ActiveRecord::RecordInvalid.new @deloyment
+          raise ::ActiveRecord::RecordInvalid.new @deployment
         end
         ::Fusor.log.warn "Attempting to redeploy deployment with id [ #{@deployment.id} ]"
         new_deploy_task = async_task(::Actions::Fusor::Deploy, @deployment)
@@ -78,14 +87,57 @@ module Fusor
     end
 
     def validate
+      error_syncing_openstack = nil
+      begin
+        sync_openstack
+      rescue => e
+        error_syncing_openstack =  _("Error contacting Openstack undercloud #{e.message}")
+      end
+
       @deployment.valid?
+      errors = @deployment.errors.full_messages
+      errors << error_syncing_openstack unless error_syncing_openstack.nil?
+
       render json: {
-          :validation => {
-              :deployment_id => @deployment.id,
-              :errors => @deployment.errors.full_messages,
-              :warnings => @deployment.warnings
-          }
+        :validation => {
+          :deployment_id => @deployment.id,
+          :errors => errors,
+          :warnings => @deployment.warnings
+        }
       }
+    end
+
+    def validate_cdn
+      begin
+        if params.key?('cdn_url')
+          ad_hoc_req = lambda do |uri_str|
+            uri = URI.parse(uri_str)
+            http = Net::HTTP.new(uri.host, uri.port)
+            request = Net::HTTP::Head.new(uri.request_uri)
+            http.request(request)
+          end
+
+          unescaped_uri_str = URI.unescape(params[:cdn_url])
+          # Best we can reasonably do here is to check to make sure we get
+          # back a 200 when we hit $URL/content, since we can be reasonably
+          # certain a repo needs to have the /content path
+          full_uri_str = "#{unescaped_uri_str}/content"
+          full_uri_str = "#{unescaped_uri_str}content" if unescaped_uri_str =~ /\/$/
+
+          response = ad_hoc_req.call(full_uri_str)
+          # Follow a 301 once in case redirect /content -> /content/
+          final_code = response.code
+          final_code = ad_hoc_req.call(response['location']).code if response.code == '301'
+
+          render json: { :cdn_url_code => final_code }, status: 200
+        else
+          raise 'cdn_url parameter missing'
+        end
+      rescue => error
+        message = 'Malformed request'
+        message = error.message if error.respond_to?(:message)
+        render json: { :error => message }, status: 400
+      end
     end
 
     def log
@@ -107,6 +159,31 @@ module Fusor
     end
 
     private
+
+    def deployment_params
+      params.require(:deployment).permit(:name, :description, :deploy_rhev, :deploy_cfme,
+                                         :deploy_openstack, :is_disconnected, :rhev_is_self_hosted,
+                                         :rhev_engine_admin_password, :rhev_database_name,
+                                         :rhev_cluster_name, :rhev_storage_name, :rhev_storage_type,
+                                         :rhev_storage_address, :rhev_cpu_type, :rhev_share_path,
+                                         :cfme_install_loc, :rhev_root_password, :cfme_root_password,
+                                         :cfme_admin_password, :foreman_task_uuid, :upstream_consumer_uuid,
+                                         :upstream_consumer_name, :rhev_export_domain_name,
+                                         :rhev_export_domain_address, :rhev_export_domain_path,
+                                         :rhev_local_storage_path, :rhev_gluster_node_name,
+                                         :rhev_gluster_node_address, :rhev_gluster_ssh_port,
+                                         :rhev_gluster_root_password, :host_naming_scheme, :has_content_error,
+                                         :custom_preprend_name, :enable_access_insights, :cfme_address,
+                                         :cfme_hostname, :openstack_undercloud_password,
+                                         :openstack_undercloud_ip_addr, :openstack_undercloud_user,
+                                         :openstack_undercloud_user_password, :openstack_undercloud_hostname,
+                                         :openstack_overcloud_hostname, :openstack_overcloud_address,
+                                         :openstack_overcloud_password, :openstack_overcloud_private_net,
+                                         :openstack_overcloud_float_net, :openstack_overcloud_float_gateway,
+                                         :cdn_url, :manifest_file, :created_at, :updated_at, :rhev_engine_host_id,
+                                         :organization_id, :lifecycle_environment_id, :discovered_host_id,
+                                         :foreman_task_id, :discovered_host_ids => [])
+    end
 
     def find_deployment
       id = params[:deployment_id] || params[:id]
@@ -145,6 +222,35 @@ module Fusor
         else
           ::Fusor.log_file_path(@deployment.label, @deployment.id)
       end
+    end
+
+    def undercloud_handle
+      Overcloud::UndercloudHandle.new('admin', @deployment.openstack_undercloud_password, @deployment.openstack_undercloud_ip_addr, 5000)
+    end
+
+    def get_openstack_param_value(plan, param_name)
+      param = plan.parameters.find { |p| p['name'] == param_name }
+      param['value'] if param
+    end
+
+    def sync_openstack
+      return unless @deployment.deploy_openstack?
+      plan = undercloud_handle.get_plan('overcloud')
+
+      @deployment.openstack_overcloud_ext_net_interface = get_openstack_param_value(plan, 'Controller-1::NeutronPublicInterface')
+      @deployment.openstack_overcloud_libvirt_type = get_openstack_param_value(plan, 'Compute-1::NovaComputeLibvirtType')
+      @deployment.openstack_overcloud_compute_flavor = get_openstack_param_value(plan, 'Compute-1::Flavor')
+      @deployment.openstack_overcloud_compute_count = get_openstack_param_value(plan, 'Compute-1::count')
+      @deployment.openstack_overcloud_controller_flavor = get_openstack_param_value(plan, 'Controller-1::Flavor')
+      @deployment.openstack_overcloud_controller_count = get_openstack_param_value(plan, 'Controller-1::count')
+      @deployment.openstack_overcloud_ceph_storage_flavor = get_openstack_param_value(plan, 'Ceph-Storage-1::Flavor')
+      @deployment.openstack_overcloud_ceph_storage_count = get_openstack_param_value(plan, 'Ceph-Storage-1::Flavor')
+      @deployment.openstack_overcloud_cinder_storage_flavor = get_openstack_param_value(plan, 'Cinder-Storage-1::Flavor')
+      @deployment.openstack_overcloud_cinder_storage_count = get_openstack_param_value(plan, 'Cinder-Storage-1::Flavor')
+      @deployment.openstack_overcloud_swift_storage_flavor = get_openstack_param_value(plan, 'Swift-Storage-1::Flavor')
+      @deployment.openstack_overcloud_swift_storage_count = get_openstack_param_value(plan, 'Swift-Storage-1::Flavor')
+
+      @deployment.save(:validate => false)
     end
   end
 end

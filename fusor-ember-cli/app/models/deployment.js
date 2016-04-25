@@ -11,13 +11,14 @@ export default DS.Model.extend({
   deploy_rhev: DS.attr('boolean'),
   deploy_cfme: DS.attr('boolean'),
   deploy_openstack: DS.attr('boolean'),
+  deploy_openshift: DS.attr('boolean'),
 
   is_disconnected: DS.attr('boolean'),
   has_content_error: DS.attr('boolean'),
   rhev_is_self_hosted: DS.attr('boolean'),
 
   rhev_engine_admin_password: DS.attr('string'),
-  rhev_database_name: DS.attr('string'),
+  rhev_data_center_name: DS.attr('string'),
   rhev_cluster_name: DS.attr('string'),
   rhev_storage_name: DS.attr('string'),
   rhev_storage_type: DS.attr('string'),
@@ -52,15 +53,82 @@ export default DS.Model.extend({
   openstack_undercloud_user: DS.attr('string'),
   openstack_undercloud_user_password: DS.attr('string'),
   openstack_undercloud_hostname: DS.attr('string'),
+
   openstack_overcloud_hostname: DS.attr('string'),
   openstack_overcloud_address: DS.attr('string'),
   openstack_overcloud_password: DS.attr('string'),
+  openstack_overcloud_ext_net_interface: DS.attr('string'),
   openstack_overcloud_private_net: DS.attr('string'),
   openstack_overcloud_float_net: DS.attr('string'),
   openstack_overcloud_float_gateway: DS.attr('string'),
+  openstack_overcloud_libvirt_type: DS.attr('string'),
+
+  openstack_overcloud_node_count: DS.attr('number'),
+  openstack_overcloud_compute_flavor: DS.attr('string'),
+  openstack_overcloud_compute_count: DS.attr('number'),
+  openstack_overcloud_controller_flavor: DS.attr('string'),
+  openstack_overcloud_controller_count: DS.attr('number'),
+  openstack_overcloud_ceph_storage_flavor: DS.attr('string'),
+  openstack_overcloud_ceph_storage_count: DS.attr('number'),
+  openstack_overcloud_cinder_storage_flavor: DS.attr('string'),
+  openstack_overcloud_cinder_storage_count: DS.attr('number'),
+  openstack_overcloud_swift_storage_flavor: DS.attr('string'),
+  openstack_overcloud_swift_storage_count: DS.attr('number'),
 
   cdn_url: DS.attr('string'),
   manifest_file: DS.attr('string'),
+
+  openshift_install_loc: DS.attr('string'),
+
+  openshift_number_master_nodes: DS.attr('number'),
+  openshift_number_worker_nodes: DS.attr('number'),
+
+  numNodes: Ember.computed('openshift_number_master_nodes',
+                           'openshift_number_worker_nodes', function() {
+      return this.get('openshift_number_master_nodes') + this.get('openshift_number_worker_nodes');
+  }),
+
+  openshift_storage_size: DS.attr('number'),
+  openshift_username: DS.attr('string'),
+  openshift_user_password: DS.attr('string'),
+  openshift_root_password: DS.attr('string'),
+  openshift_master_vcpu: DS.attr('number'),
+  openshift_master_ram: DS.attr('number'),
+  openshift_master_disk: DS.attr('number'),
+  openshift_node_vcpu: DS.attr('number'),
+  openshift_node_ram: DS.attr('number'),
+  openshift_node_disk: DS.attr('number'),
+  openshift_available_vcpu: DS.attr('number'),
+  openshift_available_ram: DS.attr('number'),
+  openshift_available_disk: DS.attr('number'),
+  openshift_storage_type: DS.attr('string'),
+  openshift_storage_name: DS.attr('string'),
+  openshift_storage_host: DS.attr('string'),
+  openshift_export_path: DS.attr('string'),
+  openshift_subdomain_name: DS.attr('string'),
+
+  openshift_hosts: DS.hasMany('openshift-host', {async: true}),
+  openshift_master_hosts: Ember.computed('openshift_hosts', function() {
+    const regexFilter = /ose-master\d+\./;
+    return this.get('openshift_hosts')
+      .filter(host => regexFilter.test(host.get('name')));
+  }),
+
+  openshift_worker_hosts: Ember.computed('openshift_hosts', function() {
+    const regexFilter = /ose-node\d+\./;
+    return this.get('openshift_hosts')
+      .filter(host => regexFilter.test(host.get('name')));
+  }),
+
+  cloudforms_vcpu: DS.attr('number'),
+  cloudforms_ram: DS.attr('number'),
+  cloudforms_vm_disk_size: DS.attr('number'),
+  cloudforms_db_disk_size: DS.attr('number'),
+
+  cfmeDisk: Ember.computed('cloudforms_vm_disk_size',
+                           'cloudforms_db_disk_size', function() {
+      return this.get('cloudforms_vm_disk_size') + this.get('cloudforms_db_disk_size');
+  }),
 
   created_at: DS.attr('date'),
   updated_at: DS.attr('date'),
@@ -127,5 +195,4 @@ export default DS.Model.extend({
   })
 
 });
-
 

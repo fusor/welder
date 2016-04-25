@@ -126,14 +126,10 @@ module Actions
         if hostgroup = find_hostgroup(organization_id, hostgroup_params[:name], parent)
           hostgroup.update_attributes!(hostgroup_params)
 
-          parameter = ::GroupParameter.where(:type => "GroupParameter",
-                                             :reference_id => hostgroup.id,
-                                             :name => "kt_activation_keys").first
-
           if activation_key_name = activation_key_name(deployment, hostgroup_settings)
-            parameter.update_attributes!(:reference_id => hostgroup.id,
-                                         :name => "kt_activation_keys",
-                                         :value => activation_key_name)
+            GroupParameter.create(:reference_id => hostgroup.id,
+                                  :name => "kt_activation_keys",
+                                  :value => activation_key_name)
           end
         else
           # Note: when setting the arch, medium and ptable, we assume that there will only be 1
@@ -142,7 +138,8 @@ module Actions
           hostgroup = ::Hostgroup.create!(hostgroup_params)
 
           if activation_key_name = activation_key_name(deployment, hostgroup_settings)
-            ::GroupParameter.create!(:hostgroup => hostgroup,
+            ::GroupParameter.create!(:reference_id => hostgroup.id,
+                                     :hostgroup => hostgroup,
                                      :name => "kt_activation_keys",
                                      :value => activation_key_name)
           end
@@ -176,7 +173,7 @@ module Actions
       def apply_deployment_parameter_overrides(hostgroup, deployment, product_type, puppet_environment)
         # TODO: ISSUE: the following attributes exist on the deployment object, but I do not know
         # if they should be mapping to puppet class parameters and if so, which class & parameter?
-        # :name => , :value => deployment.rhev_database_name,
+        # :name => , :value => deployment.rhev_data_center_name,
         # :name => , :value => deployment.cfme_install_loc,
         # :name => , :value => deployment.rhev_is_self_hosted,
 
@@ -206,7 +203,7 @@ module Actions
                     # necessary because the puppet parameter needs to store it in clear text and
                     # the hostgroup stores it using one-time encryption.
                     { :name => "root_password", :value => root_password(deployment, product_type) },
-                    { :name => "dc_name", :value => deployment.rhev_database_name },
+                    { :name => "dc_name", :value => deployment.rhev_data_center_name },
                     { :name => "cluster_name", :value => deployment.rhev_cluster_name },
                     { :name => "storage_name", :value => deployment.rhev_storage_name },
                     { :name => "storage_address", :value => deployment.rhev_storage_address },

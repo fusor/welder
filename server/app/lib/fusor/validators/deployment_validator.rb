@@ -14,6 +14,10 @@ module Fusor
         if deployment.deploy_cfme
           validate_cfme_parameters(deployment)
         end
+
+        if deployment.deploy_openstack
+          validate_openstack_parameters(deployment)
+        end
       end
 
       def validate_rhev_parameters(deployment)
@@ -112,8 +116,101 @@ module Fusor
         if deployment.cfme_root_password.empty?
           deployment.errors[:cfme_root_password] << _('CloudForms deployments must specify a root password for the CloudForms machines')
         end
+
+        if deployment.deploy_openshift
+          validate_openshift_parameters(deployment)
+        end
       end
 
+      def validate_openshift_parameters(deployment)
+        # 1) must also deploy either rhev or openstack
+        # 2) must have install location
+        # 3) must have at least one master node with valid resource requirements
+        # 4) must have an OSE username
+        # 5) must have a unique wildcard subdomain entry
+
+        if !(deployment.deploy_rhev or deployment.deploy_openstack)
+          deployment.errors[:deploy_openshift] << _("OpenShift deployments must also deploy either RHEV or OpenStack")
+        end
+
+        if deployment.openshift_install_loc.empty?
+          deployment.errors[:openshift_install_loc] << _('OpenShift deployments must specify an install location')
+        end
+
+        if deployment.openshift_number_master_nodes < 1
+          deployment.errors[:openshift_number_master_nodes] << _("OpenShift deployments must have at least one master node")
+        else
+          if deployment.openshift_master_vcpu < 1 or deployment.openshift_master_ram < 1 or deployment.openshift_master_disk < 1
+            deployment.errors[:openshift_master_vcpu] << _("OpenShift deployments must specify amount of resources to be used")
+          end
+        end
+
+        if deployment.openshift_username.empty?
+          deployment.errors[:openshift_username] << _("OpenShift deployments must specify an OSE user to be created")
+        end
+
+        if deployment.openshift_user_password.empty?
+          deployment.errors[:openshift_user_password] << _("OpenShift deployments must specify a password for the OpenShift user")
+        end
+
+        if deployment.openshift_subdomain_name.empty?
+          deployment.errors[:openshift_subdomain_name] << _("Openshift deployments must specify a wildcard subdomain region")
+        else
+          subdomain = Net::DNS::ARecord.new({:ip => "0.0.0.0",
+                                             :hostname => "*.#{deployment.openshift_subdomain_name}.#{Domain.find(Hostgroup.find_by_name('Fusor Base').domain_id)}",
+                                             :proxy => Domain.find(1).proxy
+                                           })
+          if !subdomain.conflicts.empty?
+            deployment.errors[:openshift_subdomain_name] << _("already in use or conflicts with existing entry")
+          end
+        end
+      end
+
+      def validate_openstack_parameters(deployment)
+        if deployment.openstack_undercloud_password.empty?
+          deployment.errors[:openstack_undercloud_password] << _('Openstack deployments must specify an admin password for the Undercloud')
+        end
+
+        if deployment.openstack_undercloud_ip_addr.empty?
+          deployment.errors[:openstack_undercloud_ip_addr] << _('Openstack deployments must specify an ip address for the Undercloud')
+        end
+
+        if deployment.openstack_undercloud_user.empty?
+          deployment.errors[:openstack_undercloud_user] << _('Openstack deployments must specify an ssh user for the Undercloud')
+        end
+
+        if deployment.openstack_undercloud_user_password.empty?
+          deployment.errors[:openstack_undercloud_user_password] << _('Openstack deployments must specify an ssh password for the Undercloud')
+        end
+
+        if deployment.openstack_overcloud_password.empty?
+          deployment.errors[:openstack_overcloud_password] << _('Openstack deployments must specify an admin password for the Overcloud')
+        end
+
+        if deployment.openstack_overcloud_ext_net_interface.empty?
+          deployment.errors[:openstack_overcloud_ext_net_interface] << _('Openstack deployments must specify an external network interface for the Overcloud')
+        end
+
+        if deployment.openstack_overcloud_private_net.empty?
+          deployment.errors[:openstack_overcloud_private_net] << _('Openstack deployments must specify a private network for the Overcloud')
+        end
+
+        if deployment.openstack_overcloud_float_net.empty?
+          deployment.errors[:openstack_overcloud_password] << _('Openstack deployments must specify a floating network for the Overcloud')
+        end
+
+        if deployment.openstack_overcloud_float_gateway.empty?
+          deployment.errors[:openstack_overcloud_float_gateway] << _('Openstack deployments must specify a floating network gateway for the Overcloud')
+        end
+
+        if deployment.openstack_overcloud_compute_flavor.empty? || deployment.openstack_overcloud_compute_count.nil? || deployment.openstack_overcloud_compute_count < 1
+          deployment.errors[:openstack_overcloud_compute_flavor] << _('Openstack deployments must have at least 1 compute node for the Overcloud')
+        end
+
+        if deployment.openstack_overcloud_controller_flavor.empty? || deployment.openstack_overcloud_controller_count.nil? || deployment.openstack_overcloud_controller_count < 1
+          deployment.errors[:openstack_overcloud_compute_flavor] << _('Openstack deployments must have at least 1 controller node for the Overcloud')
+        end
+      end
 
       private
 
@@ -167,7 +264,7 @@ module Fusor
           return
         end
 
-        files = Dir["#{output}/*"] # this may return [] if it can't read the share
+        files = Dir["/tmp/fusor-test-mount-#{deployment.id}/*"] # this may return [] if it can't read the share
         Utils::Fusor::CommandUtils.run_command("sudo safe-umount.sh #{deployment.id}")
 
         if files.length > 0

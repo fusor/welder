@@ -13,6 +13,8 @@ export default Ember.Route.extend({
         var rhevTask          = subtasksOfDeploy.findBy('humanized_name', 'Deploy Red Hat Enterprise Virtualization');
         var openstackTask     = subtasksOfDeploy.findBy('humanized_name', 'Deploy Red Hat OpenStack Platform overcloud');
         var cfmeTask          = subtasksOfDeploy.findBy('humanized_name', 'Deploy CloudForms Management Engine');
+        var openshiftTask     = subtasksOfDeploy.findBy('humanized_name', 'Deploy OpenShift Enterprise');
+
 
         return Ember.RSVP.hash({
            deployTask: deployTask,
@@ -20,6 +22,7 @@ export default Ember.Route.extend({
            rhevTask: rhevTask,
            openstackTask: openstackTask,
            cfmeTask: cfmeTask,
+           openshiftTask: openshiftTask,
            deployment: deployment
         });
 
@@ -33,7 +36,9 @@ export default Ember.Route.extend({
     controller.set('rhevTask', model.rhevTask);
     controller.set('openstackTask', model.openstackTask);
     controller.set('cfmeTask', model.cfmeTask);
+    controller.set('openshiftTask', model.openshiftTask);
     controller.set('deployment', model.deployment);
+    controller.set('katelloSyncErrorTasks', null);
     controller.stopPolling();
 
     ////////////////////////////////////////////////////////////
@@ -68,6 +73,15 @@ export default Ember.Route.extend({
 
     } else if(!model.deployment.get('has_content_error')) {
       controller.startPolling();
+    } else {
+      // has_content_error == true and no contentErrorDiscovered, it's been reset
+      model.manageContentTask.get('subtasks').then(tasks => {
+        controller.set('katelloSyncErrorTasks', tasks.filter(task => {
+          return task.get('humanized_name') === 'Synchronize' &&
+                 task.get('state') === 'stopped' &&
+                 task.get('result') === 'warning';
+        }));
+      });
     }
   },
 
