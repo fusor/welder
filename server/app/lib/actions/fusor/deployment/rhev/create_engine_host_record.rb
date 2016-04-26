@@ -22,23 +22,42 @@ module Actions
             _('Create Host Record for RHEV Engine for self-hosted')
           end
 
-          def plan(deployment)
+          def plan(deployment, hostgroup_name)
             super(deployment)
-            plan_self(deployment_id: deployment.id)
+            plan_self(deployment_id: deployment.id, hostgroup_name: hostgroup_name)
           end
 
           def run
             ::Fusor.log.debug '====== CreateEngineHostRecord run method ======'
             deployment = ::Fusor::Deployment.find(input[:deployment_id])
-            # ignoring return value for now
-            deployment.rhev_engine_host = create_host(deployment)
+
+            mac_address = get_mac_address(deployment, input[:hostgroup_name])
+            ::Fusor.log.debug 'XXX mac address: #{mac_address}'
+
+            deployment.rhev_engine_host = create_host(deployment, mac_address)
             deployment.save!
             ::Fusor.log.debug '====== Leaving CreateEngineHostRecord run method ======'
           end
 
           private
 
-          def create_host(deployment)
+          def get_mac_address(deployment, hostgroup_name)
+            hostgroup = find_hostgroup(deployment, hostgroup_name)
+            fail _("no hostgroup with name #{input[:hostgroup_name]} found") if hostgroup.nil?
+
+            # get the self-hosted puppet class from the hostgroup
+            pc_self_hosted_setup = hostgroup.puppetclasses.where(:name =>  'ovirt::self_hosted::setup').first
+            fail _("no puppet class 'ovirt::self_hosted::setup' found") if pc_self_hosted_setup.nil?
+
+            # get the default key
+            default_mac_address_value = pc_self_hosted_setup.class_params.where(:key => 'engine_mac_address').first
+            fail _("no puppet value for 'engine_mac_address' found") if default_mac_address_value.nil?
+
+            # return the override
+            return LookupValue.where(:lookup_key_id =>  default_mac_address_value.id).first.value
+          end
+
+          def create_host(deployment, mac_addr)
             rhevm = {"name" => "#{deployment.label.tr('_', '-')}-rhev-engine",
                     "location_id" => Location.find_by_name('Default Location').id,
                     "environment_id" => Environment.where(:katello_id => "Default_Organization/Library/Fusor_Puppet_Content").first.id,
@@ -51,7 +70,7 @@ module Actions
                     "ptable_id" => Ptable.find { |p| p["name"] == "Kickstart default" }.id,
                     "domain_id" => 1,
                     "root_pass" => deployment.rhev_root_password,
-                    "mac" => generate_mac_address,
+                    "mac" => mac_addr,
                     "build" => "0"}
             host = ::Host.create(rhevm)
 
@@ -63,13 +82,30 @@ module Actions
             end
           end
 
-          def generate_mac_address
-            options = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F']
-            l = [[options.sample, '2'].join('')]
-            for i in 0..4
-              l << (options.sample 2).join('')
+          def find_hostgroup(deployment, name)
+            # locate the top-level hostgroup for the deployment...
+            # currently, we'll create a hostgroup with the same name as the deployment...
+            # Note: you need to scope the query to organization
+            parent = ::Hostgroup.where(:name => deployment.label).
+                joins(:organizations).
+                where("taxonomies.id in (?)", [deployment.organization.id]).first
+
+            # generate the ancestry, so that we can locate the hostgroups based on the hostgroup hierarchy, which assumes:
+            # "Fusor Base"/"My Deployment"
+            # Note: there may be a better way in foreman to locate the hostgroup
+            if parent
+              if parent.ancestry
+                ancestry = [parent.ancestry, parent.id.to_s].join('/')
+              else
+                ancestry = parent.id.to_s
+              end
             end
-            l.join(':')
+
+            # locate the engine hostgroup...
+            ::Hostgroup.where(:name => name).
+                where(:ancestry => ancestry).
+                joins(:organizations).
+                where("taxonomies.id in (?)", [deployment.organization.id]).first
           end
         end
       end
