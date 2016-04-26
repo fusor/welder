@@ -191,6 +191,24 @@ module Actions
         # unclear which one the deployment attribute is associated with
         # :name => , :value => deployment.rhev_storage_type,
 
+        # Self-hosted and standard have two different ways they want the cpu type
+        # https://github.com/oVirt/ovirt-hosted-engine-setup/blob/master/src/plugins/ovirt-hosted-engine-setup/vdsmd/cpu.py#L50
+        self_hosted_cpu_map = {
+          'Intel Broadwell Family' => 'model_Broadwell',
+          'Intel Conroe Family' => 'model_Conroe',
+          'Intel Penryn Family' => 'model_Penryn',
+          'Intel Nehalem Family' => 'model_Nehalem',
+          'Intel Westmere Family' => 'model_Westmere',
+          'Intel SandyBridge Family' => 'model_SandyBridge',
+          'Intel Haswell' => 'model_Haswell',
+          'AMD Opteron G1' => 'model_Opteron_G1',
+          'AMD Opteron G2' => 'model_Opteron_G2',
+          'AMD Opteron G3' => 'model_Opteron_G3',
+          'AMD Opteron G4' => 'model_Opteron_G4',
+          'AMD Opteron G5' => 'model_Opteron_G5',
+          # 'IBM POWER 8' => 'UNSUPPORTED',
+        }
+
         # TODO(fabianvf): Add overrides for rhev-self-hosted
         deployment_overrides =
           [
@@ -263,7 +281,7 @@ module Actions
                     { :name => "root_password", :value => root_password(deployment, product_type) },
                     { :name => "dc_name", :value => deployment.rhev_database_name },
                     { :name => "cluster_name", :value => deployment.rhev_cluster_name },
-                    { :name => "cpu_type", :value => deployment.rhev_cpu_type },
+                    { :name => "cpu_type", :value => self_hosted_cpu_map[deployment.rhev_cpu_type] },
                     { :name => "storage_name", :value => deployment.rhev_storage_name },
                     { :name => "storage_address", :value => deployment.rhev_storage_address },
                     { :name => "storage_type", :value => deployment.rhev_storage_type },
