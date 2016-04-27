@@ -11,7 +11,6 @@ export default Ember.Route.extend({
     controller.set('showErrorMessage', false);
     if (model.get('deploy_rhev')) {
         this.store.findAll('hostgroup').then(function(results) {
-            console.log(results);
             var fusorBaseHostgroup = results.filterBy('name', 'Fusor Base').get('firstObject');
             var fusorBaseDomain = fusorBaseHostgroup.get('domain.name');
             controller.set('engineDomain', fusorBaseDomain);
@@ -45,7 +44,7 @@ export default Ember.Route.extend({
         controller.set('spinnerTextMessage', "Validating deployment...");
 
         request({
-            url: `/fusor/api/v21/deployments/${model.get('id')}/validate`,
+            url: `/fusor/api/v3/deployments/${model.get('id')}/validate`,
             type: "GET",
             headers: {
                 "Accept": "application/json",

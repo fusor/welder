@@ -7,18 +7,18 @@ export default function() {
       return {};
   });
 
-  this.get('/fusor/api/v21/deployments');
-  this.post('/fusor/api/v21/deployments');
-  this.get('/fusor/api/v21/deployments/:id');
-  this.put('/fusor/api/v21/deployments/:id');
-  this.del('/fusor/api/v21/deployments/:id');
+  this.get('/fusor/api/v3/deployments');
+  this.post('/fusor/api/v3/deployments');
+  this.get('/fusor/api/v3/deployments/:id');
+  this.put('/fusor/api/v3/deployments/:id');
+  this.del('/fusor/api/v3/deployments/:id');
 
-  this.get('/api/v21/organizations');
-  this.get('/api/v21/organizations/:id');
+  this.get('/api/v3/organizations');
+  this.get('/api/v3/organizations/:id');
 
-  this.get('/api/v21/lifecycle_environments');
-  this.get('/api/v21/lifecycle_environments/:id');
-  this.post('/api/v21/lifecycle_environments', function(db, request) {
+  this.get('/fusor/api/v3/lifecycle_environments');
+  this.get('/fusor/api/v3/lifecycle_environments/:id');
+  this.post('/fusor/api/v3/lifecycle_environments', function(db, request) {
       var attrs = JSON.parse(request.requestBody).lifecycle_environment;
       attrs['prior_id'] = 1;
       var record = db.lifecycle_environments.insert(attrs);
@@ -28,9 +28,9 @@ export default function() {
       };
   });
 
-  this.get('/api/v21/discovered_hosts');
-  this.get('/api/v21/discovered_hosts/:id');
-  this.put('/api/v21/discovered_hosts/:id/rename', function(db, request) {
+  this.get('/fusor/api/v3/discovered_hosts');
+  this.get('/fusor/api/v3/discovered_hosts/:id');
+  this.put('/fusor/api/v3/discovered_hosts/:id/rename', function(db, request) {
     var id = request.params.id;
     return db.discovered_hosts.find(id);
   });
@@ -60,29 +60,29 @@ export default function() {
     return {};
   });
 
-  this.get('/fusor/api/v21/subscriptions', function(db, request) {
+  this.get('/fusor/api/v3/subscriptions', function(db, request) {
     var id = request.params.deployment_id;
     console.log(request.params);
     return db.subscriptions;
   });
 
-  this.get('/api/v21/hostgroups');
-  this.get('/api/v21/hostgroups/:id');
+  this.get('/api/v3/hostgroups');
+  this.get('/api/v3/hostgroups/:id');
 
-  this.get('/api/v21/domains');
-  this.get('/api/v21/domains/:id');
+  this.get('/api/v3/domains');
+  this.get('/api/v3/domains/:id');
 
-  this.get('fusor/api/v21/deployments/:id/validate', function(db, request) {
+  this.get('/fusor/api/v3/deployments/:id/validate', function(db, request) {
     var id = request.params.id;
     return db.deployments.find(id);
   });
 
-  this.put('fusor/api/v21/deployments/:id/deploy', function(db, request) {
+  this.put('/fusor/api/v3/deployments/:id/deploy', function(db, request) {
     return db.foreman_tasks.find('db25a76f-e344-48ba-ac77-f29303586dbe');
   });
 
-  this.get('/api/v21/foreman_tasks');
-  this.get('/api/v21/foreman_tasks/:id', function(db, request) {
+  this.get('/fusor/api/v3/foreman_tasks');
+  this.get('/fusor/api/v3/foreman_tasks/:id', function(db, request) {
     var id = request.params.id;
     return db.foreman_tasks.find(id);
   });
@@ -129,8 +129,8 @@ export default function() {
     return {deployment_plan: db.deployment_plan[0]};
   });
 
-  this.get('/fusor/api/v21/subscriptions');
-  this.post('/fusor/api/v21/subscriptions');
+  this.get('/fusor/api/v3/subscriptions');
+  this.post('/fusor/api/v3/subscriptions');
 
 
   this.post('/customer_portal/consumers/:uuid/entitlements');

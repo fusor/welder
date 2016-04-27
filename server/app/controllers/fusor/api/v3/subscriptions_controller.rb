@@ -11,7 +11,9 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 module Fusor
-  class Api::V21::SubscriptionsController < Api::V2::BaseController
+  class Api::V3::SubscriptionsController < Api::V3::BaseController
+
+    #include Api::Version3
     skip_before_filter :check_content_type, :only => [:upload]
 
     def index
@@ -33,7 +35,7 @@ module Fusor
     end
 
     def create
-      @subscription = Fusor::Subscription.new(params[:subscription])
+      @subscription = Fusor::Subscription.new(subscription_params)
       if @subscription.save
         render :json => @subscription, :serializer => Fusor::SubscriptionSerializer
       else
@@ -48,7 +50,7 @@ module Fusor
 
     def update
       @subscription = Fusor::Subscription.find(params[:id])
-      if @subscription.update_attributes(params[:subscription])
+      if @subscription.update_attributes(subscription_params)
         render :json => @subscription, :serializer => Fusor::SubscriptionSerializer
       else
         render json: {errors: @subscription.errors}, status: 422
@@ -96,6 +98,22 @@ module Fusor
       end
 
       render json: {manifest_file: temp_file.path}, status: 200
+    end
+
+    private
+
+    def subscription_params
+      # add belongs_to attribute: deployment_id
+      if params[:data][:relationships]
+        if (deployment = params[:data][:relationships][:deployment])
+          deployment_id = deployment[:data] ? deployment[:data][:id] : nil
+          params[:data][:attributes][:deployment_id] = deployment_id
+        end
+      end
+
+      params.require(:data).require(:attributes).permit(:deployment_id, :contract_number,
+         :product_name, :quantity_attached, :start_date, :end_date, :total_quantity,
+         :source, :quantity_to_add)
     end
 
   end

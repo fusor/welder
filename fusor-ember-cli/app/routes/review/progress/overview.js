@@ -56,6 +56,7 @@ export default Ember.Route.extend({
     // serverside once a given deployment has been initiated.
     ////////////////////////////////////////////////////////////
     let contentErrorDiscovered =
+      model.manageContentTask &&
       model.manageContentTask.get('result') === 'error' &&
       model.manageContentTask.get('state') === 'paused';
     ////////////////////////////////////////////////////////////

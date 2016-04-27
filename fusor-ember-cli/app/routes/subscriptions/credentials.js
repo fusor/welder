@@ -57,7 +57,7 @@ export default Ember.Route.extend({
       controller.set('nextButtonTitle', "Logging in ...");
       controller.set('disableCredentialsNext', true);
       request({
-            url: '/customer_portal/login/',
+            url:  '/customer_portal/login/',
             type: "POST",
             data: JSON.stringify({username: identification, password: password}),
             headers: {
