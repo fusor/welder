@@ -68,6 +68,7 @@ module Actions
 
             unless outstanding_host_ids.length == 0
               suspend do |suspended_action|
+                world.clock.ping suspended_action, input[:timeout], "timeout"
                 outstanding_host_ids.each{|host_id| set_host_trigger(suspended_action, host_id)}
               end
             end
