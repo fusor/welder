@@ -30,9 +30,10 @@ module Actions
           def run
             ::Fusor.log.debug '====== CreateEngineHostRecord run method ======'
             deployment = ::Fusor::Deployment.find(input[:deployment_id])
+            ::Fusor.log.debug "Found deployment with label #{deployment.name}"
 
             mac_address = get_mac_address(deployment, input[:hostgroup_name])
-            ::Fusor.log.debug 'XXX mac address: #{mac_address}'
+            ::Fusor.log.debug "Found mac address override value: #{mac_address}"
 
             deployment.rhev_engine_host = create_host(deployment, mac_address)
             deployment.save!
@@ -44,17 +45,20 @@ module Actions
           def get_mac_address(deployment, hostgroup_name)
             hostgroup = find_hostgroup(deployment, hostgroup_name)
             fail _("no hostgroup with name #{input[:hostgroup_name]} found") if hostgroup.nil?
+            ::Fusor.log.debug "Found hostgroup with name: #{hostgroup.name}"
 
             # get the self-hosted puppet class from the hostgroup
             pc_self_hosted_setup = hostgroup.puppetclasses.where(:name =>  'ovirt::self_hosted::setup').first
             fail _("no puppet class 'ovirt::self_hosted::setup' found") if pc_self_hosted_setup.nil?
+            ::Fusor.log.debug "Found puppetclass with name: #{pc_self_hosted_setup.name}"
 
-            # get the default key
-            default_mac_address_value = pc_self_hosted_setup.class_params.where(:key => 'engine_mac_address').first
-            fail _("no puppet value for 'engine_mac_address' found") if default_mac_address_value.nil?
+            # get the lookup key
+            lookup_key = pc_self_hosted_setup.class_params.where(:key => 'engine_mac_address').first
+            fail _("no puppet override for 'engine_mac_address' found") if lookup_key.nil?
+            ::Fusor.log.debug "Found LookupKey for key: #{lookup_key.key}"
 
             # return the override
-            return LookupValue.where(:lookup_key_id =>  default_mac_address_value.id).first.value
+            return LookupValue.where(:lookup_key_id =>  lookup_key.id).first.value
           end
 
           def create_host(deployment, mac_addr)
@@ -78,7 +82,7 @@ module Actions
               ::Fusor.log.info 'RHEV Engine Host Record Created'
               return host
             else
-              fail _("RHEV Engine Host Record creation failed with errors: #{host.errors}")
+              fail _("RHEV Engine Host Record creation with mac #{mac_addr} failed with errors: #{host.errors.messages}")
             end
           end
 

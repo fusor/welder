@@ -29,7 +29,7 @@ module Actions
                 # TODO(fabianvf): additional hypervisors
                 hypervisor = deployment.discovered_hosts[0]
 
-                plan_action(::Actions::Fusor::Deployment::Rhev::CreateEngineHostRecord, deployment)
+                plan_action(::Actions::Fusor::Deployment::Rhev::CreateEngineHostRecord, deployment, 'RHEV-Self-hosted')
                 plan_action(::Actions::Fusor::Host::TriggerProvisioning,
                             deployment,
                             "RHEV-Self-hosted",
