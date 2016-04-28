@@ -31,7 +31,7 @@ module Actions
             deployment = ::Fusor::Deployment.find(input[:deployment_id])
             script_dir = "/usr/share/fusor_ovirt/bin/"
             api_user = "admin@internal"
-            api_host = deployment.rhev_engine_host.facts['ipaddress']
+            api_host = deployment.rhev_engine_host.ip
 
             # TODO: Revisit how the data center is stored in the deployment object
             #       name of "rhev_database_name" is non-intuitive,

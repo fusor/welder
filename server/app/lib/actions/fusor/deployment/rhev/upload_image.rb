@@ -38,7 +38,7 @@ module Actions
             # -v verbose
             # -m do not remove network interfaces from image
 
-            ssh_host = deployment.rhev_engine_host.facts['ipaddress']
+            ssh_host = deployment.rhev_engine_host.ip
             ssh_username = "root"
 
             username = "admin@internal"
