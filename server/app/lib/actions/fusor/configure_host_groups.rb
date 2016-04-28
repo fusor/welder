@@ -293,7 +293,10 @@ module Actions
                     { :name => "engine_activation_key", :value => hostgroup.params['kt_activation_keys'] },
                     { :name => "export_name", :value => deployment.rhev_export_domain_name },
                     { :name => "export_address", :value => deployment.rhev_export_domain_address },
-                    { :name => "export_path", :value => deployment.rhev_export_domain_path }
+                    { :name => "export_path", :value => deployment.rhev_export_domain_path },
+                    { :name => "hosted_storage_name", :value => 'hosted_storage'},# deployment.hosted_storage_name },
+                    { :name => "hosted_storage_address", :value => deployment.rhev_export_domain_address },# deployment.hosted_storage_address },
+                    { :name => "hosted_storage_path", :value => '/nfs_data/self_hosted' }# deployment.hosted_storage_path }
                   ]
                 }
               ]
