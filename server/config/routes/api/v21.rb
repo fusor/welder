@@ -9,6 +9,7 @@ Fusor::Engine.routes.draw do
             get :validate
             get :validate_cdn
             get :log
+            get :get_openshift_disk_space
           end
         end
         resources :subscriptions do
