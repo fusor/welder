@@ -123,6 +123,18 @@
                           value=model.rhev_export_domain_path}}
 
         {{/if}}
+        {{#if isSelfHosted}}
+
+            {{review-link label='Hosted Storage Domain Name' routeName='storage' isDefault=true
+                          value=model.hosted_storage_name}}
+
+            {{review-link label='Hosted Storage Address' routeName='storage' isDefault=true
+                          value=model.hosted_storage_address}}
+
+            {{review-link label='Hosted Storage Path' routeName='storage' isDefault=true
+                          value=model.hosted_storage_path}}
+
+        {{/if}}
 
         <br />
       {{/accordion-item}}
