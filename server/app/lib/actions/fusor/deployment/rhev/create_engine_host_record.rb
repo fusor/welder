@@ -57,8 +57,8 @@ module Actions
             fail _("no puppet override for 'engine_mac_address' found") if lookup_key.nil?
             ::Fusor.log.debug "Found LookupKey for key: #{lookup_key.key}"
 
-            # return the override
-            return LookupValue.where(:lookup_key_id =>  lookup_key.id).first.value
+            match_value = "hostgroup=Fusor Base/#{deployment.label}/#{hostgroup_name}"
+            return LookupValue.where(:lookup_key_id => lookup_key.id).where(:match => match_value).first.value
           end
 
           def create_host(deployment, mac_addr)
