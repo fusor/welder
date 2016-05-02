@@ -280,6 +280,7 @@ module Actions
                     # the hostgroup stores it using one-time encryption.
                     { :name => "root_password", :value => root_password(deployment, product_type) },
                     { :name => "dc_name", :value => deployment.rhev_database_name },
+                    { :name => "gateway", :value => Subnet.find_by_name('default').gateway },
                     { :name => "cluster_name", :value => deployment.rhev_cluster_name },
                     { :name => "cpu_type", :value => deployment.rhev_cpu_type },
                     { :name => "cpu_model", :value => self_hosted_cpu_map[deployment.rhev_cpu_type] },
