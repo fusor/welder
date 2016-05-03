@@ -48,7 +48,7 @@ export default Ember.Route.extend({
       return true;
     },
 
-  loginPortal() {
+    loginPortal() {
       var self = this;
       var controller = this.controllerFor('subscriptions/credentials');
       var identification = controller.get('model.identification');
@@ -57,18 +57,18 @@ export default Ember.Route.extend({
       controller.set('nextButtonTitle', "Logging in ...");
       controller.set('disableCredentialsNext', true);
       request({
-            url: '/customer_portal/login/',
-            type: "POST",
-            data: JSON.stringify({username: identification, password: password}),
-            headers: {
-                "Accept": "application/json",
-                "Content-Type": "application/json",
-                "X-CSRF-Token": token,
-                }
-            }).then(function(response) {
+        url: '/customer_portal/login/',
+        type: "POST",
+        data: JSON.stringify({username: identification, password: password}),
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "X-CSRF-Token": token,
+        }
+      }).then(function(response) {
                 //show always be {} empty successful 200 response
-                self.send('saveCredentials');
-              },
+        self.send('saveCredentials');
+      },
               function(error) {
                 console.log('error on loginPortal');
                 controller.set('nextButtonTitle', "Next");
@@ -84,21 +84,21 @@ export default Ember.Route.extend({
 
       return new Ember.RSVP.Promise(function (resolve, reject) {
         request({
-            url: '/customer_portal/logout/',
-            type: "POST",
-            headers: {
-                "Accept": "application/json",
-                "Content-Type": "application/json",
-                "X-CSRF-Token": token,
-                },
-            }).then(function(response) {
+          url: '/customer_portal/logout/',
+          type: "POST",
+          headers: {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "X-CSRF-Token": token,
+          },
+        }).then(function(response) {
               //show always be {} empty successful 200 response
-                  self.modelFor('subscriptions').setProperties({'isAuthenticated': false,
+          self.modelFor('subscriptions').setProperties({'isAuthenticated': false,
                                                                 'identification': null,
                                                                 'ownerKey': null,
                                                                 'consumerUUID': null});
-                  self.modelFor('subscriptions').save();
-                },
+          self.modelFor('subscriptions').save();
+        },
                 function(error) {
                   console.log('error on loginPortal');
                   return self.send('error');
@@ -119,14 +119,14 @@ export default Ember.Route.extend({
         sessionPortal = self.store.createRecord('session-portal', {identification: identification});
       }
       sessionPortal.save().then(function(result) {
-          console.log('saved session-portal');
-          controller.set('showErrorMessage',false);
-          return self.send('authenticatePortal');
+        console.log('saved session-portal');
+        controller.set('showErrorMessage',false);
+        return self.send('authenticatePortal');
       }, function(response) {
-          console.log('error saving session-portal');
-          controller.set('nextButtonTitle', "Next");
-          controller.set('disableCredentialsNext', false);
-          return self.send('error');
+        console.log('error saving session-portal');
+        controller.set('nextButtonTitle', "Next");
+        controller.set('disableCredentialsNext', false);
+        return self.send('error');
       });
     },
 
@@ -140,37 +140,37 @@ export default Ember.Route.extend({
 
       return new Ember.RSVP.Promise(function (resolve, reject) {
         request({
-            url: url,
-            type: "GET",
-            headers: {
-                "Accept": "application/json",
-                "Content-Type": "application/json",
-                "X-CSRF-Token": token,
-                },
-            }).then(function(response) {
-                  var ownerKey = response[0]['key'];
-                  console.log('owner key is ' + ownerKey);
-                  var sessionPortal = self.modelFor('subscriptions');
-                  sessionPortal.set('ownerKey', ownerKey);
-                  sessionPortal.set('isAuthenticated', true);
-                  sessionPortal.save().then(function(result) {
-                      console.log('saved ownerKey in session-portal');
-                      controller.set('nextButtonTitle', "Next");
-                      controller.set('disableCredentialsNext', false);
-                      return self.transitionTo('subscriptions.management-application');
-                  }, function(response) {
-                      controller.set('nextButtonTitle', "Next");
-                      controller.set('disableCredentialsNext', false);
-                      console.log('error saving ownerKey session-portal');
-                  });
-              }, function(response) {
-                    console.log('error on authenticatePortal');
-                    controller.set('nextButtonTitle', "Next");
-                    controller.set('disableCredentialsNext', false);
-                    controller.setProperties({'showErrorMessage': true,
+          url: url,
+          type: "GET",
+          headers: {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "X-CSRF-Token": token,
+          },
+        }).then(function(response) {
+          var ownerKey = response[0]['key'];
+          console.log('owner key is ' + ownerKey);
+          var sessionPortal = self.modelFor('subscriptions');
+          sessionPortal.set('ownerKey', ownerKey);
+          sessionPortal.set('isAuthenticated', true);
+          sessionPortal.save().then(function(result) {
+            console.log('saved ownerKey in session-portal');
+            controller.set('nextButtonTitle', "Next");
+            controller.set('disableCredentialsNext', false);
+            return self.transitionTo('subscriptions.management-application');
+          }, function(response) {
+            controller.set('nextButtonTitle', "Next");
+            controller.set('disableCredentialsNext', false);
+            console.log('error saving ownerKey session-portal');
+          });
+        }, function(response) {
+          console.log('error on authenticatePortal');
+          controller.set('nextButtonTitle', "Next");
+          controller.set('disableCredentialsNext', false);
+          controller.setProperties({'showErrorMessage': true,
                                               'errorMsg': 'Your username or password is incorrect. Please try again.'
                                               });
-                 }
+        }
             );
       });
     },
