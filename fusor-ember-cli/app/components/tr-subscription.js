@@ -53,12 +53,12 @@ export default Ember.Component.extend({
   saveSubAfterCheck: Ember.observer('subscription.isSelectedSubscription', function() {
     if (this.get('subscription.isSelectedSubscription')) {
       if (this.get('subscription.qtyToAttach') > 0) {
-            // nothing - don't want to change subscription.qtyToAttach
+        // nothing - don't want to change subscription.qtyToAttach
       } else {
         this.set('subscription.qtyToAttach', 0);
       }
     } else {
-          // Zero out and save if unchecked
+      // Zero out and save if unchecked
       var hasPostiveQty = this.get('subscription.qtyToAttach') > 0;
       if (hasPostiveQty) {
         this.set('subscription.qtyToAttach', 0);
