@@ -9,7 +9,7 @@ export default Ember.Route.extend({
     if (this.modelFor('deployment').get('is_disconnected')) {
       return this.store.query('subscription', {deployment_id: deploymentId, source: 'imported'});
     } else {
-        // if there are no added subscriptions we need to show what is in the manifest instead.
+      // if there are no added subscriptions we need to show what is in the manifest instead.
       return this.store.query('subscription', {deployment_id: deploymentId, source: 'added'}).then(function(results) {
 
         let noSubsFound = results.get('length') === 0;

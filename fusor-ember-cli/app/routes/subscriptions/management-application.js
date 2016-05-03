@@ -59,11 +59,11 @@ export default Ember.Route.extend({
           deployment.set('upstream_consumer_uuid', results.owner_details.upstreamConsumer.uuid);
           deployment.set('upstream_consumer_name', results.owner_details.upstreamConsumer.name);
         } else {
-            // nullify sessionPortal.consumerUUID since it's probably a different deployment
+          // nullify sessionPortal.consumerUUID since it's probably a different deployment
           sessionPortal.set('consumerUUID', null);
         }
       }, function(results) {
-          // also nullify sessionPortal.consumerUUID in case there was an error
+        // also nullify sessionPortal.consumerUUID in case there was an error
         sessionPortal.set('consumerUUID', null);
       });
     }
@@ -75,8 +75,7 @@ export default Ember.Route.extend({
 
   actions: {
     error(reason, transition) {
-        // bubble up this error event:
-      return true;
+      return true; // bubble up this error event
     }
   }
 

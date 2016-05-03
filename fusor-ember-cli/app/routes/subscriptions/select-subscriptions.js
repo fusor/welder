@@ -39,26 +39,26 @@ export default Ember.Route.extend({
             }
           });
 
-              //create Fusor::Subscription records if they don't exist
+          //create Fusor::Subscription records if they don't exist
           var matchingSubscription = subscriptionResults.filterBy('contract_number', pool.get('contractNumber')).get('firstObject');
           if (Ember.isBlank(matchingSubscription)) {
-            var sub = self.store.createRecord('subscription', {'contract_number': pool.get('contractNumber'),
-                                     'product_name': pool.get('productName'),
-                                     'quantity_to_add': 0,
-                                     'quantity_attached': pool.get('qtyAttached'),
-                                     'source': 'added',
-                                     'start_date': pool.get('startDate'),
-                                     'end_date': pool.get('endDate'),
-                                     'total_quantity': pool.get('quantity'),
-                                     'deployment': deployment
-                                    });
+            var sub = self.store.createRecord('subscription', {
+              'contract_number': pool.get('contractNumber'),
+              'product_name': pool.get('productName'),
+              'quantity_to_add': 0,
+              'quantity_attached': pool.get('qtyAttached'),
+              'source': 'added',
+              'start_date': pool.get('startDate'),
+              'end_date': pool.get('endDate'),
+              'total_quantity': pool.get('quantity'),
+              'deployment': deployment
+            });
             sub.save();
           } else {
-                // update quantity_attached is it may have changed since record was created
+            // update quantity_attached is it may have changed since record was created
             matchingSubscription.set('quantity_attached', pool.get('qtyAttached'));
             matchingSubscription.save();
           }
-
         });
         controller.set('subscriptionEntitlements', Ember.A(results[0]));
         controller.set('subscriptionPools', Ember.A(results[1]));

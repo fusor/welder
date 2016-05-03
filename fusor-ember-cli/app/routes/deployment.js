@@ -271,8 +271,7 @@ export default Ember.Route.extend(DeploymentRouteMixin, UsesOseDefaults, {
           }, function(error) {
             console.log('error on attachSubscriptions');
             return self.send('error');
-          }
-          );
+          });
 
         }
       });

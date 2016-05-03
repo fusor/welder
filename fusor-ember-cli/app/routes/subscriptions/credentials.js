@@ -66,16 +66,14 @@ export default Ember.Route.extend({
           "X-CSRF-Token": token,
         }
       }).then(function(response) {
-                //show always be {} empty successful 200 response
+        //show always be {} empty successful 200 response
         self.send('saveCredentials');
-      },
-              function(error) {
-                console.log('error on loginPortal');
-                controller.set('nextButtonTitle', "Next");
-                controller.set('disableCredentialsNext', false);
-                return self.send('error');
-              }
-      );
+      }, function(error) {
+        console.log('error on loginPortal');
+        controller.set('nextButtonTitle', "Next");
+        controller.set('disableCredentialsNext', false);
+        return self.send('error');
+      });
     },
 
     logoutPortal() {
@@ -92,20 +90,20 @@ export default Ember.Route.extend({
             "X-CSRF-Token": token,
           },
         }).then(function(response) {
-              //show always be {} empty successful 200 response
-          self.modelFor('subscriptions').setProperties({'isAuthenticated': false,
-                                                                'identification': null,
-                                                                'ownerKey': null,
-                                                                'consumerUUID': null});
+          //show always be {} empty successful 200 response
+          self.modelFor('subscriptions').setProperties({
+            'isAuthenticated': false,
+            'identification': null,
+            'ownerKey': null,
+            'consumerUUID': null
+          });
           self.modelFor('subscriptions').save();
-        },
-                function(error) {
-                  console.log('error on loginPortal');
-                  return self.send('error');
-                }
-           );
-      });
+        }, function(error) {
+          console.log('error on loginPortal');
+          return self.send('error');
+        });
 
+      });
     },
 
     saveCredentials() {
@@ -131,7 +129,6 @@ export default Ember.Route.extend({
     },
 
     authenticatePortal() {
-
       var controller = this.controllerFor('subscriptions/credentials');
       var identification = controller.get('model.identification');
       var token = Ember.$('meta[name="csrf-token"]').attr('content');
@@ -167,18 +164,17 @@ export default Ember.Route.extend({
           console.log('error on authenticatePortal');
           controller.set('nextButtonTitle', "Next");
           controller.set('disableCredentialsNext', false);
-          controller.setProperties({'showErrorMessage': true,
-                                              'errorMsg': 'Your username or password is incorrect. Please try again.'
-                                              });
-        }
-            );
+          controller.setProperties({
+            'showErrorMessage': true,
+            'errorMsg': 'Your username or password is incorrect. Please try again.'
+          });
+        });
       });
     },
 
     redirectToManagementApplication() {
       return this.transitionTo('subscriptions.management-application');
     }
-
   }
 
 });

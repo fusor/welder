@@ -32,11 +32,9 @@ export default Ember.Route.extend(DiscoveredHostRouteMixin, {
         if (redirectPath) {
           self.transitionTo('rhev-options');
         }
-      },
-              function(error) {
-                console.log(error);
-              }
-      );
+      }, function(error) {
+        console.log(error);
+      });
     }
   }
 
