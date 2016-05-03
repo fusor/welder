@@ -20,13 +20,13 @@ export default Ember.Component.extend({
 
   actions: {
     saveNamingScheme() {
-        this.set('openModal', false);
-        this.sendAction('saveNamingScheme');
+      this.set('openModal', false);
+      this.sendAction('saveNamingScheme');
     },
 
     cancelNamingScheme() {
-        this.set('openModal', false);
-        this.sendAction('cancelNamingScheme');
+      this.set('openModal', false);
+      this.sendAction('cancelNamingScheme');
     }
 
   }
