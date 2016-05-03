@@ -35,8 +35,6 @@ export default Ember.Controller.extend(NeedsDeploymentMixin, {
     if (this.get('allDiscoveredHosts')) {
       return allDiscoveredHosts.filter(function(item) {
         if (self.get('hypervisorModelIds')) {
-            //console.log(item.get('id'));
-            //console.log(self.get('hypervisorModelIds'));
           return (item.get('id') !== self.get('selectedRhevEngine.id'));
         }
       });

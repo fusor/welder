@@ -72,9 +72,14 @@ export default Ember.Controller.extend(NeedsDeploymentMixin, {
           request({
             url: url,
             type: "POST",
-            data: JSON.stringify({name: newSatelliteName,
-                                    type: "satellite",
-                                    facts: {"distributor_version": "sat-6.0", "system.certificate_version": "3.2"}} ),
+            data: JSON.stringify({
+              name: newSatelliteName,
+              type: "satellite",
+              facts: {
+                "distributor_version": "sat-6.0",
+                "system.certificate_version": "3.2"
+              }
+            }),
             headers: {
               "Accept": "application/json",
               "Content-Type": "application/json",
@@ -96,8 +101,7 @@ export default Ember.Controller.extend(NeedsDeploymentMixin, {
             self.set('showErrorMessage', true);
             self.set('errorMsg', newSatelliteName + ' failed to be added.');
             return self.send('error');
-          }
-          );
+          });
         }
       });
     }

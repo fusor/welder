@@ -74,13 +74,13 @@ export default Ember.Controller.extend(NeedsDeploymentMixin, {
   disableNextDisconnected: Ember.computed(
     'noManifestFile',
     'currentMirrorStatus',
-    function()
-  {
-    // If currentMirrorStatus is not VALID, disable next
+    function() {
+      // If currentMirrorStatus is not VALID, disable next
       let retVal = this.get('noManifestFile') ||
-      this.get('currentMirrorStatus') !== this.get('MirrorStatus').VALID;
+        this.get('currentMirrorStatus') !== this.get('MirrorStatus').VALID;
       return retVal;
-    }),
+    }
+  ),
 
   contentProviderType: Ember.computed('isDisconnected', function() {
     return (this.get('isDisconnected') ? "disconnected" : "redhat_cdn");
@@ -123,14 +123,12 @@ export default Ember.Controller.extend(NeedsDeploymentMixin, {
       }).then( function(result) {
         self.get('deploymentController.model').set('manifest_file', result.manifest_file);
         self.get('deploymentController.model').save().then(function () {
-          return console.log('Manifest successfully uploaded');
+          console.log('Manifest successfully uploaded');
         });
       }, function(error) {
+        console.log('ERROR on uploadManifest');
         console.log(error);
-        return console.log('ERROR on uploadManifest');
-      }
-      );
-
+      });
     },
 
     uploadDifferentManifest() {

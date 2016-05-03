@@ -122,14 +122,13 @@ export default Ember.Controller.extend(DeploymentControllerMixin, NeedsDeploymen
             model.save();
           }
           Ember.run.later(checkForDone, 3000);
-        },  function(error) {
+        }, function(error) {
           error = error.jqXHR;
           self.set('deploymentError', error.responseJSON.errors);
           self.set('showLoadingSpinner', false);
           console.log('create failed');
           console.log(error);
-        }
-        );
+        });
 
         var checkForDone = function () {
           console.log("running check for done for id " + self.get('deploymentId'));
@@ -161,8 +160,7 @@ export default Ember.Controller.extend(DeploymentControllerMixin, NeedsDeploymen
             console.log(error);
             self.set('deploymentError', 'Status check failed');
             self.set('showLoadingSpinner', false);
-          }
-        );
+          });
         };
       };
 

@@ -37,29 +37,32 @@ export default Ember.Controller.extend(NeedsDeploymentMixin, OpenshiftMixin, {
                                  }),
   isUnderCapacity: Ember.computed.not("isOverCapacity"),
 
-  isValidOpenshiftNodes: Ember.computed('openshiftInstallLoc',
-                                        'numMasterNodes',
-                                        'numWorkerNodes',
-                                        'storageSize',
-                                        'masterVcpu',
-                                        'masterRam',
-                                        'masterDisk',
-                                        'nodeVcpu',
-                                        'nodeRam',
-                                        'nodeDisk',
-                                        'isUnderCapacity', function() {
-                                          return (Ember.isPresent(this.get('openshiftInstallLoc')) &&
-              (this.get('numMasterNodes') > 0) &&
-              (this.get('numWorkerNodes') > 0) &&
-              (this.get('storageSize') > 0) &&
-              (this.get('masterVcpu') > 0) &&
-              (this.get('masterRam') > 0) &&
-              (this.get('masterDisk') > 0) &&
-              (this.get('nodeVcpu') > 0) &&
-              (this.get('nodeRam') > 0) &&
-              (this.get('nodeDisk') > 0) &&
-              this.get('isUnderCapacity'));
-                                        }),
+  isValidOpenshiftNodes: Ember.computed(
+    'openshiftInstallLoc',
+    'numMasterNodes',
+    'numWorkerNodes',
+    'storageSize',
+    'masterVcpu',
+    'masterRam',
+    'masterDisk',
+    'nodeVcpu',
+    'nodeRam',
+    'nodeDisk',
+    'isUnderCapacity',
+    function() {
+      return Ember.isPresent(this.get('openshiftInstallLoc')) &&
+        this.get('numMasterNodes') > 0 &&
+        this.get('numWorkerNodes') > 0 &&
+        this.get('storageSize') > 0 &&
+        this.get('masterVcpu') > 0 &&
+        this.get('masterRam') > 0 &&
+        this.get('masterDisk') > 0 &&
+        this.get('nodeVcpu') > 0 &&
+        this.get('nodeRam') > 0 &&
+        this.get('nodeDisk') > 0 &&
+        this.get('isUnderCapacity');
+    }
+  ),
   isInvalidOpenshiftNodes: Ember.computed.not("isValidOpenshiftNodes"),
 
   ////////////////////////////////////////////////////////////
@@ -111,16 +114,16 @@ export default Ember.Controller.extend(NeedsDeploymentMixin, OpenshiftMixin, {
     'model.openshift_export_path',
     'model.openshift_username',
     'model.openshift_subdomain_name',
-    function()
-  {
+    function() {
       return validateZipper([
-      [this.get('storageNameValidator'), this.get('model.openshift_storage_name')],
-      [this.get('storageHostValidator'), this.get('model.openshift_storage_host')],
-      [this.get('exportPathValidator'), this.get('model.openshift_export_path')],
-      [this.get('usernameValidator'), this.get('model.openshift_username')],
-      [this.get('subdomainValidator'), this.get('model.openshift_subdomain_name')]
+        [this.get('storageNameValidator'), this.get('model.openshift_storage_name')],
+        [this.get('storageHostValidator'), this.get('model.openshift_storage_host')],
+        [this.get('exportPathValidator'), this.get('model.openshift_export_path')],
+        [this.get('usernameValidator'), this.get('model.openshift_username')],
+        [this.get('subdomainValidator'), this.get('model.openshift_subdomain_name')]
       ]);
-    }),
+    }
+  ),
 
   isInvalidOpenshiftConfiguration: Ember.computed.not('isValidOpenshiftConfiguration'),
   validOpenshift: Ember.computed('isValidOpenshiftNodes', 'isValidOpenshiftConfiguration', function() {
