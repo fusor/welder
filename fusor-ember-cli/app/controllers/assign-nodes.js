@@ -355,7 +355,7 @@ export default Ember.Controller.extend(DeploymentControllerMixin, NeedsDeploymen
     }
   },
 
-    hasValidNodeAssignments: Ember.computed(
+  hasValidNodeAssignments: Ember.computed(
       'deployment.openstack_overcloud_compute_flavor',
       'deployment.openstack_overcloud_compute_count',
       'deployment.openstack_overcloud_controller_flavor',
@@ -370,5 +370,5 @@ export default Ember.Controller.extend(DeploymentControllerMixin, NeedsDeploymen
           controllerFlavor && controllerFlavor !== 'baremetal' && controllerCount > 0;
       }),
 
-    disableAssignNodesNext: Ember.computed.not('hasValidNodeAssignments')
-  });
+  disableAssignNodesNext: Ember.computed.not('hasValidNodeAssignments')
+});

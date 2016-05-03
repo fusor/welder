@@ -31,9 +31,9 @@ export default Ember.Controller.extend(NeedsDeploymentMixin, OpenshiftMixin, {
                                          'hasSubscriptionsToAttach',
                                          'hasSessionPortal',
                                          'hasSubscriptionPools', function() {
-    return (this.get('isNotDisconnected') && this.get('hasSubscriptionsToAttach') &&
+                                           return (this.get('isNotDisconnected') && this.get('hasSubscriptionsToAttach') &&
            (!this.get('hasSessionPortal') || !this.get('hasSubscriptionPools')));
-  }),
+                                         }),
 
   buttonDeployDisabled: Ember.computed(
     'deploymentController.isDisabledReview',
@@ -43,11 +43,11 @@ export default Ember.Controller.extend(NeedsDeploymentMixin, OpenshiftMixin, {
     'showValidationErrors',
     function()
   {
-    return this.get('deploymentController.isDisabledReview') ||
+      return this.get('deploymentController.isDisabledReview') ||
            this.get('isMissingSubscriptions') ||
            (this.get('isDisconnected') && this.get('hasNoManifestFile')) ||
            this.get('showValidationErrors');
-  }),
+    }),
 
   validationWarnings: [],
   showValidationWarnings: Ember.computed('validationWarnings', function () {
