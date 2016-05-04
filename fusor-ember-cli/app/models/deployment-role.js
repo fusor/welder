@@ -7,19 +7,19 @@ export default DS.Model.extend({
   version: DS.attr('number'),
 
   parameterPrefix: Ember.computed('name', 'version', function() {
-      return this.get('name') + '-' + this.get('version') + '::';
+    return this.get('name') + '-' + this.get('version') + '::';
   }),
 
   countParameterName: Ember.computed('name', 'version', function() {
-      return this.get('parameterPrefix') + 'count';
+    return this.get('parameterPrefix') + 'count';
   }),
 
   flavorParameterName: Ember.computed('name', 'version', function() {
-      return this.get('parameterPrefix') + 'Flavor';
+    return this.get('parameterPrefix') + 'Flavor';
   }),
 
   imageParameterName: Ember.computed('name', 'version', function() {
-      return this.get('parameterPrefix') + 'Image';
+    return this.get('parameterPrefix') + 'Image';
   }),
 
   snakeCaseName: Ember.computed('name', function() {

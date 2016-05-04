@@ -15,11 +15,11 @@ export default Ember.Controller.extend(NeedsDeploymentMixin, {
   disableTabRegisterNodes: Ember.computed.empty("deploymentController.model.openstack_undercloud_password"),
 
   disableTabAssignNodes: Ember.computed("disableTabRegisterNodes", "disableRegisterNodesNext", function () {
-     return (this.get('disableTabRegisterNodes') || this.get("disableRegisterNodesNext"));
+    return (this.get('disableTabRegisterNodes') || this.get("disableRegisterNodesNext"));
   }),
 
   disableTabOvercloud: Ember.computed("disableTabAssignNodes", "disableAssignNodesNext", function () {
-     return (this.get('disableTabAssignNodes') || this.get('disableAssignNodesNext'));
+    return (this.get('disableTabAssignNodes') || this.get('disableAssignNodesNext'));
   }),
 
   isValidRegisterNodes: Ember.computed.not('disableRegisterNodesNext'),

@@ -355,20 +355,21 @@ export default Ember.Controller.extend(DeploymentControllerMixin, NeedsDeploymen
     }
   },
 
-    hasValidNodeAssignments: Ember.computed(
-      'deployment.openstack_overcloud_compute_flavor',
-      'deployment.openstack_overcloud_compute_count',
-      'deployment.openstack_overcloud_controller_flavor',
-      'deployment.openstack_overcloud_controller_count',
-      function () {
-        let computeFlavor = this.get('deployment.openstack_overcloud_compute_flavor');
-        let computeCount = this.get('deployment.openstack_overcloud_compute_count');
-        let controllerFlavor = this.get('deployment.openstack_overcloud_controller_flavor');
-        let controllerCount = this.get('deployment.openstack_overcloud_controller_count');
+  hasValidNodeAssignments: Ember.computed(
+    'deployment.openstack_overcloud_compute_flavor',
+    'deployment.openstack_overcloud_compute_count',
+    'deployment.openstack_overcloud_controller_flavor',
+    'deployment.openstack_overcloud_controller_count',
+    function () {
+      let computeFlavor = this.get('deployment.openstack_overcloud_compute_flavor');
+      let computeCount = this.get('deployment.openstack_overcloud_compute_count');
+      let controllerFlavor = this.get('deployment.openstack_overcloud_controller_flavor');
+      let controllerCount = this.get('deployment.openstack_overcloud_controller_count');
 
-        return computeFlavor && computeFlavor !== 'baremetal' && computeCount > 0 &&
-          controllerFlavor && controllerFlavor !== 'baremetal' && controllerCount > 0;
-      }),
+      return computeFlavor && computeFlavor !== 'baremetal' && computeCount > 0 &&
+        controllerFlavor && controllerFlavor !== 'baremetal' && controllerCount > 0;
+    }
+  ),
 
-    disableAssignNodesNext: Ember.computed.not('hasValidNodeAssignments')
-  });
+  disableAssignNodesNext: Ember.computed.not('hasValidNodeAssignments')
+});

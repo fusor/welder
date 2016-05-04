@@ -59,6 +59,27 @@ if [ $1 == "install" ]; then
   echo "" >> hosts.yml
   cat ../../../fusor/server/test/fixtures/hosts.yml >> hosts.yml
 
+  ############################################################
+  # Front-end deps install
+  ############################################################
+  cd ../../../fusor
+  source $HOME/.nvm/nvm.sh
+  nvm install v4.2 && nvm use v4.2
+  node --version && npm --version
+  npm install -g bower
+  npm install -g ember-cli
+  cd fusor-ember-cli && bower install && npm install
+  node --version && npm --version && bower --version && ember --version
+elif [ $1 == "ember-run" ]; then
+  # Expects to be called from fusor project root
+  source $HOME/.nvm/nvm.sh
+  nvm use v4.2
+  cd fusor-ember-cli
+
+  # Confirm ESLint passes and project can build
+  TRAVIS_CI=1 ember build
+  # TODO: Execute test suite
+  # ember test
 else
   cd ../foreman
   rake db:create

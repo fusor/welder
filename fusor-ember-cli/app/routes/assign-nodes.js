@@ -56,10 +56,10 @@ export default Ember.Route.extend({
   formatError(error) {
     let errorMessage = '';
     if (Ember.typeOf(error) === 'error') {
-        errorMessage = error.message + ': ';
-        if (error.errors) {
-          error.errors.forEach(subError => errorMessage += ' ' + subError);
-        }
+      errorMessage = error.message + ': ';
+      if (error.errors) {
+        error.errors.forEach(subError => errorMessage += ' ' + subError);
+      }
     }
 
     return errorMessage;

@@ -9,14 +9,14 @@ export default Ember.Component.extend({
   getParamValue(paramName, params) {
     var paramValue = null;
     if (params) {
-        var numParams = params.get('length');
-        for (var i=0; i<numParams; i++) {
-          var param = params.objectAt(i);
-          if (param.get('id') === paramName) {
-            paramValue = param.get('value');
-            break;
-          }
+      var numParams = params.get('length');
+      for (var i=0; i<numParams; i++) {
+        var param = params.objectAt(i);
+        if (param.get('id') === paramName) {
+          paramValue = param.get('value');
+          break;
         }
+      }
     }
     return paramValue;
   },
