@@ -54,10 +54,12 @@
     "express": "^4.13.0",
     "glob": "^4.5.3",
     "morgan": "^1.6.0",
-    "phantomjs": "~1.9.18"
+    "phantomjs": "~1.9.18",
+    "eslint": "^2.9.0"
   },
   "ember-addon": {
     "paths": [
+      "lib/eslint-runner",
       "lib/copy-assets"
     ]
   }
