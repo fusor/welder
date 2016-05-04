@@ -1,7 +1,7 @@
 language: ruby
 
-#rvm:
-  #- 2.2.4
+rvm:
+  - 2.2.4
 
 branches:
  only:
@@ -15,13 +15,12 @@ notifications:
 
 install: ./.travis.sh install
 
-#before_script: ./.travis.sh migrate
+before_script: ./.travis.sh migrate
 
 script:
-  - ./.travis.sh ember-run
- #- gem install rubocop -v 0.35.1 && rubocop
- #- cd ../foreman
- #- rake test:fusor
+ - gem install rubocop -v 0.35.1 && rubocop
+ - pushd ../foreman && rake test:fusor && popd
+ - ./.travis.sh ember-run
 
-#services:
-  #- postgresql
+services:
+  - postgresql
