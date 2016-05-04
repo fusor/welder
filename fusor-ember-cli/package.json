@@ -61,5 +61,8 @@
       "lib/eslint-runner",
       "lib/copy-assets"
     ]
+  },
+  "dependencies": {
+    "eslint": "^2.9.0"
   }
 }

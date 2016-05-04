@@ -1,13 +1,31 @@
 //var fs = require('fs');
 //var path = require('path');
 //var spawn = require('child_process').spawn;
+var assert = require('assert');
+var CLIEngine = require('eslint').CLIEngine;
 
 module.exports = {
   name: 'eslint-runner',
 
   preBuild: function(result) {
     console.log('NSK -> preBuild');
-    throw 'AHH something went wrong.'
+    assert(CLIEngine);
+
+    console.log('Running eslint against the following dir: ');
+
+    var cli = new CLIEngine({
+      configFile: '.eslintrc.js'
+    });
+
+    var report = cli.executeOnFiles(['app']);
+    console.log('Errors occurred during linting -> ', report.errorCount);
+
+    if(report.errorCount !== 0) {
+      console.log('eslint did not pass, hard failing');
+      throw 'Dude, your eslint broke stuff';
+    } else {
+      console.log('eslint passed! Continuing with ember build...');
+    }
   }
   //outputReady: function(result) {
     //const BUILT_CSS_FILES = [

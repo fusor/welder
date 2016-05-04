@@ -15,12 +15,13 @@ notifications:
 
 install: ./.travis.sh install
 
-before_script: ./.travis.sh migrate
+#before_script: ./.travis.sh migrate
 
 script: 
- - gem install rubocop -v 0.35.1 && rubocop
- - cd ../foreman
- - rake test:fusor
+  - echo 0
+ #- gem install rubocop -v 0.35.1 && rubocop
+ #- cd ../foreman
+ #- rake test:fusor
 
-services:
-  - postgresql
+#services:
+  #- postgresql
