@@ -8,7 +8,7 @@ module Utils
         @application     = params[:application]
         @provider        = params[:provider]
         @hostgroup       = params[:hostgroup]
-        @operatingsystem = params[:os] ||= 'RedHat 7.1'
+        @operatingsystem = params[:os] ||= 'RedHat 7.2'
         @architecture    = params[:arch] ||= 'x86_64'
         @ptable_name     = params[:ptable_name] ||= 'Kickstart default'
         @profile_name = "#{@deployment.label}-#{@application}"
@@ -209,7 +209,7 @@ module Utils
                        "operatingsystem_id" => Operatingsystem.find_by_title(@operatingsystem)['id'],
                        "domain_id" => 1,
                        "root_pass" => @deployment.openshift_root_password,
-                       "mac" => "admin"
+                       "mac" => ""
                       }.with_indifferent_access
       end
 
