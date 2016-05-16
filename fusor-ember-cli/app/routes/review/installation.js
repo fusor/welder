@@ -35,7 +35,7 @@ export default Ember.Route.extend({
       controller.set('reviewSubscriptions', this.modelFor('subscriptions/review-subscriptions'));
     } else {
       var reviewSubscriptions = model.get('subscriptions').filter(function(sub) {
-        return ((sub.get('quantity_to_add') > 0) && sub.get('source') == 'added');
+        return (sub.get('source') == 'added');
       });
       controller.set('reviewSubscriptions', reviewSubscriptions);
       controller.set('hasSubscriptionsToAttach', reviewSubscriptions.get('length') > 0);
