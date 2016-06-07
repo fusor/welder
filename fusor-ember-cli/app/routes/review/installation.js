@@ -91,8 +91,6 @@ export default Ember.Route.extend(NeedsExistingManifestHelpers, {
     controller.set('validationWarnings', []);
 
     if (!model.get('isStarted')) {
-      // the PUT request from saveDeployment was firing too late and the server was syncing/validating stale data.
-      // the model.save ensures the server has the most recent version of deployment before proceeding.
       controller.set('showSpinner', true);
       this.validate()
         .then(() => this.validateDiscoveredHostsPoweredOn())
@@ -113,7 +111,8 @@ export default Ember.Route.extend(NeedsExistingManifestHelpers, {
     let deploymentId = this.get('controller.model.id');
     let token = Ember.$('meta[name="csrf-token"]').attr('content');
     let validationErrors = controller.get('validationErrors');
-    controller.set('spinnerTextMessage', "Validating deployment");
+
+    controller.set('spinnerTextMessage', "Validating deployment...");
 
     return request({
       url: `/fusor/api/v21/deployments/${deploymentId}/validate`,
@@ -125,42 +124,71 @@ export default Ember.Route.extend(NeedsExistingManifestHelpers, {
       },
       data: {}
     }).then(response => {
-       if (Ember.isPresent(response.validation)) {
-         controller.set('validationErrors', response.validation.errors);
-         controller.set('validationWarnings', response.validation.warnings);
-       }
-    })
+      if (Ember.isPresent(response.validation)) {
+        controller.set('validationErrors', response.validation.errors);
+        controller.set('validationWarnings', response.validation.warnings);
+      }
+    });
   },
 
   validateDiscoveredHostsPoweredOn() {
     let controller = this.get('controller');
     let deployment = this.get('controller.model');
     let token = Ember.$('meta[name="csrf-token"]').attr('content');
+    let hostsPromises = {};
+
     if (!deployment.get('deploy_rhev') || Ember.isPresent(controller.get('validationErrors'))) {
       return Ember.RSVP.Promise.resolve('all discovered hosts are powered on');
     }
 
-    deployment.get('discovered_hosts').then(function(results) {
-      var discoveredHostIds = results.getEach('id');
-      discoveredHostIds.push(deployment.get('rhev_engine_host_id'));
+    hostsPromises.hypervisors = deployment.get('discovered_hosts');
+    if (!deployment.get('rhev_is_self_hosted')) {
+      hostsPromises.engine = deployment.get('discovered_host');
+    }
+
+    return Ember.RSVP.hash(hostsPromises).then(results => {
+      let powerValidationPromises = {};
+
       controller.set('showSpinner', true);
-      controller.set('spinnerTextMessage', controller.get('spinnerTextMessage') + " and ensuring discovered hosts are powered on");
-      discoveredHostIds.forEach(function (hostId) {
-        request({
-          url: `/api/v2/discovered_hosts/${hostId}/refresh_facts`,
-          type: "PUT",
-          headers: {
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-            "X-CSRF-Token": token
-          },
-          data: {}
-        }).catch(error => {
-            controller.set('showSpinner', false);
-            console.log('error', error);
-            controller.set('errorMsg', 'Discovered host id ' + hostId + ' selected for RHEV deployment is turned off');
-            controller.set('showErrorMessage', true);
-        });
+      controller.set('spinnerTextMessage', 'Validating discovered hosts are powered on');
+
+      results.hypervisors.forEach(discoveredHost => {
+        powerValidationPromises[discoveredHost.get('name')] = this.hostIsPoweredOn(discoveredHost);
+      });
+
+      if (results.engine) {
+        powerValidationPromises[results.engine.get('name')] = this.hostIsPoweredOn(results.engine);
+      }
+
+      return Ember.RSVP.hash(powerValidationPromises).then(results => {
+        let powerValidationErrors = [];
+
+        for (let hostname in results) {
+          if (results.hasOwnProperty(hostname) && !results[hostname]) {
+            powerValidationErrors.push(`Discovered host ${hostname} selected for RHEV deployment is turned off`);
+          }
+        }
+
+        controller.set('validationErrors', powerValidationErrors);
+      });
+    });
+  },
+
+  hostIsPoweredOn(host) {
+    return new Ember.RSVP.Promise((resolve, reject) => {
+      request({
+        url: `/api/v2/discovered_hosts/${host.get('id')}/refresh_facts`,
+        type: 'PUT',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': Ember.$('meta[name="csrf-token"]').attr('content')
+        },
+        data: {}
+      }).then(result => {
+        resolve(true);
+      }).catch(error => {
+        resolve(false);
       });
     });
   },
@@ -175,15 +203,15 @@ export default Ember.Route.extend(NeedsExistingManifestHelpers, {
       return Ember.RSVP.Promise.resolve('no OpenStack sync needed');
     }
 
-    controller.set('spinnerTextMessage', controller.get('spinnerTextMessage') + " and syncing OpenStack");
+    controller.set('spinnerTextMessage', 'Syncing OpenStack...');
 
     return request({
       url: `/fusor/api/v21/openstack_deployments/${openstack_deployment.get('id')}/sync_openstack`,
-      type: "POST",
+      type: 'POST',
       headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-        "X-CSRF-Token": token
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': token
       }
     });
   }
