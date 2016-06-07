@@ -95,6 +95,7 @@ export default Ember.Route.extend(NeedsExistingManifestHelpers, {
       // the model.save ensures the server has the most recent version of deployment before proceeding.
       controller.set('showSpinner', true);
       this.validate()
+        .then(() => this.validateDiscoveredHostsPoweredOn())
         .then(() => this.syncOpenStack())
         .catch(error => {
           console.log('error', error);
@@ -112,8 +113,7 @@ export default Ember.Route.extend(NeedsExistingManifestHelpers, {
     let deploymentId = this.get('controller.model.id');
     let token = Ember.$('meta[name="csrf-token"]').attr('content');
     let validationErrors = controller.get('validationErrors');
-
-    controller.set('spinnerTextMessage', "Validating deployment...");
+    controller.set('spinnerTextMessage', "Validating deployment");
 
     return request({
       url: `/fusor/api/v21/deployments/${deploymentId}/validate`,
@@ -125,8 +125,43 @@ export default Ember.Route.extend(NeedsExistingManifestHelpers, {
       },
       data: {}
     }).then(response => {
-      controller.set('validationErrors', response.validation.errors);
-      controller.set('validationWarnings', response.validation.warnings);
+       if (Ember.isPresent(response.validation)) {
+         controller.set('validationErrors', response.validation.errors);
+         controller.set('validationWarnings', response.validation.warnings);
+       }
+    })
+  },
+
+  validateDiscoveredHostsPoweredOn() {
+    let controller = this.get('controller');
+    let deployment = this.get('controller.model');
+    let token = Ember.$('meta[name="csrf-token"]').attr('content');
+    if (!deployment.get('deploy_rhev') || Ember.isPresent(controller.get('validationErrors'))) {
+      return Ember.RSVP.Promise.resolve('all discovered hosts are powered on');
+    }
+
+    deployment.get('discovered_hosts').then(function(results) {
+      var discoveredHostIds = results.getEach('id');
+      discoveredHostIds.push(deployment.get('rhev_engine_host_id'));
+      controller.set('showSpinner', true);
+      controller.set('spinnerTextMessage', controller.get('spinnerTextMessage') + " and ensuring discovered hosts are powered on");
+      discoveredHostIds.forEach(function (hostId) {
+        request({
+          url: `/api/v2/discovered_hosts/${hostId}/refresh_facts`,
+          type: "PUT",
+          headers: {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "X-CSRF-Token": token
+          },
+          data: {}
+        }).catch(error => {
+            controller.set('showSpinner', false);
+            console.log('error', error);
+            controller.set('errorMsg', 'Discovered host id ' + hostId + ' selected for RHEV deployment is turned off');
+            controller.set('showErrorMessage', true);
+        });
+      });
     });
   },
 
@@ -140,7 +175,7 @@ export default Ember.Route.extend(NeedsExistingManifestHelpers, {
       return Ember.RSVP.Promise.resolve('no OpenStack sync needed');
     }
 
-    controller.set('spinnerTextMessage', "Syncing OpenStack...");
+    controller.set('spinnerTextMessage', controller.get('spinnerTextMessage') + " and syncing OpenStack");
 
     return request({
       url: `/fusor/api/v21/openstack_deployments/${openstack_deployment.get('id')}/sync_openstack`,
