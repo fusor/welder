@@ -175,7 +175,7 @@ module Fusor
       end
 
       def validate_nfs_server(deployment, address)
-        cmd = "showmount #{address}"
+        cmd = "timeout -k 5 5 showmount #{address}"
         status, output = Utils::Fusor::CommandUtils.run_command(cmd)
 
         if status != 0
