@@ -29,7 +29,12 @@ module Utils
         #
         output = stdout_err.readlines
 
-        if status > 0
+        # In cases where we kill a process before it has finished executing, status is not set.
+        # This is used to avoid waiting for long system timeouts.
+        if !status
+          Rails.logger.error "Error running command: #{cmd}"
+          Rails.logger.error "Process was unexpectedly killed... process may have timed out"
+        elsif status > 0
           Rails.logger.error "Error running command: #{cmd}"
           Rails.logger.error "Status code: #{status}"
           Rails.logger.error "Command output: #{output}"
