@@ -8,9 +8,7 @@
   {{/if}}
 
   {{#if showValidationError}}
-    {{#each validationMessages as |message|}}
-        <p class="error errorForValidation">{{message}}</p>
-    {{/each}}
+    <p class="error errorForValidation">{{validationMessages}}</p>
 
     <p class="error errorForValidation">{{errors.name}}</p>
   {{/if}}

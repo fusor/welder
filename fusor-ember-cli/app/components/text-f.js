@@ -55,7 +55,7 @@ export default Ember.Component.extend({
     }
 
     let validator = this.get('validator');
-    return validator ? validator.getMessages(this.get('value')) : [];
+    return validator ? validator.getMessages(this.get('value')).join('') : null;
   }),
 
   setOrigValue: Ember.on('didInsertElement', function() {
