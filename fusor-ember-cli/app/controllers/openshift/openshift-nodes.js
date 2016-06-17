@@ -1,6 +1,7 @@
 import Ember from 'ember';
 import NeedsDeploymentMixin from "../../mixins/needs-deployment-mixin";
 import OpenshiftMixin from "../../mixins/openshift-mixin";
+import { AllValidator, PresenceValidator, NumberValidator, IntegerValidator } from '../../utils/validators';
 
 export default Ember.Controller.extend(NeedsDeploymentMixin, OpenshiftMixin, {
 
@@ -45,17 +46,41 @@ export default Ember.Controller.extend(NeedsDeploymentMixin, OpenshiftMixin, {
     return (Ember.isPresent(this.get('numNodes')) && Ember.isPresent(this.get('storageSize')));
   }),
 
+  positiveIntegerValidator: AllValidator.create({
+    validators: [
+      IntegerValidator.create({}),
+      NumberValidator.create({min: 1})
+    ]
+  }),
+
   actions: {
     openshiftLocationChanged() {},
 
-    numNodesChanged(numNodes) {
-      var numMasterNodes = 1; // for non-HA scerios
-      this.set('numMasterNodes', numMasterNodes);
-      this.set('numWorkerNodes', numNodes - numMasterNodes);
+    numMasterNodesChanged(numNodes) {
+      this.set('isCustomNumMasterNodes', false);
+      this.set('numMasterNodes', numNodes);
+    },
+
+    numWorkerNodesChanged(numNodes) {
+      this.set('isCustomNumWorkerNodes', false);
+      this.set('numWorkerNodes', numNodes);
     },
 
     storageSizeChanged(storageSize) {
+      this.set('isCustomStorageSize', false);
       this.set('model.openshift_storage_size', storageSize);
+    },
+
+    showCustomNumMasterNodes() {
+      this.set('isCustomNumMasterNodes', true);
+    },
+
+    showCustomNumWorkerNodes() {
+      this.set('isCustomNumWorkerNodes', true);
+    },
+
+    showCustomStorageSize() {
+      this.set('isCustomStorageSize', true);
     }
   }
 
