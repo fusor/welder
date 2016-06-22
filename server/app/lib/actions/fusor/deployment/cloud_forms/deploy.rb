@@ -82,6 +82,9 @@ module Actions
 
               plan_action(::Actions::Fusor::Deployment::CloudForms::AddOspProvider,
                           deployment) if deployment.deploy_openstack
+
+              plan_action(::Actions::Fusor::Deployment::CloudForms::RegisterToSatellite,
+                         deployment)
             end
           end
 
