@@ -378,3 +378,10 @@
           - :file: "/var/log/foreman-proxy/proxy.log"
           - :file: "/var/log/candlepin/candlepin.log"
           - :file: "/var/log/messages"
+    :silenced_logging:
+      :paths:
+        - "api/v21/foreman_tasks"
+        - "fusor/api/v21/unlogged"
+        - "katello/cp_proxy"
+        - "katello/cp_rest"
+        - "foreman-tasks/dynflow"

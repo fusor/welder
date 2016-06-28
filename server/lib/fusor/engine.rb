@@ -1,3 +1,5 @@
+require 'fusor/middleware/silenced_logger'
+
 module Fusor
   class Engine < ::Rails::Engine
     isolate_namespace Fusor
@@ -9,19 +11,13 @@ module Fusor
     config.autoload_paths += Dir["#{config.root}/app/serializers"]
     config.autoload_paths += Dir["#{config.root}/lib/modules"]
 
-    initializer 'fusor.silenced_logger', :after => :build_middleware_stack do |app|
-      # Add additional paths below if you want logging silenced
-      #  we want the polling of ForemanTasksController#show silenced to reduce noise in logs
-      silenced_paths = ["api/v21/foreman_tasks", "fusor/api/v21/unlogged"]
-
-      if ::Katello.respond_to? 'config' and ::Katello.config.respond_to? 'logging' and ::Katello.config.logging.respond_to? 'ignored_paths'
-        for sil_path in silenced_paths
-          ::Katello.config.logging.ignored_paths.push(sil_path)
-        end
-        Rails.logger.warn "fusor_server has added '#{silenced_paths}' to 'Katello.config.logging.ignored_paths': #{::Katello.config.logging.ignored_paths}"
-      else
-        Rails.logger.warn "fusor_server did not find 'Katello.config.logging.ignored_paths' available, skipping silence of logs for '#{silenced_paths}'"
-      end
+    #
+    # Katello used to include SilencedLogger, then removed with below commit in Sat 6.2
+    #   https://github.com/Katello/katello/pull/5253/files#diff-d7603c91d0c428042a865667c2ad4e02L1
+    #
+    initializer 'fusor.silenced_logger', :before => :build_middleware_stack do |app|
+      app.config.middleware.swap Rails::Rack::Logger, Fusor::Middleware::SilencedLogger, {}
+      Rails.logger.info "Swapped Rails::Rack::Logger with Fusor::Middleware::SilencedLogger"
     end
 
     # Add any db migrations
