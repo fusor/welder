@@ -1,8 +1,14 @@
 import Ember from 'ember';
+import InfinityRoute from "ember-infinity/mixins/route";
 
-export default Ember.Route.extend({
+export default Ember.Route.extend(InfinityRoute, {
   model() {
-    return this.store.findAll('deployment');
+    return this.infinityModel("deployment", { perPage: 20, startingPage: 1 });
+  },
+
+  setupController(controller, model) {
+    controller.set('model', model);
+    controller.set('totalDeployments', model.get('meta.total'));
   },
 
   actions: {

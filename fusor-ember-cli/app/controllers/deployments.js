@@ -22,6 +22,10 @@ export default Ember.Controller.extend({
     } else {
       return sortedDeployments;
     }
+  }),
+
+  isFiltered: Ember.computed('searchDeploymentString', function () {
+    return Ember.isPresent(this.get('searchDeploymentString'));
   })
 
 });

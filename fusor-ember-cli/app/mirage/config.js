@@ -7,7 +7,15 @@ export default function() {
     return {};
   });
 
-  this.get('/fusor/api/v21/deployments');
+  this.get('/fusor/api/v21/deployments', function(db, request) {
+    return {deployments: db.deployments,
+            meta: {
+              total: 107,
+              total_pages: 5
+            }
+           };
+  });
+
   this.post('/fusor/api/v21/deployments');
   this.get('/fusor/api/v21/deployments/:id');
   this.put('/fusor/api/v21/deployments/:id');

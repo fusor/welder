@@ -19,7 +19,9 @@
    </div>
 </div>
 </form>
-<br />
+<p class='displaying-entries'>
+  {{if isFiltered 'Found' 'Displaying'}} <strong>{{filteredDeployments.length}} of {{totalDeployments}}</strong> entries
+</p>
 <table class="table table-bordered table-striped small deployments-table">
   <thead>
     <tr>
@@ -38,11 +40,17 @@
   </tbody>
 </table>
 
-<p class='displaying-entries'>
-  Displaying <strong>{{filteredDeployments.length}} of {{model.length}}</strong> entries
-</p>
+{{#infinity-loader infinityModel=model destroyOnInfinity=true}}
+  <div class="spinner spinner-md spinner-inline"></div>
+  <span class='spinner-text'>
+    Loading more deployments ....
+  </span>
+  <br />
+{{/infinity-loader}}
 
-{{outlet}}
+<p class='displaying-entries'>
+  {{if isFiltered 'Found' 'Displaying'}} <strong>{{filteredDeployments.length}} of {{totalDeployments}}</strong> entries
+</p>
 
 {{delete-deployment-modal openModal=openModal
                           deployment=deploymentInModal
