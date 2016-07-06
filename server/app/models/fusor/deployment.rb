@@ -57,7 +57,7 @@ module Fusor
     before_validation :update_label, :ensure_openstack_deployment, on: :create  # we validate on create, so we need to do it before those validations
     before_save :update_label, :ensure_openstack_deployment, on: :update        # but we don't validate on update, so we need to call before_save
 
-    scoped_search :on => [:id, :name], :complete_value => true
+    scoped_search :on => [:id, :name, :updated_at], :complete_value => true
 
     # used by ember-data for .find('model', {id: [1,2,3]})
     scope :by_id, proc { |n| where(:id => n) if n.present? }

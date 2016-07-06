@@ -21,9 +21,9 @@ export default Ember.Mixin.create({
     return ('id_' + this.get('host.id'));
   }),
 
-  selectedIds: Ember.computed('model.[]', function () {
-    if (this.get('model')) {
-      return this.get('model').getEach("id");
+  selectedIds: Ember.computed('hypervisorHosts.[]', function () {
+    if (this.get('hypervisorHosts')) {
+      return this.get('hypervisorHosts').getEach("id");
     }
   }),
 

@@ -16,7 +16,7 @@
               <div class='rhev-search-box'>
                   {{input type='text' class='form-control rhev-search-input'
                                placeholder=' Search ...'
-                               value=searchString
+                               value=search
                                disabled=isStarted}}
               </div>
             </div>
@@ -24,14 +24,14 @@
 
           <div class='col-md-7 text-right'>
 
-            {{model.length}} selected
+            {{model.hypervisor_hosts.length}} selected
 
             {{#if isNotStarted}}
               <span class='rhev-select-all'>
                 {{#if isAllChecked}}
-                  <a {{action 'setUncheckAll'}}>Deselect all ({{availableHosts.length}})</a>
+                  <a {{action 'setUncheckAll'}}>Deselect all ({{allDiscoveredHosts.length}})</a>
                 {{else}}
-                  <a {{action 'setCheckAll'}}>Select all ({{availableHosts.length}})</a>
+                  <a {{action 'setCheckAll'}}>Select all ({{allDiscoveredHosts.length}})</a>
                 {{/if}}
               </span>
             {{/if}}
@@ -68,7 +68,7 @@
         <tbody>
         {{#each filteredHosts as |host|}}
            {{tr-hypervisor host=host
-                           model=model
+                           hypervisorHosts=model.hypervisor_hosts
                            isCustomScheme=isCustomScheme
                            isMac=isMac
                            isHypervisorN=isHypervisorN
@@ -85,6 +85,12 @@
         {{/each}}
         </tbody>
       </table>
+
+      {{pagination-footer routeName='hypervisor.discovered-host'
+                          totalCnt=totalCnt
+                          pageNumber=pageNumber
+                          totalPages=totalPages
+                          pageRange=pageRange}}
 
     {{/if}}
 

@@ -1,12 +1,13 @@
 import Ember from 'ember';
 import NeedsDeploymentMixin from "../../mixins/needs-deployment-mixin";
+import PaginationControllerMixin from "../../mixins/pagination-controller-mixin";
 import {
   AllValidator,
   PresenceValidator,
   AlphaNumericDashUnderscoreValidator
 } from '../../utils/validators';
 
-export default Ember.Controller.extend(NeedsDeploymentMixin, {
+export default Ember.Controller.extend(NeedsDeploymentMixin, PaginationControllerMixin, {
 
   selectedRhevEngine: Ember.computed.alias("deploymentController.model.discovered_host"),
   rhevIsSelfHosted: Ember.computed.alias("deploymentController.model.rhev_is_self_hosted"),
@@ -32,30 +33,16 @@ export default Ember.Controller.extend(NeedsDeploymentMixin, {
     return (this.get('hostNamingScheme') === 'hypervisorN');
   }),
 
-  // Filter out hosts selected as Engine
-  availableHosts: Ember.computed('allDiscoveredHosts.[]', 'hypervisorModelIds.[]', function() {
-    // TODO: Ember.computed.filter() caused problems. error item.get is not a function
-    var self = this;
-    var allDiscoveredHosts = this.get('allDiscoveredHosts');
-    if (this.get('allDiscoveredHosts')) {
-      return allDiscoveredHosts.filter(function(item) {
-        if (self.get('hypervisorModelIds')) {
-          return (item.get('id') !== self.get('selectedRhevEngine.id'));
-        }
-      });
-    }
-  }),
-
   // same as Engine. TODO. put it mixin
-  filteredHosts: Ember.computed('availableHosts.[]', 'searchString', 'isStarted', function(){
-    var searchString = this.get('searchString');
-    var rx = new RegExp(searchString, 'gi');
-    var availableHosts = this.get('availableHosts');
+  filteredHosts: Ember.computed('allDiscoveredHosts.[]', 'search', 'isStarted', function(){
+    var search = this.get('search');
+    var rx = new RegExp(search, 'gi');
+    var allDiscoveredHosts = this.get('allDiscoveredHosts');
 
     if (this.get('isStarted')) {
-      return this.get('model');
-    } else if (availableHosts.get('length') > 0) {
-      return availableHosts.filter(function(record) {
+      return this.get('model.hypervisor_hosts');
+    } else if (allDiscoveredHosts.get('length') > 0) {
+      return allDiscoveredHosts.filter(function(record) {
         return record.get('name').match(rx) ||
           record.get('memory_human_size').match(rx) ||
           record.get('disks_human_size').match(rx) ||
@@ -63,14 +50,13 @@ export default Ember.Controller.extend(NeedsDeploymentMixin, {
           record.get('mac').match(rx);
       });
     } else {
-      return availableHosts;
+      return allDiscoveredHosts;
     }
   }),
 
-  hypervisorModelIds: Ember.computed('model.[]', 'selectedRhevEngine', function() {
-    if (this.get('model')) {
-      var allIds = this.get('model').getEach('id');
-      return allIds.removeObject(this.get('selectedRhevEngine').get('id'));
+  hypervisorModelIds: Ember.computed('model.hypervisor_hosts.[]', function() {
+    if (Ember.isPresent(this.get('model.hypervisor_hosts'))) {
+      return this.get('model.hypervisor_hosts').getEach('id');
     } else {
       return [];
     }
@@ -82,8 +68,8 @@ export default Ember.Controller.extend(NeedsDeploymentMixin, {
     return this.get('cntSelectedHypervisorHosts') === 1 ? 'host' : 'hosts';
   }),
 
-  isAllChecked: Ember.computed('availableHosts.[]', 'cntSelectedHypervisorHosts', function() {
-    return (this.get('cntSelectedHypervisorHosts') === this.get('availableHosts.length'));
+  isAllChecked: Ember.computed('allDiscoveredHosts.[]', 'cntSelectedHypervisorHosts', function() {
+    return (this.get('cntSelectedHypervisorHosts') === this.get('allDiscoveredHosts.length'));
   }),
 
   observeAllChecked: Ember.observer('allChecked', function(row) {
@@ -135,16 +121,16 @@ export default Ember.Controller.extend(NeedsDeploymentMixin, {
   actions: {
 
     setCheckAll() {
-      this.get('model').setObjects([]);
+      this.get('model.hypervisor_hosts').setObjects([]);
       this.set('checkAll', true);
       this.set('uncheckAll', false);
-      this.get('model').addObjects(this.get('availableHosts'));
+      this.get('model.hypervisor_hosts').addObjects(this.get('allDiscoveredHosts'));
     },
 
     setUncheckAll() {
       this.set('uncheckAll', true);
       this.set('checkAll', false);
-      this.get('model').setObjects([]);
+      this.get('model.hypervisor_hosts').setObjects([]);
     },
 
     openNamingSchemeModal() {

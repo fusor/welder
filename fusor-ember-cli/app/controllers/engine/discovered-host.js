@@ -1,11 +1,12 @@
 import Ember from 'ember';
 import NeedsDeploymentMixin from "../../mixins/needs-deployment-mixin";
+import PaginationControllerMixin from "../../mixins/pagination-controller-mixin";
 
-export default Ember.Controller.extend(NeedsDeploymentMixin, {
+export default Ember.Controller.extend(NeedsDeploymentMixin, PaginationControllerMixin, {
 
   rhevController: Ember.inject.controller('rhev'),
 
-  selectedRhevEngineHost: Ember.computed.alias("model"),
+  selectedRhevEngineHost: Ember.computed.alias("model.engine_host"),
   rhevIsSelfHosted: Ember.computed.alias("deploymentController.model.rhev_is_self_hosted"),
 
   hypervisorModelIds: Ember.computed('deploymentController.model.discovered_hosts.[]', function() {
@@ -20,41 +21,27 @@ export default Ember.Controller.extend(NeedsDeploymentMixin, {
     }
   }),
 
-  // Filter out hosts selected as Hypervisor
-  availableHosts: Ember.computed('allDiscoveredHosts.[]', 'hypervisorModelIds.[]', function() {
-    // TODO: Ember.computed.filter() caused problems. error item.get is not a function
-    var self = this;
+  filteredHosts: Ember.computed('allDiscoveredHosts.[]', 'search', 'isStarted', function(){
+    var search = this.get('search');
+    var rx = new RegExp(search, 'gi');
     var allDiscoveredHosts = this.get('allDiscoveredHosts');
-    if (this.get('allDiscoveredHosts')) {
-      return allDiscoveredHosts.filter(function(item) {
-        if (self.get('hypervisorModelIds')) {
-          return !(self.get('hypervisorModelIds').contains(item.get('id')));
-        }
-      });
-    }
-  }),
-
-  filteredHosts: Ember.computed('availableHosts.[]', 'searchString', 'isStarted', function(){
-    var searchString = this.get('searchString');
-    var rx = new RegExp(searchString, 'gi');
-    var availableHosts = this.get('availableHosts');
 
     if (this.get('isStarted')) {
       return Ember.A([this.get('model')]);
-    } else if (availableHosts.get('length') > 0) {
-      return availableHosts.filter(function(record) {
+    } else if (allDiscoveredHosts.get('length') > 0) {
+      return allDiscoveredHosts.filter(function(record) {
         return (record.get('name').match(rx) || record.get('memory_human_size').match(rx) ||
                 record.get('disks_human_size').match(rx) || record.get('subnet_to_s').match(rx) ||
                 record.get('mac').match(rx)
                );
       });
     } else {
-      return availableHosts;
+      return allDiscoveredHosts;
     }
   }),
 
-  numSelected: Ember.computed('model.id', function() {
-    return (this.get('model.id')) ? 1 : 0;
+  numSelected: Ember.computed('model.engine_host.id', function() {
+    return (this.get('model.engine_host.id')) ? 1 : 0;
   }),
 
   isSelectedEngineHostnameInvalid: false,

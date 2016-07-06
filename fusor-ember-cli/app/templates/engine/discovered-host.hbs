@@ -16,14 +16,14 @@
               <div class='rhev-search-box'>
                   {{input type='text' class='form-control rhev-search-input'
                                placeholder=' Search ...'
-                               value=searchString disabled=isStarted}}
+                               value=search disabled=isStarted}}
               </div>
             </div>
           </div>
 
           <div class='col-md-7 text-right'>
 
-            {{numSelected}} selected
+            {{numSelected}} selected &nbsp;
 
             <button class='btn btn-default btn-sm' {{action 'refreshDiscoveredHosts'}}
                     disabled={{isStarted}}>
@@ -58,6 +58,12 @@
           {{/each}}
         </tbody>
       </table>
+
+      {{pagination-footer routeName='engine.discovered-host'
+                          totalCnt=totalCnt
+                          pageNumber=pageNumber
+                          totalPages=totalPages
+                          pageRange=pageRange}}
 
     {{/if}}
 

@@ -32,9 +32,9 @@ export default Ember.Component.extend(TrEngineHypervisorMixin, {
 
   addOrRemoveHypervisor: Ember.observer('isSelectedAsHypervisor', function() {
     if (this.get('isSelectedAsHypervisor')) {
-      this.get('model').addObject(this.get('host'));
+      this.get('hypervisorHosts').addObject(this.get('host'));
     } else {
-      this.get('model').removeObject(this.get('host'));
+      this.get('hypervisorHosts').removeObject(this.get('host'));
     }
   }),
 
