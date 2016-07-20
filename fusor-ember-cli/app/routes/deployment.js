@@ -24,11 +24,10 @@ export default Ember.Route.extend(DeploymentRouteMixin, {
       }
     });
 
-    model.loadOpenshiftDefaults();
-    model.loadCloudformsDefaults();
-
     this.loadDefaultDomainName(controller);
     this.loadUpstreamConsumer(controller, model);
+
+    this.loadDefaultData(model);
   },
 
   loadDefaultDomainName(controller) {
@@ -52,6 +51,17 @@ export default Ember.Route.extend(DeploymentRouteMixin, {
         controller.set('model.upstream_consumer_name', results.owner_details.upstreamConsumer.name);
       }
     });
+  },
+
+  loadDefaultData(model, opt) {
+    Ember.RSVP.all([
+      request('/api/v2/settings?search=openshift').then(settings => {
+        model.loadOpenshiftDefaults(settings['results'], opt);
+      }),
+      request('/api/v2/settings?search=cloudforms').then(settings => {
+        model.loadCloudformsDefaults(settings['results'], opt);
+      })
+    ]);
   },
 
   actions: {
@@ -189,6 +199,10 @@ export default Ember.Route.extend(DeploymentRouteMixin, {
     refreshModel() {
       console.log('refreshModelOnDeploymentRoute');
       return this.refresh();
+    },
+
+    loadDefaultData(model, opt) {
+      this.loadDefaultData(model, opt);
     }
   }
 });

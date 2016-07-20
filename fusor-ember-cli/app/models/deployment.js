@@ -211,57 +211,47 @@ export default DS.Model.extend(UsesOseDefaults, {
     }
   },
 
-  loadOpenshiftDefaults(opt) {
-    const shouldReset = opt && (opt.reset || false);
-
+  loadOpenshiftDefaults(settings, opt) {
     if (this.get('deploy_openshift')) {
-      return request('/api/v2/settings?search=openshift').then(settings => {
-        const results = settings['results'];
+      const shouldReset = opt && (opt.reset || false);
 
-        [
-          'openshift_master_vcpu',
-          'openshift_master_ram',
-          'openshift_master_disk',
-          'openshift_node_vcpu',
-          'openshift_node_ram',
-          'openshift_node_disk'
-        ].forEach(prop => {
-          this.handleReset(shouldReset, prop);
-          this.setOpenshiftDefault(
-            prop, results.findBy('name', prop).value);
-        });
-
-        this.handleReset(shouldReset, 'openshift_number_master_nodes');
-        this.handleReset(shouldReset, 'openshift_number_worker_nodes');
-        this.handleReset(shouldReset, 'openshift_storage_size');
-
+      [
+        'openshift_master_vcpu',
+        'openshift_master_ram',
+        'openshift_master_disk',
+        'openshift_node_vcpu',
+        'openshift_node_ram',
+        'openshift_node_disk'
+      ].forEach(prop => {
+        this.handleReset(shouldReset, prop);
         this.setOpenshiftDefault(
-          'openshift_number_master_nodes', 1);
-        this.setOpenshiftDefault(
-          'openshift_number_worker_nodes', 1);
-        this.setOpenshiftDefault(
-          'openshift_storage_size', 30);
+          prop, settings.findBy('name', prop).value);
       });
+
+      this.handleReset(shouldReset, 'openshift_number_master_nodes');
+      this.handleReset(shouldReset, 'openshift_number_worker_nodes');
+      this.handleReset(shouldReset, 'openshift_storage_size');
+
+      this.setOpenshiftDefault(
+        'openshift_number_master_nodes', 1);
+      this.setOpenshiftDefault(
+        'openshift_number_worker_nodes', 1);
+      this.setOpenshiftDefault(
+        'openshift_storage_size', 30);
     }
   },
 
-  loadCloudformsDefaults(opt) {
-    const shouldReset = opt && (opt.reset || false);
-
-    // GET from API v2 CFME settings for Foreman/Sat6 - if CFME is selected
+  loadCloudformsDefaults(settings, opt) {
     if (this.get('deploy_cfme')) {
-      return request('/api/v2/settings?search=cloudforms').then((settings) => {
-        // overwrite values for deployment since Sat6 settings is only place to change CFME VM requirements
-        const results = settings['results'];
+      const shouldReset = opt && (opt.reset || false);
 
-        [
-          'cloudforms_vcpu',
-          'cloudforms_ram',
-          'cloudforms_vm_disk_size',
-          'cloudforms_db_disk_size'
-        ].forEach(prop => {
-          this.set(prop, results.findBy('name', prop).value);
-        });
+      [
+        'cloudforms_vcpu',
+        'cloudforms_ram',
+        'cloudforms_vm_disk_size',
+        'cloudforms_db_disk_size'
+      ].forEach(prop => {
+        this.set(prop, settings.findBy('name', prop).value);
       });
     }
   }

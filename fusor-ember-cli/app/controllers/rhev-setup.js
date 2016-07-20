@@ -49,8 +49,6 @@ export default Ember.Controller.extend(NeedsDeploymentMixin, NeedsDiscoveredHost
     return deployment
       .save()
       .then(() => this.postDiscoveredHostIds(deployment, []))
-      .then(() => deployment.loadOpenshiftDefaults({reset: true}))
-      .then(() => deployment.loadCloudformsDefaults({reset: true}));
+      .then(() => this.send('loadDefaultData', deployment, {reset: true}));
   }
-
 });
