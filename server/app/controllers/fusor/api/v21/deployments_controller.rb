@@ -247,7 +247,7 @@ module Fusor
       end
       #############################################################
 
-      params.require(:deployment).permit(allowed)
+      params.require(:deployment).permit(*allowed)
     end
 
     def find_deployment
