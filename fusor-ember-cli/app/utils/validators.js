@@ -383,5 +383,6 @@ export {
   HostnameValidator,
   NfsPathValidator,
   GlusterPathValidator,
-  validateZipper
+  validateZipper,
+  NoSpacesValidator
 };
