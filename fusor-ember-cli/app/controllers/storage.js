@@ -1,6 +1,6 @@
 import Ember from 'ember';
-import request from 'ic-ajax';
-import NeedsDeploymentMixin from "../mixins/needs-deployment-mixin";
+import NeedsDeploymentMixin from '../mixins/needs-deployment-mixin';
+import ValidatesMounts from '../mixins/validates-mounts';
 import {
   AllValidator,
   PresenceValidator,
@@ -10,7 +10,7 @@ import {
   GlusterPathValidator
 } from '../utils/validators';
 
-export default Ember.Controller.extend(NeedsDeploymentMixin, {
+export default Ember.Controller.extend(NeedsDeploymentMixin, ValidatesMounts, {
   actions: {
     testMountPoint() {
       var deployment = this.get('model');
@@ -27,7 +27,7 @@ export default Ember.Controller.extend(NeedsDeploymentMixin, {
       };
 
       const validationPromises = {
-        storage: this.storageMountRequest(storageParams)
+        storage: this.fetchMountValidation(this.get('deploymentId'), storageParams)
       };
 
       if(checkExport) {
@@ -37,7 +37,10 @@ export default Ember.Controller.extend(NeedsDeploymentMixin, {
           type: this.get('model.rhev_storage_type')
         };
 
-        validationPromises.export = this.storageMountRequest(exportParams);
+        validationPromises.export = this.fetchMountValidation(
+          this.get('deploymentId'),
+          exportParams
+        );
       }
 
       if(checkHosted) {
@@ -47,7 +50,10 @@ export default Ember.Controller.extend(NeedsDeploymentMixin, {
           type: this.get('model.rhev_storage_type')
         };
 
-        validationPromises.hosted = this.storageMountRequest(hostedParams);
+        validationPromises.hosted = this.fetchMountValidation(
+          this.get('deploymentId'),
+          hostedParams
+        );
       }
 
       this.set('loadingSpinnerText', `Trying to mount storage paths...`);
@@ -124,20 +130,6 @@ export default Ember.Controller.extend(NeedsDeploymentMixin, {
           'Error occurred while attempting to validate storage paths');
       });
     }
-  },
-
-  storageMountRequest(params) {
-    const deploymentId = this.get('deploymentId');
-    return request({
-      url: `/fusor/api/v21/deployments/${deploymentId}/check_mount_point`,
-      type: 'GET',
-      data: params,
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': Ember.$('meta[name="csrf-token"]').attr('content')
-      }
-    });
   },
 
   deploymentId: Ember.computed.alias('deploymentController.model.id'),

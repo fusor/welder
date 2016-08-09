@@ -141,8 +141,8 @@ module Fusor
       begin
         mount_result = mount_storage(mount_address, mount_path, mount_type)
         render json: { :mounted => true, :is_empty => mount_result[:is_empty] }, status: 200
-      rescue Exception => e
-        render json: { :mounted => false }, status: 200
+      rescue
+        render json: { :mounted => false, :is_empty => false }, status: 200
       end
     end
 

@@ -473,6 +473,17 @@ module Fusor
       end
 
       test 'check_mount_point should return a 200 indicating mount is_empty if storage is empty' do
+        mock_stats = Object.new
+
+        def mock_stats.block_size
+          1024
+        end
+
+        def mock_stats.blocks_available
+          1024 * 1024
+        end
+
+        Sys::Filesystem.stubs(:stat).returns(mock_stats)
         Dir.stubs(:[]).returns([])
         Utils::Fusor::CommandUtils.stubs(:run_command).returns(0, :foo)
         response = JSON.parse(get(
@@ -483,6 +494,17 @@ module Fusor
       end
 
       test 'check_mount_point should return a 200 indicating mount is_empty == false if storage is NOT empty' do
+        mock_stats = Object.new
+
+        def mock_stats.block_size
+          1024
+        end
+
+        def mock_stats.blocks_available
+          1024 * 1024
+        end
+
+        Sys::Filesystem.stubs(:stat).returns(mock_stats)
         Dir.stubs(:[]).returns(['thecakeisalie'])
         Utils::Fusor::CommandUtils.stubs(:run_command).returns(0, :foo)
         response = JSON.parse(get(
