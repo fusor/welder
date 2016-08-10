@@ -23,10 +23,10 @@ module Actions
         # the WaitUntilProvisioned because it's not a polling action.
         middleware.use Actions::Fusor::Middleware::Timeout
 
-        def plan(hostid, wait_for_puppet = false)
+        def plan(hostid, wait_for_puppet = false, puppet_overrides = nil)
           super()
           sequence do
-            plan_self(host_id: hostid)
+            plan_self(host_id: hostid, puppet_overrides: puppet_overrides)
             if wait_for_puppet
               plan_action(::Actions::Fusor::Host::WaitForPuppet, hostid)
             end
@@ -63,8 +63,10 @@ module Actions
                  "\"Resume Deployment\" button to continue.")
           when Hash
             output[:installed_at] = event.fetch(:installed_at).to_s
+            apply_puppet_overrides host, input[:puppet_overrides]
           when Dynflow::Action::Skip
             output[:installed_at] = Time.now.utc.to_s
+            apply_puppet_overrides host, input[:puppet_overrides]
           else
             raise TypeError
           end
@@ -78,6 +80,24 @@ module Actions
           0.1
         end
 
+        def apply_puppet_overrides(host, puppet_overrides)
+          unless puppet_overrides.nil?
+            # Puppet overrides should be in the form:
+            # { puppetclass_id => { key => value }, puppetclass2_id => { key2 => value2}}
+            ::Fusor.log.debug "Applying host specific puppet overrides"
+            ::Fusor.log.debug puppet_overrides
+            puppet_overrides.each do |puppetclass_id, overrides|
+              puppetclass = ::Puppetclass.find puppetclass_id
+              overrides.each do |key, value|
+                if key == 'provisioning_interface'
+                  # This changes between when the task was called and now
+                  value = host.interfaces.where(:provision => true).try(:first).try(:identifier)
+                end
+                host.set_param_value_if_changed(puppetclass, key, value)
+              end
+            end
+          end
+        end
       end
     end
   end
