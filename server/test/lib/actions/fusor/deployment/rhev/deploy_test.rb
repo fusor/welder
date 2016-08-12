@@ -41,6 +41,7 @@ module Actions::Fusor::Deployment::Rhev
                                   hypervisor.id, true)
       end
     end
+
     test "plan call should schedule provision and wait actions for each host for self-hosted" do
       @deployment = fusor_deployments(:rhev_self_hosted)
       plan_action(@deploy, fusor_deployments(:rhev_self_hosted))
@@ -57,12 +58,11 @@ module Actions::Fusor::Deployment::Rhev
                                   TriggerProvisioning,
                                 @deployment,
                                 'RHEV-Self-hosted',
-                                first_host,
-                                {puppetclass_id => {:provisioning_interface => nil}})
+                                first_host)
       assert_action_planed_with(@deploy,
                                 WaitUntilProvisioned,
-                                first_host.id, true)
-
+                                first_host.id, true,
+                                {puppetclass_id => {:provisioning_interface => nil}})
       additional_hosts.each_with_index do |hypervisor, index|
         override = {
           puppetclass_id => {
@@ -75,10 +75,10 @@ module Actions::Fusor::Deployment::Rhev
                                   TriggerProvisioning,
                                   @deployment,
                                   'RHEV-Self-hosted',
-                                  hypervisor, override)
+                                  hypervisor)
         assert_action_planed_with(@deploy,
                                   WaitUntilProvisioned,
-                                  hypervisor.id, true)
+                                  hypervisor.id, true, override)
       end
     end
 

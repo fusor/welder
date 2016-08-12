@@ -35,34 +35,39 @@ module Actions
 
                 first_host_overrides = {
                   puppetclass_id => {
+                    # This is changed later (because the value changes between when the host is converted and when the build completes)
+                    # Just leaving this here for clarity
                     :provisioning_interface => first_host.interfaces.where(:provision => true).try(:first).try(:identifier)
                   }
                 }
                 plan_action(::Actions::Fusor::Host::TriggerProvisioning,
                             deployment,
                             "RHEV-Self-hosted",
-                            first_host, first_host_overrides)
+                            first_host)
 
                 plan_action(::Actions::Fusor::Host::WaitUntilProvisioned,
-                            first_host.id, true)
+                            first_host.id, true, first_host_overrides)
 
                 additional_hosts.each_with_index do |host, index|
-                  overrides = {
-                    puppetclass_id => {
-                     :host_id => (index + 2),
-                     :additional_host => true,
-                     :provisioning_interface => host.interfaces.where(:provision => true).try(:first).try(:identifier)
-                    }
-                  }
                   plan_action(::Actions::Fusor::Host::TriggerProvisioning,
                               deployment,
                               "RHEV-Self-hosted",
-                              host, overrides)
+                              host)
                 end
+
                 concurrence do
-                  additional_hosts.each do |host|
+                  additional_hosts.each_with_index do |host, index|
+                    overrides = {
+                      puppetclass_id => {
+                      :host_id => (index + 2),
+                      :additional_host => true,
+                      # This is changed later (because the value changes between when the host is converted and when the build completes)
+                      # Just leaving this here for clarity
+                      :provisioning_interface => host.interfaces.where(:provision => true).try(:first).try(:identifier)
+                      }
+                    }
                     plan_action(::Actions::Fusor::Host::WaitUntilProvisioned,
-                                host.id, true)
+                                host.id, true, overrides)
                   end
                 end
 
