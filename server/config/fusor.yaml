@@ -355,7 +355,7 @@
        - :name: "RHV-Engine"
          :os: "RedHat"
          :major: "7"
-         :minor: "2"
+         :minor: "3"
          :parent: :root_deployment
          :puppet_classes:
            - :name: "ovirt"
@@ -378,7 +378,7 @@
        - :name: "RHV-Hypervisor"
          :os: "RedHat"
          :major: "7"
-         :minor: "2"
+         :minor: "3"
          :parent: :root_deployment
          :puppet_classes:
            - :name: "ovirt"
@@ -396,7 +396,7 @@
        - :name: "RHV-Self-hosted"
          :os: "RedHat"
          :major: "7"
-         :minor: "2"
+         :minor: "3"
          :ptable: "rhev_self_hosted"
          :parent: :root_deployment
          :puppet_classes:
@@ -422,7 +422,7 @@
        - :name: "OpenShift"
          :os: "RedHat"
          :major: "7"
-         :minor: "2"
+         :minor: "3"
          :parent: :root_deployment
          :activation_key:
            :name: "OpenShift"
@@ -440,7 +440,7 @@
          :parent: :root_deployment
          :os: "RedHat"
          :major: "7"
-         :minor: "2"
+         :minor: "3"
          :activation_key:
            :name: "OpenStack-Undercloud"
            :content: :openstack
@@ -456,7 +456,7 @@
          :parent: :root_deployment
          :os: "RedHat"
          :major: "7"
-         :minor: "2"
+         :minor: "3"
          :activation_key:
            :name: "Cloudforms"
            :content: :cloudforms
