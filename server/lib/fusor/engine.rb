@@ -1,3 +1,5 @@
+require 'active_model_serializers'
+
 module Fusor
   class Engine < ::Rails::Engine
     isolate_namespace Fusor
@@ -8,6 +10,9 @@ module Fusor
     config.autoload_paths += Dir["#{config.root}/app/overrides"]
     config.autoload_paths += Dir["#{config.root}/app/serializers"]
     config.autoload_paths += Dir["#{config.root}/lib/modules"]
+
+    ActiveModelSerializers.config.adapter = :json_api
+    ActiveModelSerializers.config.key_transform = :unaltered
 
     # Add any db migrations
     initializer "fusor.load_app_instance_data" do |app|
@@ -40,19 +45,15 @@ module Fusor
 
         security_block :fusor do
           permission :view_fusor_deployments, {
-            :"fusor/api/v2/deployments" => [:index, :show],
             :"fusor/api/v21/deployments" => [:index, :show]
           }, :resource_type => 'Fusor::Deployment'
           permission :create_fusor_deployments, {
-            :"fusor/api/v2/deployments" => [:create],
             :"fusor/api/v21/deployments" => [:create]
           }, :resource_type => 'Fusor::Deployment'
           permission :edit_fusor_deployments, {
-            :"fusor/api/v2/deployments" => [:update],
             :"fusor/api/v21/deployments" => [:update]
           }, :resource_type => 'Fusor::Deployment'
           permission :destroy_fusor_deployments, {
-            :"fusor/api/v2/deployments" => [:destroy],
             :"fusor/api/v21/deployments" => [:destroy]
           }, :resource_type => 'Fusor::Deployment'
         end
@@ -65,6 +66,7 @@ module Fusor
 
     initializer "fusor.apipie" do
       Apipie.configuration.api_controllers_matcher << "#{Fusor::Engine.root}/app/controllers/fusor/api/v2/*.rb"
+      Apipie.configuration.api_controllers_matcher << "#{Fusor::Engine.root}/app/controllers/fusor/api/v21/*.rb"
       Apipie.configuration.checksum_path += ['/fusor/api/']
     end
 

@@ -55,9 +55,9 @@ export default Ember.Mixin.create({
       var token = Ember.$('meta[name="csrf-token"]').attr('content');
       if (this.get('isValidHostname')) {
         request({
-          url: '/api/v21/discovered_hosts/' + host.get('id') + '/rename',
+          url: '/fusor/api/v21/discovered_hosts/' + host.get('id') + '/rename',
           type: "PUT",
-          data: JSON.stringify({'discovered_host': { 'name': host.get('name') } }),
+          data: JSON.stringify({'data': {'attributes': { 'name': host.get('name') } } }),
           headers: {
             "Accept": "application/json",
             "Content-Type": "application/json",

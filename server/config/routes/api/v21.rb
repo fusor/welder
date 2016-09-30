@@ -26,6 +26,15 @@ Fusor::Engine.routes.draw do
           end
         end
 
+        # routes previously in gem foretello_api_v21
+        resources :lifecycle_environments, :except => [:new, :edit]
+        resources :discovered_hosts, :except => [:new, :edit] do
+          put :rename, :on => :member
+        end
+        resources :foreman_tasks, :only => [:index, :show] do
+          post :bulk_search, :on => :collection
+        end
+
         scope 'unlogged' do
           get '/deployments/:id/log', to: 'deployments#log'
         end

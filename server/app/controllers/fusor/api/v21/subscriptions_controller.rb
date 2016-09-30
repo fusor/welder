@@ -11,7 +11,7 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 module Fusor
-  class Api::V21::SubscriptionsController < Api::V2::BaseController
+  class Api::V21::SubscriptionsController < Api::V21::BaseController
     skip_before_filter :check_content_type, :only => [:upload]
 
     def index
@@ -29,7 +29,7 @@ module Fusor
         ::Fusor.log.debug "finding all"
         @subscriptions = Subscription.all
       end
-      render :json => @subscriptions, :each_serializer => Fusor::SubscriptionSerializer, :serializer => RootArraySerializer
+      render :json => @subscriptions, :each_serializer => Fusor::SubscriptionSerializer
     end
 
     def create
@@ -128,8 +128,17 @@ module Fusor
     end
 
     def subscription_params
-      params.require(:subscription).permit(:contract_number, :product_name, :quantity_to_add, :quantity_attached,
-                                           :start_date, :end_date, :total_quantity, :source, :deployment_id)
+      # add belongs_to attribute: deployment_id
+      if params[:data][:relationships]
+        if (deployment = params[:data][:relationships][:deployment])
+          deployment_id = deployment[:data] ? deployment[:data][:id] : nil
+          params[:data][:attributes][:deployment_id] = deployment_id
+        end
+      end
+
+      params.require(:data).require(:attributes).permit(:deployment_id, :contract_number,
+         :product_name, :quantity_attached, :start_date, :end_date, :total_quantity,
+         :source, :quantity_to_add)
     end
 
   end

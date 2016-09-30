@@ -1,12 +1,17 @@
 import DS from 'ember-data';
 import Ember from 'ember';
-import ActiveModelAdapter from 'active-model-adapter';
 
 var token = Ember.$('meta[name="csrf-token"]').attr('content');
-export default ActiveModelAdapter.extend({
+export default DS.JSONAPIAdapter.extend({
   namespace: 'api/v21',
   headers: {
-    "X-CSRF-Token": token
+    "X-CSRF-Token": token,
+    "Accept": "application/json",
+    "Content-Type": "application/json"
+  },
+  pathForType: function(modelName) {
+    var underscored = Ember.String.underscore(modelName);
+    return Ember.String.pluralize(underscored);
   },
   shouldReloadRecord(store, ticketSnapshot) {
     return true;

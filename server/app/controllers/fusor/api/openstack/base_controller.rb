@@ -23,8 +23,8 @@ module Fusor
 
         resource_description do
           resource_id 'fusor'
-          api_version 'openstack'
-          api_base_url '/fusor/api'
+          api_version 'v21'
+          api_base_url '/fusor/api/openstack'
         end
 
         def cors_set_access_control_headers

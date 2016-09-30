@@ -11,7 +11,7 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 module Fusor
-  class Api::V21::OpenstackDeploymentsController < Api::V2::BaseController
+  class Api::V21::OpenstackDeploymentsController < Api::V21::BaseController
 
     def index
       if params[:deployment_id]
@@ -19,7 +19,7 @@ module Fusor
       else
         @openstack_deployments = OpenstackDeployment.all
       end
-      render :json => @openstack_deployments, :each_serializer => Fusor::OpenstackDeploymentSerializer, :serializer => RootArraySerializer
+      render :json => @openstack_deployments, :each_serializer => Fusor::OpenstackDeploymentSerializer
     end
 
     def create
@@ -141,7 +141,7 @@ module Fusor
     end
 
     def openstack_deployment_params
-      params.fetch(:openstack_deployment, {}).permit(:undercloud_admin_password,
+      params.require(:data).require(:attributes).permit(:undercloud_admin_password,
                                                    :undercloud_ip_address,
                                                    :undercloud_ssh_username,
                                                    :undercloud_ssh_password,

@@ -4,26 +4,6 @@ import NeedsExistingManifestHelpers from '../../mixins/needs-existing-manifest-h
 
 export default Ember.Route.extend(NeedsExistingManifestHelpers, {
 
-  beforeModel() {
-    // Ensure the models have been persisted so that we're validating/syncing up to date data.
-    let deployment = this.modelFor('deployment');
-
-    if (deployment.get('isStarted')) {
-      return;
-    }
-
-    let promises = {
-      deployment: deployment.save()
-    };
-
-    if (deployment.get('deploy_openstack')) {
-      promises.openstack_deployment = deployment.get('openstack_deployment')
-        .then(openstack_deployment => openstack_deployment.save());
-    }
-
-    return Ember.RSVP.hash(promises);
-  },
-
   model() {
     const reviewModel = this.modelFor('review');
     const subModel = this.modelFor('subscriptions');
@@ -59,7 +39,7 @@ export default Ember.Route.extend(NeedsExistingManifestHelpers, {
   },
 
   setupController(controller, modelHash) {
-    const model = modelHash.reviewModel;
+    const model = this.modelFor('review');
     controller.set('model', model);
     controller.set('showErrorMessage', false);
     controller.set('useExistingManifest', modelHash.useExistingManifest);
@@ -163,7 +143,7 @@ export default Ember.Route.extend(NeedsExistingManifestHelpers, {
       .then(results => results.get('firstObject'));
   },
 
-  loadSubscriptionPools(deployment_id) {
+  loadSubscriptionPools() {
     const deployment = this.modelFor('deployment');
     return this.store.query('subscription', {
       deployment_id: deployment.get('id'),

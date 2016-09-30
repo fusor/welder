@@ -216,8 +216,8 @@ export default DS.Model.extend(UsesOseDefaults, {
   },
 
   loadOpenshiftDefaults(settings, opt) {
-    const shouldReset = opt && (opt.reset || false);
 
+    const shouldReset = opt && (opt.reset || false);
     [
       'openshift_master_vcpu',
       'openshift_master_ram',

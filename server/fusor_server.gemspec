@@ -15,7 +15,7 @@ Gem::Specification.new do |s|
   s.files += Dir["config/fusor.yaml"]
   s.test_files = Dir["test/**/*"]
 
-  s.add_dependency "active_model_serializers", '~> 0.9.0'
+  s.add_dependency "active_model_serializers", '~> 0.10.0'
   s.add_dependency "rubyipmi"
   s.add_dependency "ruby-ip"
   s.add_dependency "rubyzip"
@@ -23,7 +23,7 @@ Gem::Specification.new do |s|
   s.add_dependency 'net-scp'
   s.add_dependency "sys-filesystem"
   s.add_dependency "foreman_discovery"
-  s.add_dependency "foretello_api_v21"
+#  s.add_dependency "foreman_jsonapi"
   s.add_dependency "egon"
   s.add_development_dependency 'rubocop', '0.33.0'
   s.add_development_dependency 'simplecov'

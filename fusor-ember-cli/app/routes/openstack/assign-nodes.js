@@ -4,6 +4,7 @@ import request from 'ic-ajax';
 export default Ember.Route.extend({
   setupController(controller, model) {
     controller.set('model', model);
+    this.store.findAll('deployment-plan');
     this.loadOpenStack()
       .then(() => this.ensureFlavors())
       .catch(error => {
@@ -35,11 +36,10 @@ export default Ember.Route.extend({
     controller.set('showSpinner', true);
     controller.set('errorMsg', null);
     controller.set('isOspLoading', true);
-
     return Ember.RSVP.hash({
       // plan: this.store.findRecord('deployment-plan', deployment.get('id'), {reload: true}),
       // findRecord on deployment-plan is caching and not reloading, so using queryRecord for now.
-      plan: this.store.queryRecord('deployment-plan', {deployment_id: deploymentId}),
+      plan: this.store.findRecord('deployment-plan', deploymentId),
       images: this.store.query('image', {deployment_id: deploymentId}),
       nodes: this.store.query('node', {deployment_id: deploymentId}),
       profiles: this.store.query('flavor', {deployment_id: deploymentId})

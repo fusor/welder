@@ -25,7 +25,7 @@ module Fusor
         MAC_ADDRESS_REGEX = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/
 
         def index
-          render :json => undercloud_handle.list_nodes, :serializer => RootArraySerializer
+          render :json => undercloud_handle.list_nodes
         end
 
         def show

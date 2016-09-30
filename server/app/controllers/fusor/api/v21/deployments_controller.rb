@@ -14,9 +14,11 @@ require "net/http"
 require "sys/filesystem"
 require "uri"
 require "json"
+require 'fusor/password_filter'
+require 'fusor/deployment_logger'
 
 module Fusor
-  class Api::V21::DeploymentsController < Api::V2::DeploymentsController
+  class Api::V21::DeploymentsController < Api::V21::BaseController
 
     before_filter :find_deployment, :only => [:destroy, :show, :update, :check_mount_point,
                                               :deploy, :redeploy, :validate, :log,
@@ -32,8 +34,10 @@ module Fusor
                                 .paginate(:page => params[:page])
       cnt_search = Deployment.search_for(params[:search], :order => params[:order]).count
       render :json => @deployments,
+             :include => [:organization, :lifecycle_environment, :discovered_host,
+                                         :discovered_hosts, :ose_master_hosts, :ose_worker_hosts, :subscriptions,
+                                         :introspection_tasks, :foreman_task, :openstack_deployment],
              :each_serializer => Fusor::DeploymentSerializer,
-             :serializer => RootArraySerializer,
              :meta => {:total => cnt_search,
                        :page => params[:page].present? ? params[:page].to_i : 1,
                        :total_pages => (cnt_search / 20.0).ceil
@@ -41,7 +45,11 @@ module Fusor
     end
 
     def show
-      render :json => @deployment, :serializer => Fusor::DeploymentSerializer
+      render :json => @deployment,
+                          :include => [:organization, :lifecycle_environment, :discovered_host,
+                                         :discovered_hosts, :ose_master_hosts, :ose_worker_hosts, :subscriptions,
+                                         :introspection_tasks, :foreman_task, :openstack_deployment],
+             :serializer => Fusor::DeploymentSerializer
     end
 
     def create
@@ -65,9 +73,43 @@ module Fusor
     end
 
     def deploy
-      # just inherit from V2
       begin
-        super
+        # If we're deploying then the deployment object needs to be valid.
+        # This should be the only time we run the DeploymentValidator.
+        if @deployment.invalid?
+          raise ::ActiveRecord::RecordInvalid.new @deployment
+        end
+
+        ::Fusor.log_change_deployment(@deployment)
+
+        # update the provider with the url
+        ::Fusor.log.debug "setting provider url to [#{@deployment.cdn_url}]"
+        provider = @deployment.organization.redhat_provider
+        # just in case save it on the @deployment.org as well
+        @deployment.organization.redhat_provider.repository_url = @deployment.cdn_url
+        provider.repository_url = @deployment.cdn_url
+        provider.save!
+
+        save_deployment_attributes
+
+        manifest_task = sync_task(::Actions::Fusor::Subscription::ManageManifest,
+                                  @deployment,
+                                  customer_portal_credentials)
+
+        # If the manifest action failed, there is no need to continue with
+        # the deploy actions, since it requires subscriptions & content
+        # both of which are enabled by the manifest.
+        unless manifest_task["result"] == "error"
+          task = async_task(::Actions::Fusor::Deploy,
+                            @deployment,
+                            params[:skip_content])
+          @deployment.foreman_task_uuid = task.id
+          @deployment.save
+        end
+
+        raise "ManageManifest task failed" unless task
+
+        render :json => @deployment, :serializer => Fusor::DeploymentSerializer
       rescue ::ActiveRecord::RecordInvalid
         render json: {errors: @deployment.errors}, status: 422
       end
@@ -220,48 +262,41 @@ module Fusor
     private
 
     def deployment_params
-      allowed = [
-        :name, :description, :deploy_rhev, :deploy_cfme,
-        :deploy_openstack, :deploy_openshift, :is_disconnected, :rhev_is_self_hosted,
-        :rhev_self_hosted_engine_hostname, :rhev_engine_admin_password, :rhev_data_center_name,
-        :rhev_cluster_name, :rhev_storage_name, :rhev_storage_type,
-        :rhev_storage_address, :rhev_cpu_type, :rhev_share_path,
-        :hosted_storage_name, :hosted_storage_address, :hosted_storage_path,
-        :cfme_install_loc, :rhev_root_password, :cfme_root_password,
-        :cfme_admin_password, :cfme_db_password, :foreman_task_uuid,
-        :upstream_consumer_uuid, :upstream_consumer_name, :rhev_export_domain_name,
-        :rhev_export_domain_address, :rhev_export_domain_path,
-        :rhev_local_storage_path, :rhev_gluster_node_name,
-        :rhev_gluster_node_address, :rhev_gluster_ssh_port,
-        :rhev_gluster_root_password, :host_naming_scheme, :has_content_error,
-        :custom_preprend_name, :enable_access_insights, :cfme_address, :cfme_hostname,
-        :openshift_install_loc, :openshift_number_master_nodes, :openshift_number_worker_nodes,
-        :openshift_storage_size, :openshift_username, :openshift_user_password,
-        :openshift_root_password, :openshift_master_vcpu, :openshift_master_ram,
-        :openshift_master_disk, :openshift_node_vcpu, :openshift_node_ram, :openshift_node_disk,
-        :openshift_available_vcpu, :openshift_available_ram, :openshift_available_disk,
-        :openshift_storage_type, :openshift_sample_helloworld, :openshift_storage_host,
-        :openshift_export_path, :openshift_subdomain_name, :cloudforms_vcpu,
-        :cloudforms_ram, :cloudforms_vm_disk_size, :cloudforms_db_disk_size,
-        :cdn_url, :manifest_file, :created_at, :updated_at, :rhev_engine_host_id,
-        :organization_id, :lifecycle_environment_id, :discovered_host_id,
-        :foreman_task_id, :openstack_deployment_id
-      ]
-
-      #############################################################
-      # Workaround for permitting the reset of discovered_hosts via accepting
-      # discovered_host_ids as an empty array. By default, if it's an empty array,
-      # strong params will filter the value so it does not impact an update.
-      # See discussion: https://github.com/rails/rails/issues/13766
-      #############################################################
-      if params[:deployment][:discovered_host_ids].nil?
-        allowed << :discovered_host_ids
-      else
-        allowed << { :discovered_host_ids => [] }
+      # add belongs_to attributes: organization_id, lifecycle_environment_id, rhev_engine_host_id
+      if params[:data][:relationships]
+        if (org = params[:data][:relationships][:organization])
+          org_id = org[:data] ? org[:data][:id] : nil
+          params[:data][:attributes][:organization_id] = org_id
+        end
+        if (env = params[:data][:relationships][:lifecycle_environment])
+          env_id = env[:data] ? env[:data][:id] : nil
+          params[:data][:attributes][:lifecycle_environment_id] = env_id
+        end
+        if (engine = params[:data][:relationships][:discovered_host])
+          engine_id = engine[:data] ? engine[:data][:id] : nil
+          params[:data][:attributes][:rhev_engine_host_id] = engine_id
+        end
       end
-      #############################################################
 
-      params.require(:deployment).permit(*allowed)
+      # add discovered_host_ids => [] as permitted in addition to model attrs
+      # Note: config.action_dispatch.perform_deep_munge = false, so [] is passed as [] and not null
+      params.require(:data).require(:attributes).permit(:name, :lifecycle_environment_id,
+              :organization_id, :deploy_rhev, :deploy_cfme, :deploy_openstack, :rhev_engine_host_id,
+              :rhev_data_center_name, :rhev_cluster_name, :rhev_storage_name, :rhev_storage_type,
+              :rhev_storage_address, :rhev_cpu_type, :rhev_share_path, :cfme_install_loc,
+              :description, :rhev_is_self_hosted, :rhev_self_hosted_engine_hostname, :rhev_engine_admin_password, :foreman_task_uuid,
+              :upstream_consumer_uuid, :rhev_root_password, :cfme_root_password,
+              :upstream_consumer_name, :rhev_export_domain_name, :rhev_export_domain_address,
+              :rhev_export_domain_path, :rhev_local_storage_path, :host_naming_scheme,
+              :custom_preprend_name, :enable_access_insights, :cfme_address, :cfme_admin_password,
+              :openstack_undercloud_password, :openstack_undercloud_ip_addr,
+              :openstack_undercloud_user, :openstack_undercloud_user_password, :cdn_url,
+              :manifest_file, :is_disconnected, :openstack_overcloud_address,
+              :openstack_overcloud_password, :openstack_overcloud_private_net,
+              :openstack_overcloud_float_net, :openstack_overcloud_float_gateway,
+              :openstack_overcloud_hostname, :openstack_undercloud_hostname, :cfme_hostname,
+              :label, :has_content_error,
+              :discovered_host_ids => [])
     end
 
     def find_deployment

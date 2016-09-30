@@ -19,7 +19,7 @@ module Fusor
 
         def index
           stacks = undercloud_handle.list_stacks
-          render :json => stacks, :serializer => RootArraySerializer
+          render :json => stacks
         end
 
         def show

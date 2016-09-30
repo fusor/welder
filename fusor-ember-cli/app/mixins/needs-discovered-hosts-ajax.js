@@ -6,8 +6,8 @@ export default Ember.Mixin.create({
     const token = Ember.$('meta[name="csrf-token"]').attr('content');
     return request({
       url: '/fusor/api/v21/deployments/' + deployment.get('id'),
-      type: 'PUT',
-      data: JSON.stringify({'deployment': { 'discovered_host_ids': hypervisorIds } }),
+      type: "PATCH",
+      data: JSON.stringify({data: {attributes: { 'discovered_host_ids': hypervisorIds } } }),
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',

@@ -53,7 +53,7 @@ export default Ember.Route.extend(PollingPromise, {
     resetError() {
       this.set('controller.errorMsg', null);
     },
-    
+
     loadError(error, message) {
       console.log(error, message);
       this.set('controller.loadErrorMsg', this.formatError(error, message));
@@ -91,7 +91,6 @@ export default Ember.Route.extend(PollingPromise, {
     let deploymentId = this.get('controller.deployment.id');
     let token = Ember.$('meta[name="csrf-token"]').attr('content');
     let url = `/fusor/api/openstack/deployments/${deploymentId}/node_ports`;
-
     return request({
       url: url,
       type: 'GET',
