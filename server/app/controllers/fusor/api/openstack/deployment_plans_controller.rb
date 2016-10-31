@@ -17,11 +17,23 @@ module Fusor
     module Openstack
       class DeploymentPlansController < Api::Openstack::BaseController
 
+        resource_description do
+          name 'OpenStack Deployment Plans'
+          api_version 'fusor_v21'
+          api_base_url '/fusor/api/openstack/deployments/:deployment_id'
+        end
+
+        api :POST, '/deployment_plans/:id', 'Show the undercloud deployment status'
+        param :deployment_id, :identifier, desc: 'ID of the deployment'
+        param :id, String, desc: 'Name of the deployment plan (ex. overcloud)'
         def deploy
           @plan = undercloud_handle.deploy_plan(params[:id])
           render :json => build_deployment_plan(params[:id])
         end
 
+        api :GET, '/deployment_plans/:id', 'Get deployment plan parameters and roles for the overcloud'
+        param :deployment_id, :identifier, desc: 'ID of the deployment'
+        param :id, String, desc: 'Name of the deployment plan (ex. overcloud)'
         def show
           render :json => build_deployment_plan(params[:id])
         end
@@ -36,6 +48,10 @@ module Fusor
           render :json => build_deployment_plan(params[:id])
         end
 
+        api :PUT, '/deployment_plans/:id/update_parameters', 'Updates deployment plan roles for the overcloud'
+        param :deployment_id, :identifier, desc: 'ID of the deployment'
+        param :id, String, desc: 'Name of the deployment plan (ex. overcloud)'
+        param :parameters, Hash, desc: 'Hash of deployment plan parameters to change'
         def update_parameters
           @plan = undercloud_handle.edit_plan_parameters(params[:id], params[:parameters])
           render :json => build_deployment_plan(params[:id])
