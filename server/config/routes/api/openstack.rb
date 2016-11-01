@@ -12,7 +12,6 @@ Fusor::Engine.routes.draw do
             end
           end
 
-          resources :deployment_roles, :only => :index
           resources :flavors, :only => [:index, :show]
 
           resources :images, :only => :index

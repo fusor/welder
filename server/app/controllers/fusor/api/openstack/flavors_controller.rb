@@ -15,6 +15,14 @@ module Fusor
     module Openstack
       class FlavorsController < Api::Openstack::BaseController
 
+        resource_description do
+          name 'OpenStack Flavors'
+          api_version 'fusor_v21'
+          api_base_url '/fusor/api/openstack/deployments/:deployment_id'
+        end
+
+        api :GET, '/flavors', 'Get OpenStack flavors'
+        param :deployment_id, :identifier, desc: 'ID of the deployment'
         def index
           flavor_json_array = Array.new
           for flavor in undercloud_handle.list_flavors
@@ -23,6 +31,9 @@ module Fusor
           render :json => {:flavors => flavor_json_array}
         end
 
+        api :GET, '/flavors', 'Get OpenStack flavor by ID'
+        param :deployment_id, :identifier, desc: 'ID of the deployment'
+        param :id, :identifier, desc: 'ID number of the flavor'
         def show
           render :json => {:flavor => flavor_json_with_extra_specs(undercloud_handle.get_flavor(params[:id]))}
         end

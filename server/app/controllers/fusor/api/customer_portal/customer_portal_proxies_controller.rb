@@ -20,18 +20,31 @@ module Fusor
         before_filter :proxy_request_path, :except => [:login, :logout, :is_authenticated]
         before_filter :proxy_request_body, :except => [:login, :logout, :is_authenticated]
 
+        resource_description do
+          name 'Customer Portal Proxy'
+          desc 'Proxy to Red Hat customer portal for some API methods. Refer to customer portal '\
+               'documentation for parameters available to each method.'
+          api_version 'fusor_v21'
+          api_base_url '/fusor/api/customer_portal'
+        end
+
+        api :post, '/login', 'Log in to customer portal (creates session)'
+        param :username, String, desc: 'Customer portal account username to log in'
+        param :password, String, desc: 'Customer portal account password to log in'
         def login
           session[:portal_username] = params[:username]
           session[:portal_password] = params[:password]
           render :json => {}
         end
 
+        api :post, '/logout', 'Log out of customer portal (deletes session)'
         def logout
           session.delete(:portal_username)
           session.delete(:portal_password)
           render :json => {}
         end
 
+        api :get, '/is_authenticated', 'Is there an active authenticated session to the customer portal'
         def is_authenticated
           authenticated = false
           if session[:portal_username] && session[:portal_password]
@@ -40,6 +53,41 @@ module Fusor
           end
           render :json => authenticated
         end
+
+        # Apipie doesn't support multiple actions for a single controller method
+        # The following methods document the requests but are not used directly.
+        #
+        #### BEGIN Apipie Docs ####
+        api :get, '/users/:login/owners', '(Proxied API method) Get a list of subscription owners'
+        param :login, String, desc: 'Subscription account login user ID'
+        def get_owners_no_op; end #apipie docs dummy.  Routes to get()
+
+        api :get, '/pools', '(Proxied API method) Get a list of subscription pools'
+        def get_pools_no_op; end #apipie docs dummy.  Routes to get()
+
+        api :get, '/owners/:id/consumers', '(Proxied API method) Get a list of subscription consumers'
+        param :id, :identifier, desc: 'UUID of the subscription owner'
+        def get_consumers_no_op; end #apipie docs dummy.  Routes to get()
+
+        api :get, '/consumers/:id', '(Proxied API method) Get a subscription consumer'
+        param :id, String, desc: 'Subscription consumer UUID'
+        def get_consumer_no_op; end #apipie docs dummy.  Routes to get()
+
+        api :post, '/consumers', '(Proxied API method) Create a new subscription consumer'
+        def create_consumer_no_op; end #apipie docs dummy.  Routes to post()
+
+        api :get, '/consumers/:id/entitlements', '(Proxied API method) Get a list of subscription entitlements'
+        param :id, String, desc: 'Subscription consumer UUID'
+        def get_entitlements_no_op; end #apipie docs dummy.  Routes to get()
+
+        api :post, '/consumers/:id/entitlements', '(Proxied API method) Create new subscription entitlement'
+        param :id, String, desc: 'Subscription consumer UUID'
+        def create_entitlement_no_op; end #apipie docs dummy.  Routes to post()
+
+        api :delete, '/consumers/:id/entitlements', '(Proxied API method) Delete all entitlements for a subscription consumer'
+        param :id, String, desc: 'Subscription consumer UUID'
+        def delete_entitlements_no_op; end #apipie docs dummy.  Routes to delete()
+        #### END Apipie Docs ####
 
         def get
           response = Resources::CustomerPortal::Proxy.get(@request_path, credentials)
