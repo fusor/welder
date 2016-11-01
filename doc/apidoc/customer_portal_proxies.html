@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>API documentation</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link type='text/css' rel='stylesheet' href='../apidoc/stylesheets/bundled/bootstrap.min.css'/>
+<link type='text/css' rel='stylesheet' href='../apidoc/stylesheets/bundled/prettify.css'/>
+<link type='text/css' rel='stylesheet' href='../apidoc/stylesheets/bundled/bootstrap-responsive.min.css'/>
+  <link type='text/css' rel='stylesheet' href='../apidoc/stylesheets/application.css'/>
+  <!-- IE6-8 support of HTML5 elements -->
+  <!--[if lt IE 9]>
+    <script src="//html5shim.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+</head>
+<body>
+  <div class="container-fluid">
+    <div class="row-fluid">
+      <div id='container'>
+        <ul class='breadcrumb'>
+  <li>
+    <a href='../apidoc.html'>Foreman fusor_v21</a>
+    <span class='divider'>/</span>
+  </li>
+  <li class='active'>
+    Customer Portal Proxy
+
+  </li>
+
+</ul>
+
+<div class='page-header'>
+  <h1>
+    Customer Portal Proxy
+    <br>
+    <small></small>
+  </h1>
+</div>
+
+  <div>
+<p>Capsule to Red Hat customer portal for some API methods. Refer to customer portal documentation for parameters available to each method.</p>
+</div>
+
+
+
+
+
+<div class='accordion' id='accordion'>
+
+    <hr>
+    <div class='pull-right small'>
+      <a href='../apidoc/customer_portal_proxies/login.html'> >>> </a>
+    </div>
+    <div>
+        <h2>
+          <a href='#description-login'
+           class='accordion-toggle'
+           data-toggle='collapse'
+           data-parent='#accordion'>
+            post /fusor/api/customer_portal/login
+          </a>
+          <br>
+          <small>Log in to customer portal (creates session)</small>
+        </h2>
+    </div>
+
+
+    <div id='description-login' class='collapse accordion-body'>
+
+
+
+
+
+
+  <h3>Params</h3>
+  <table class='table'>
+    <thead>
+      <tr>
+        <th>Param name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr style='background-color:rgb(255,255,255);'>
+    <td>
+      <strong>username </strong><br>
+      <small>
+        optional
+
+      </small>
+    </td>
+    <td>
+
+<p>Customer portal account username to log in</p>
+
+        <p><strong>Validations:</strong></p>
+        <ul>
+            <li>
+<p>String</p>
+</li>
+        </ul>
+
+    </td>
+
+  </tr>
+
+
+  <tr style='background-color:rgb(255,255,255);'>
+    <td>
+      <strong>password </strong><br>
+      <small>
+        optional
+
+      </small>
+    </td>
+    <td>
+
+<p>Customer portal account password to log in</p>
+
+        <p><strong>Validations:</strong></p>
+        <ul>
+            <li>
+<p>String</p>
+</li>
+        </ul>
+
+    </td>
+
+  </tr>
+
+
+
+    </tbody>
+  </table>
+
+
+
+    </div>
+    <hr>
+    <div class='pull-right small'>
+      <a href='../apidoc/customer_portal_proxies/logout.html'> >>> </a>
+    </div>
+    <div>
+        <h2>
+          <a href='#description-logout'
+           class='accordion-toggle'
+           data-toggle='collapse'
+           data-parent='#accordion'>
+            post /fusor/api/customer_portal/logout
+          </a>
+          <br>
+          <small>Log out of customer portal (deletes session)</small>
+        </h2>
+    </div>
+
+
+    <div id='description-logout' class='collapse accordion-body'>
+
+
+
+
+
+
+
+
+
+    </div>
+    <hr>
+    <div class='pull-right small'>
+      <a href='../apidoc/customer_portal_proxies/is_authenticated.html'> >>> </a>
+    </div>
+    <div>
+        <h2>
+          <a href='#description-is_authenticated'
+           class='accordion-toggle'
+           data-toggle='collapse'
+           data-parent='#accordion'>
+            get /fusor/api/customer_portal/is_authenticated
+          </a>
+          <br>
+          <small>Is there an active authenticated session to the customer portal</small>
+        </h2>
+    </div>
+
+
+    <div id='description-is_authenticated' class='collapse accordion-body'>
+
+
+
+
+
+
+
+
+
+    </div>
+    <hr>
+    <div class='pull-right small'>
+      <a href='../apidoc/customer_portal_proxies/get_owners_no_op.html'> >>> </a>
+    </div>
+    <div>
+        <h2>
+          <a href='#description-get_owners_no_op'
+           class='accordion-toggle'
+           data-toggle='collapse'
+           data-parent='#accordion'>
+            get /fusor/api/customer_portal/users/:login/owners
+          </a>
+          <br>
+          <small>(Proxied API method) Get a list of subscription owners</small>
+        </h2>
+    </div>
+
+
+    <div id='description-get_owners_no_op' class='collapse accordion-body'>
+
+
+
+
+
+
+  <h3>Params</h3>
+  <table class='table'>
+    <thead>
+      <tr>
+        <th>Param name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr style='background-color:rgb(255,255,255);'>
+    <td>
+      <strong>login </strong><br>
+      <small>
+        optional
+
+      </small>
+    </td>
+    <td>
+
+<p>Subscription account login user ID</p>
+
+        <p><strong>Validations:</strong></p>
+        <ul>
+            <li>
+<p>String</p>
+</li>
+        </ul>
+
+    </td>
+
+  </tr>
+
+
+
+    </tbody>
+  </table>
+
+
+
+    </div>
+    <hr>
+    <div class='pull-right small'>
+      <a href='../apidoc/customer_portal_proxies/get_pools_no_op.html'> >>> </a>
+    </div>
+    <div>
+        <h2>
+          <a href='#description-get_pools_no_op'
+           class='accordion-toggle'
+           data-toggle='collapse'
+           data-parent='#accordion'>
+            get /fusor/api/customer_portal/pools
+          </a>
+          <br>
+          <small>(Proxied API method) Get a list of subscription pools</small>
+        </h2>
+    </div>
+
+
+    <div id='description-get_pools_no_op' class='collapse accordion-body'>
+
+
+
+
+
+
+
+
+
+    </div>
+    <hr>
+    <div class='pull-right small'>
+      <a href='../apidoc/customer_portal_proxies/get_consumers_no_op.html'> >>> </a>
+    </div>
+    <div>
+        <h2>
+          <a href='#description-get_consumers_no_op'
+           class='accordion-toggle'
+           data-toggle='collapse'
+           data-parent='#accordion'>
+            get /fusor/api/customer_portal/owners/:id/consumers
+          </a>
+          <br>
+          <small>(Proxied API method) Get a list of subscription consumers</small>
+        </h2>
+    </div>
+
+
+    <div id='description-get_consumers_no_op' class='collapse accordion-body'>
+
+
+
+
+
+
+  <h3>Params</h3>
+  <table class='table'>
+    <thead>
+      <tr>
+        <th>Param name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr style='background-color:rgb(255,255,255);'>
+    <td>
+      <strong>id </strong><br>
+      <small>
+        optional
+
+      </small>
+    </td>
+    <td>
+
+<p>UUID of the subscription owner</p>
+
+        <p><strong>Validations:</strong></p>
+        <ul>
+            <li>
+<p>string from 2 to 128 characters containing only alphanumeric characters, space, ‘<em>‘, ‘-’ with no leading or trailing space..</em></p>
+</li>
+        </ul>
+
+    </td>
+
+  </tr>
+
+
+
+    </tbody>
+  </table>
+
+
+
+    </div>
+    <hr>
+    <div class='pull-right small'>
+      <a href='../apidoc/customer_portal_proxies/get_consumer_no_op.html'> >>> </a>
+    </div>
+    <div>
+        <h2>
+          <a href='#description-get_consumer_no_op'
+           class='accordion-toggle'
+           data-toggle='collapse'
+           data-parent='#accordion'>
+            get /fusor/api/customer_portal/consumers/:id
+          </a>
+          <br>
+          <small>(Proxied API method) Get a subscription consumer</small>
+        </h2>
+    </div>
+
+
+    <div id='description-get_consumer_no_op' class='collapse accordion-body'>
+
+
+
+
+
+
+  <h3>Params</h3>
+  <table class='table'>
+    <thead>
+      <tr>
+        <th>Param name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr style='background-color:rgb(255,255,255);'>
+    <td>
+      <strong>id </strong><br>
+      <small>
+        optional
+
+      </small>
+    </td>
+    <td>
+
+<p>Subscription consumer UUID</p>
+
+        <p><strong>Validations:</strong></p>
+        <ul>
+            <li>
+<p>String</p>
+</li>
+        </ul>
+
+    </td>
+
+  </tr>
+
+
+
+    </tbody>
+  </table>
+
+
+
+    </div>
+    <hr>
+    <div class='pull-right small'>
+      <a href='../apidoc/customer_portal_proxies/create_consumer_no_op.html'> >>> </a>
+    </div>
+    <div>
+        <h2>
+          <a href='#description-create_consumer_no_op'
+           class='accordion-toggle'
+           data-toggle='collapse'
+           data-parent='#accordion'>
+            post /fusor/api/customer_portal/consumers
+          </a>
+          <br>
+          <small>(Proxied API method) Create a new subscription consumer</small>
+        </h2>
+    </div>
+
+
+    <div id='description-create_consumer_no_op' class='collapse accordion-body'>
+
+
+
+
+
+
+
+
+
+    </div>
+    <hr>
+    <div class='pull-right small'>
+      <a href='../apidoc/customer_portal_proxies/get_entitlements_no_op.html'> >>> </a>
+    </div>
+    <div>
+        <h2>
+          <a href='#description-get_entitlements_no_op'
+           class='accordion-toggle'
+           data-toggle='collapse'
+           data-parent='#accordion'>
+            get /fusor/api/customer_portal/consumers/:id/entitlements
+          </a>
+          <br>
+          <small>(Proxied API method) Get a list of subscription entitlements</small>
+        </h2>
+    </div>
+
+
+    <div id='description-get_entitlements_no_op' class='collapse accordion-body'>
+
+
+
+
+
+
+  <h3>Params</h3>
+  <table class='table'>
+    <thead>
+      <tr>
+        <th>Param name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr style='background-color:rgb(255,255,255);'>
+    <td>
+      <strong>id </strong><br>
+      <small>
+        optional
+
+      </small>
+    </td>
+    <td>
+
+<p>Subscription consumer UUID</p>
+
+        <p><strong>Validations:</strong></p>
+        <ul>
+            <li>
+<p>String</p>
+</li>
+        </ul>
+
+    </td>
+
+  </tr>
+
+
+
+    </tbody>
+  </table>
+
+
+
+    </div>
+    <hr>
+    <div class='pull-right small'>
+      <a href='../apidoc/customer_portal_proxies/create_entitlement_no_op.html'> >>> </a>
+    </div>
+    <div>
+        <h2>
+          <a href='#description-create_entitlement_no_op'
+           class='accordion-toggle'
+           data-toggle='collapse'
+           data-parent='#accordion'>
+            post /fusor/api/customer_portal/consumers/:id/entitlements
+          </a>
+          <br>
+          <small>(Proxied API method) Create new subscription entitlement</small>
+        </h2>
+    </div>
+
+
+    <div id='description-create_entitlement_no_op' class='collapse accordion-body'>
+
+
+
+
+
+
+  <h3>Params</h3>
+  <table class='table'>
+    <thead>
+      <tr>
+        <th>Param name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr style='background-color:rgb(255,255,255);'>
+    <td>
+      <strong>id </strong><br>
+      <small>
+        optional
+
+      </small>
+    </td>
+    <td>
+
+<p>Subscription consumer UUID</p>
+
+        <p><strong>Validations:</strong></p>
+        <ul>
+            <li>
+<p>String</p>
+</li>
+        </ul>
+
+    </td>
+
+  </tr>
+
+
+
+    </tbody>
+  </table>
+
+
+
+    </div>
+    <hr>
+    <div class='pull-right small'>
+      <a href='../apidoc/customer_portal_proxies/delete_entitlements_no_op.html'> >>> </a>
+    </div>
+    <div>
+        <h2>
+          <a href='#description-delete_entitlements_no_op'
+           class='accordion-toggle'
+           data-toggle='collapse'
+           data-parent='#accordion'>
+            delete /fusor/api/customer_portal/consumers/:id/entitlements
+          </a>
+          <br>
+          <small>(Proxied API method) Delete all entitlements for a subscription consumer</small>
+        </h2>
+    </div>
+
+
+    <div id='description-delete_entitlements_no_op' class='collapse accordion-body'>
+
+
+
+
+
+
+  <h3>Params</h3>
+  <table class='table'>
+    <thead>
+      <tr>
+        <th>Param name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr style='background-color:rgb(255,255,255);'>
+    <td>
+      <strong>id </strong><br>
+      <small>
+        optional
+
+      </small>
+    </td>
+    <td>
+
+<p>Subscription consumer UUID</p>
+
+        <p><strong>Validations:</strong></p>
+        <ul>
+            <li>
+<p>String</p>
+</li>
+        </ul>
+
+    </td>
+
+  </tr>
+
+
+
+    </tbody>
+  </table>
+
+
+
+    </div>
+</div>
+
+
+
+
+      </div>
+    </div>
+    <hr>
+    <footer></footer>
+  </div>
+  <script type='text/javascript' src='../apidoc/javascripts/bundled/jquery.js'></script>
+<script type='text/javascript' src='../apidoc/javascripts/bundled/bootstrap-collapse.js'></script>
+<script type='text/javascript' src='../apidoc/javascripts/bundled/prettify.js'></script>
+<script type='text/javascript' src='../apidoc/javascripts/apipie.js'></script>
+</body>
+</html>
