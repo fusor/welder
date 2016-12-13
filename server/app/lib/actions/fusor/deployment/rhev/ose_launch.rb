@@ -31,125 +31,241 @@ module Actions
           def run
             ::Fusor.log.info '====== OSE Launch run method ======'
             deployment = ::Fusor::Deployment.find(input[:deployment_id])
-            hostgroup = find_hostgroup(deployment, 'OpenShift')
-
             generate_root_password(deployment)
-
-            os = Operatingsystem.find(hostgroup.operatingsystem_id)
-            ptable_name = "#{hostgroup.name} Ptable"
-            ensure_vda_only_ptable(ptable_name)
-            update_ptable_for_os(ptable_name, os.title)
-            update_hostgroup_ptable(hostgroup, ptable_name)
-
-            ks_name = "#{hostgroup.name} Kickstart"
-            snippet_name = "rhevm_guest_agent"
             repos = SETTINGS[:fusor][:content][:openshift].map { |p| p[:repository_set_label] if p[:repository_set_label] =~ /rpms$/ }.compact
-            ct_util = Utils::Fusor::ConfigTemplateUtils.new({:rhevm_guest_agent_snippet_name => snippet_name, :enabled_repos => repos})
-            ret = ct_util.ensure_ks_with_snippet(ks_name, snippet_name)
-            fail _("====== Could not ensure '#{ks_name}' with '#{snippet_name}'") unless ret
 
-            ks = ProvisioningTemplate.find_by_name(ks_name)
-            ks.hostgroup_ids = hostgroup.id
-            ks.save!
-
-            vm_init_params = {:deployment => deployment,
-                              :application => 'ose',
-                              :provider => deployment.openshift_install_loc,
-                              :hostgroup => hostgroup,
-                              :os => os.title,
-                              :arch => 'x86_64',
-                              :ptable_name => ptable_name}
-
-            # launch master nodes
-            master_vm_launch_params = {:cpu => deployment.openshift_master_vcpu,
-                                       :ram => deployment.openshift_master_ram,
-                                       :vda_size => deployment.openshift_master_disk,
-                                       :other_disks => [deployment.openshift_storage_size]}
-            for i in 1..deployment.openshift_number_master_nodes do
-              vmlauncher = Utils::Fusor::VMLauncher.new(vm_init_params)
-              fail _("====== vmlauncher is nil for Master #{i}! ======") unless vmlauncher
-
-              vmlauncher.set_hostname("#{deployment.label.tr('_', '-')}-ose-master#{i}")
-              host = vmlauncher.launch_openshift_vm(master_vm_launch_params)
-              if host.nil?
-                fail _("====== Launch OSE Master #{i} VM FAILED! ======")
-              else
-                deployment.ose_master_hosts << host
-                ::Fusor.log.debug "====== OSE Launched VM Name : #{host.name} ======"
-                ::Fusor.log.debug "====== OSE Launched VM IP   : #{host.ip}   ======"
-              end
-            end
-            subdomain = Net::DNS::ARecord.new({:ip => host.ip,
-                                               :hostname => "*.#{deployment.openshift_subdomain_name}.#{Domain.find(host.domain_id)}",
-                                               :proxy => Domain.find(host.domain_id).proxy})
-            if subdomain.valid?
-              ::Fusor.log.debug "====== OSE wildcard subdomain is not valid, it might conflict with a previous entry. Skipping. ======"
-            else
-              subdomain.create
-              ::Fusor.log.debug "====== OSE wildcard subdomain created successfully ======"
-            end
-
-            # launch worker nodes
-            worker_vm_launch_params = {:cpu => deployment.openshift_node_vcpu,
-                                       :ram => deployment.openshift_node_ram,
-                                       :vda_size => deployment.openshift_node_disk,
-                                       :other_disks => [deployment.openshift_storage_size]}
-            for i in 1..deployment.openshift_number_worker_nodes do
-              vmlauncher = Utils::Fusor::VMLauncher.new(vm_init_params)
-              fail _("====== vmlauncher is nil for Worker #{i}! ======") unless vmlauncher
-
-              vmlauncher.set_hostname("#{deployment.label.tr('_', '-')}-ose-node#{i}")
-              host = vmlauncher.launch_openshift_vm(worker_vm_launch_params)
-              if host.nil?
-                fail _("====== Launch OSE Worker #{i} VM FAILED! ======")
-              else
-                deployment.ose_worker_hosts << host
-                ::Fusor.log.debug "====== OSE Launched VM Name : #{host.name} ======"
-                ::Fusor.log.debug "====== OSE Launched VM IP   : #{host.ip}   ======"
-              end
-            end
-
-            # launch infra nodes
-            for i in 1 + deployment.openshift_number_worker_nodes..deployment.openshift_number_infra_nodes + deployment.openshift_number_worker_nodes do
-              vmlauncher = Utils::Fusor::VMLauncher.new(vm_init_params)
-              fail _("====== vmlauncher is nil for Infra #{i}! ======") unless vmlauncher
-
-              vmlauncher.set_hostname("#{deployment.label.tr('_', '-')}-ose-node#{i}")
-              host = vmlauncher.launch_openshift_vm(worker_vm_launch_params)
-              if host.nil?
-                fail _("====== Launch OSE Infra #{i} VM FAILED! ======")
-              else
-                deployment.ose_worker_hosts << host
-                ::Fusor.log.debug "====== OSE Launched VM Name : #{host.name} ======"
-                ::Fusor.log.debug "====== OSE Launched VM IP   : #{host.ip}   ======"
-              end
-            end
-
-            # launch ha nodes
-            ha_vm_launch_params = {:cpu => deployment.openshift_node_vcpu,
-                                   :ram => deployment.openshift_node_ram,
-                                   :vda_size => deployment.openshift_node_disk,
-                                   :other_disks => [deployment.openshift_storage_size]}
-            for i in 1..deployment.openshift_number_ha_nodes do
-              vmlauncher = Utils::Fusor::VMLauncher.new(vm_init_params)
-              fail _("====== vmlauncher is nil for HA #{i}! ======") unless vmlauncher
-
-              vmlauncher.set_hostname("#{deployment.label.tr('_', '-')}-ose-ha#{i}")
-              host = vmlauncher.launch_openshift_vm(ha_vm_launch_params)
-              if host.nil?
-                fail _("====== Launch OSE HA #{i} VM FAILED! ======")
-              else
-                deployment.ose_ha_hosts << host
-                ::Fusor.log.debug "====== OSE Launched VM Name : #{host.name} ======"
-                ::Fusor.log.debug "====== OSE Launched VM IP   : #{host.ip}   ======"
-              end
-            end
-
-            deployment.save!
-            ::Fusor.log.info '====== Leaving OSE Launch run method ======'
+            generate_vars(deployment)
           end
 
           private
+
+          def generate_vars(deployment)
+            return {
+              :foo => 'bar',
+              :vms => get_ose_vms(deployment)
+            }
+          end
+
+          def get_ose_vms(deployment)
+            # ==============================================================
+            # CREATE NEW SATELLITE HOST RECORDS WITH MAC ADDRESSES AND NAMES
+            # ==============================================================
+            bootable_image_path = '/usr/share/rhel-guest-image-7/rhel-guest-image-7.3-32.x86_64.qcow2'
+            hostgroup = find_hostgroup(deployment, 'OpenShift')
+
+            common_host_params = {
+              :hostgroup_id => hostgroup.id,
+              :location_id => Location.find_by_name('Default Location').id,
+              :environment_id => Environment.where(:name => "production").first.id,
+              :organization_id => deployment["organization_id"],
+              :subnet_id => Subnet.find_by_name('default').id,
+              :enabled => "1",
+              :managed => "1",
+              :architecture_id => Architecture.find_by_name('x86_64')['id'],
+              :operatingsystem_id => hostgroup.os.id,
+              :ptable_id => Ptable.find { |p| p["name"] == "Kickstart default" }.id,
+              :domain_id => 1,
+              :root_pass => deployment.openshift_root_password,
+              :build => "0",
+              :provider => deployment.openshift_install_loc
+            }
+
+            ose_vms_to_create = []
+
+            # ===================
+            # CREATE MASTER NODES
+            # ===================
+            for i in 1..deployment.openshift_number_master_nodes do
+              mac = Utils::Fusor::MacAddresses.generate_mac_address # TODO generate from pool of safe addresses
+              hostname = "#{deployment.label.tr('_', '-')}-ose-master#{i}"
+
+              # Create Satellite host entry
+              unique_host_params = {
+                :mac => mac,
+                :hostname => hostname
+              }
+
+              host_params = common_host_params.merge(unique_host_params)
+              host = ::Host.create(host_params)
+
+              unless host.errors.empty?
+                fail _("OSE Master Node Host Record creation with mac #{mac} failed with errors: #{host.errors.messages}")
+              end
+
+              # Arrange parameters so that Ansible can create OSE VM's
+              ose_vm = {
+                :name => hostname,
+                :memory => deployment.openshift_master_ram.to_s + "MiB",
+                :cpus => deployment.openshift_master_vcpu,
+                :disks => [{
+                  :name => "#{deployment.label.tr('_', '-')}-ose-master1-disk1",
+                  :size => deployment.openshift_master_disk,
+                  :image_path => bootable_image_path,
+                  :bootable => "True"
+                }],
+                :nic => {
+                  :boot_protocol => "dhcp",
+                  :mac => mac
+                }
+              }
+
+              # Create additional N disks
+              [deployment.openshift_storage_size].each_with_index do |disk_size, index|
+                ose_vm[:disks] << {
+                  :name => "#{deployment.label.tr('_', '-')}-ose-master1-disk#{index+2}",
+                  :size => disk_size,
+                }
+              end
+
+              ose_vms_to_create << ose_vm
+            end
+
+            # ===================
+            # CREATE WORKER NODES
+            # ===================
+            for i in 1..deployment.openshift_number_worker_nodes do
+              mac = Utils::Fusor::MacAddresses.generate_mac_address # TODO generate from pool of safe addresses
+              hostname = "#{deployment.label.tr('_', '-')}-ose-node#{i}"
+
+              # Create Satellite host entry
+              unique_host_params = {
+                :mac => mac,
+                :hostname => hostname
+              }
+
+              host_params = common_host_params.merge(unique_host_params)
+              host = ::Host.create(host_params)
+
+              unless host.errors.empty?
+                fail _("OSE Worker Node Host Record creation with mac #{mac} failed with errors: #{host.errors.messages}")
+              end
+
+              # Arrange parameters so that Ansible can create OSE VM's
+              ose_vm = {
+                :name => hostname,
+                :memory => deployment.openshift_node_ram.to_s + "MiB",
+                :cpus => deployment.openshift_node_vcpu,
+                :disks => [{
+                  :name => "#{deployment.label.tr('_', '-')}-ose-node#{i}-disk1",
+                  :size => deployment.openshift_node_disk,
+                  :image_path => bootable_image_path,
+                  :bootable => "True"
+                }],
+                :nic => {
+                  :boot_protocol => "dhcp",
+                  :mac => mac
+                }
+              }
+
+              # Create additional N disks
+              [deployment.openshift_storage_size].each_with_index do |disk_size, disk_index|
+                ose_vm[:disks] << {
+                  :name => "#{deployment.label.tr('_', '-')}-ose-node#{i}-disk#{disk_index+2}",
+                  :size => disk_size,
+                }
+              end
+
+              ose_vms_to_create << ose_vm
+
+            end
+
+            # ==================
+            # CREATE INFRA NODES
+            # ==================
+            for i in 1 + deployment.openshift_number_worker_nodes..deployment.openshift_number_infra_nodes + deployment.openshift_number_worker_nodes do
+              mac = Utils::Fusor::MacAddresses.generate_mac_address # TODO generate from pool of safe addresses
+              hostname = "#{deployment.label.tr('_', '-')}-ose-node#{i}"
+
+              # Create Satellite host entry
+              unique_host_params = {
+                :mac => mac,
+                :hostname => hostname
+              }
+
+              host_params = common_host_params.merge(unique_host_params)
+              host = ::Host.create(host_params)
+
+              unless host.errors.empty?
+                fail _("OSE Infra Node Host Record creation with mac #{mac} failed with errors: #{host.errors.messages}")
+              end
+
+              # Arrange parameters so that Ansible can create OSE VM's
+              ose_vm = {
+                :name => hostname,
+                :memory => deployment.openshift_node_ram.to_s + "MiB",
+                :cpus => deployment.openshift_node_vcpu,
+                :disks => [{
+                  :name => "#{deployment.label.tr('_', '-')}-ose-node#{i}-disk1",
+                  :size => deployment.openshift_node_disk,
+                  :image_path => bootable_image_path,
+                  :bootable => "True"
+                }],
+                :nic => {
+                  :boot_protocol => "dhcp",
+                  :mac => mac
+                }
+              }
+
+              # Create additional N disks
+              [deployment.openshift_storage_size].each_with_index do |disk_size, disk_index|
+                ose_vm[:disks] << {
+                  :name => "#{deployment.label.tr('_', '-')}-ose-node#{i}-disk#{disk_index+2}",
+                  :size => disk_size,
+                }
+              end
+
+              ose_vms_to_create << ose_vm
+            end
+
+            # ===============
+            # CREATE HA NODES
+            # ===============
+            for i in 1..deployment.openshift_number_ha_nodes do
+              mac = Utils::Fusor::MacAddresses.generate_mac_address # TODO generate from pool of safe addresses
+              hostname = "#{deployment.label.tr('_', '-')}-ose-node#{i}"
+
+              # Create Satellite host entry
+              unique_host_params = {
+                :mac => mac,
+                :hostname => hostname
+              }
+
+              host_params = common_host_params.merge(unique_host_params)
+              host = ::Host.create(host_params)
+
+              unless host.errors.empty?
+                fail _("OSE HA Node Host Record creation with mac #{mac} failed with errors: #{host.errors.messages}")
+              end
+
+              # Arrange parameters so that Ansible can create OSE VM's
+              ose_vm = {
+                :name => hostname,
+                :memory => deployment.openshift_node_ram.to_s + "MiB",
+                :cpus => deployment.openshift_node_vcpu,
+                :disks => [{
+                  :name => "#{deployment.label.tr('_', '-')}-ose-ha#{i}-disk1",
+                  :size => deployment.openshift_node_disk,
+                  :image_path => bootable_image_path,
+                  :bootable => "True"
+                }],
+                :nic => {
+                  :boot_protocol => "dhcp",
+                  :mac => mac
+                }
+              }
+
+              # Create additional N disks
+              [deployment.openshift_storage_size].each_with_index do |disk_size, disk_index|
+                ose_vm[:disks] << {
+                  :name => "#{deployment.label.tr('_', '-')}-ose-ha#{i}-disk#{disk_index+2}",
+                  :size => disk_size,
+                }
+              end
+              ose_vms_to_create << ose_vm
+            end
+
+            return ose_vms_to_create
+          end
 
           def find_hostgroup(deployment, name)
             # locate the top-level hostgroup for the deployment...
