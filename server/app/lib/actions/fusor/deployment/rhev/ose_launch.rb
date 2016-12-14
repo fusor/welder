@@ -47,9 +47,7 @@ module Actions
           end
 
           def get_ose_vms(deployment)
-            # ==============================================================
-            # CREATE NEW SATELLITE HOST RECORDS WITH MAC ADDRESSES AND NAMES
-            # ==============================================================
+            ose_vms_to_create = []
             bootable_image_path = '/usr/share/rhel-guest-image-7/rhel-guest-image-7.3-32.x86_64.qcow2'
             hostgroup = find_hostgroup(deployment, 'OpenShift')
 
@@ -70,53 +68,75 @@ module Actions
               :provider => deployment.openshift_install_loc
             }
 
-            ose_vms_to_create = []
-
-            # ===================
-            # CREATE MASTER NODES
-            # ===================
-            for i in 1..deployment.openshift_number_master_nodes do
-              mac = Utils::Fusor::MacAddresses.generate_mac_address # TODO generate from pool of safe addresses
-              hostname = "#{deployment.label.tr('_', '-')}-ose-master#{i}"
-
-              # Create Satellite host entry
+            def create_satellite_host_entry(hostname, mac)
               unique_host_params = {
-                :mac => mac,
-                :hostname => hostname
+                :hostname => hostname,
+                :mac => mac
               }
 
               host_params = common_host_params.merge(unique_host_params)
               host = ::Host.create(host_params)
 
               unless host.errors.empty?
-                fail _("OSE Master Node Host Record creation with mac #{mac} failed with errors: #{host.errors.messages}")
+                fail _("OCP Node Host Record creation with mac #{mac} and hostname #{hostname} failed with errors: #{host.errors.messages}")
               end
 
-              # Arrange parameters so that Ansible can create OSE VM's
+              return host
+            end
+
+            def create_ose_vm_hostname(deployment, vm_tag)
+              # vm_tag is an identifier such as ose-master or ose-node
+              return "#{deployment.label.tr('_', '-')}-#{vm_tag}#{i}"
+            end
+
+            def create_ose_vm_definition(vm_params, index)
               ose_vm = {
-                :name => hostname,
-                :memory => deployment.openshift_master_ram.to_s + "MiB",
-                :cpus => deployment.openshift_master_vcpu,
-                :disks => [{
-                  :name => "#{deployment.label.tr('_', '-')}-ose-master1-disk1",
-                  :size => deployment.openshift_master_disk,
-                  :image_path => bootable_image_path,
-                  :bootable => "True"
-                }],
+                :name => vm_params[:hostname],
+                :memory => vm_params[:memory].to_s + "MiB",
+                :cpus => vm_params[:cpus],
+                :disks => [
+                  {
+                    :name => "#{deployment.label.tr('_', '-')}-#{vm_params[:disk_tag]}#{index}-disk1",
+                    :size => bootable_size,
+                    :image_path => bootable_image_path,
+                    :bootable => "True"
+                  },
+                  {
+                    :name => "#{deployment.label.tr('_', '-')}-#{vm_params[:disk_tag]}#{index}-disk#{index+2}",
+                    :size => vm_params[:storage_size],
+                  }
+                ],
                 :nic => {
                   :boot_protocol => "dhcp",
-                  :mac => mac
+                  :mac => vm_params[:mac]
                 }
               }
+              return ose_vm
+            end
 
-              # Create additional N disks
-              [deployment.openshift_storage_size].each_with_index do |disk_size, index|
-                ose_vm[:disks] << {
-                  :name => "#{deployment.label.tr('_', '-')}-ose-master1-disk#{index+2}",
-                  :size => disk_size,
-                }
-              end
+            # ===================
+            # CREATE MASTER NODES
+            # ===================
+            for i in 1..deployment.openshift_number_master_nodes do
+              vm_tag = "ose-master"
+              hostname = create_ose_hostname(deployment, vm_tag)
+              mac = Utils::Fusor::MacAddresses.generate_mac_address # TODO generate from pool of safe addresses
 
+              # Create Satellite host entry
+              create_satellite_host_entry(hostname, mac)
+
+              # Arrange parameters so that Ansible can create OSE VM's
+              vm_params = {
+                  :hostname => hostname,
+                  :mac => mac,
+                  :memory => deployment.openshift_master_ram,
+                  :cpus => deployment.openshift_master_vcpu,
+                  :vda_size => deployment.openshift_master_disk,
+                  :storage_size => deployment.openshift_storage_size,
+                  :disk_tag => vm_tag
+              }
+
+              ose_vm = create_ose_vm_definition(vm_params, i)
               ose_vms_to_create << ose_vm
             end
 
@@ -124,96 +144,51 @@ module Actions
             # CREATE WORKER NODES
             # ===================
             for i in 1..deployment.openshift_number_worker_nodes do
+              vm_tag = "ose-node"
+              hostname = create_ose_hostname(deployment, vm_tag)
               mac = Utils::Fusor::MacAddresses.generate_mac_address # TODO generate from pool of safe addresses
-              hostname = "#{deployment.label.tr('_', '-')}-ose-node#{i}"
 
               # Create Satellite host entry
-              unique_host_params = {
-                :mac => mac,
-                :hostname => hostname
-              }
-
-              host_params = common_host_params.merge(unique_host_params)
-              host = ::Host.create(host_params)
-
-              unless host.errors.empty?
-                fail _("OSE Worker Node Host Record creation with mac #{mac} failed with errors: #{host.errors.messages}")
-              end
+              create_satellite_host_entry(hostname, mac)
 
               # Arrange parameters so that Ansible can create OSE VM's
-              ose_vm = {
-                :name => hostname,
-                :memory => deployment.openshift_node_ram.to_s + "MiB",
-                :cpus => deployment.openshift_node_vcpu,
-                :disks => [{
-                  :name => "#{deployment.label.tr('_', '-')}-ose-node#{i}-disk1",
-                  :size => deployment.openshift_node_disk,
-                  :image_path => bootable_image_path,
-                  :bootable => "True"
-                }],
-                :nic => {
-                  :boot_protocol => "dhcp",
-                  :mac => mac
-                }
+              vm_params = {
+                  :hostname => hostname,
+                  :mac => mac,
+                  :memory => deployment.openshift_node_ram,
+                  :cpus => deployment.openshift_node_vcpu,
+                  :vda_size => deployment.openshift_node_disk,
+                  :storage_size => deployment.openshift_storage_size,
+                  :disk_tag => vm_tag
               }
 
-              # Create additional N disks
-              [deployment.openshift_storage_size].each_with_index do |disk_size, disk_index|
-                ose_vm[:disks] << {
-                  :name => "#{deployment.label.tr('_', '-')}-ose-node#{i}-disk#{disk_index+2}",
-                  :size => disk_size,
-                }
-              end
-
+              ose_vm = create_ose_vm_definition(vm_params, i)
               ose_vms_to_create << ose_vm
-
             end
 
             # ==================
             # CREATE INFRA NODES
             # ==================
             for i in 1 + deployment.openshift_number_worker_nodes..deployment.openshift_number_infra_nodes + deployment.openshift_number_worker_nodes do
+              vm_tag = "ose-node"
+              hostname = create_ose_hostname(deployment, vm_tag)
               mac = Utils::Fusor::MacAddresses.generate_mac_address # TODO generate from pool of safe addresses
-              hostname = "#{deployment.label.tr('_', '-')}-ose-node#{i}"
 
               # Create Satellite host entry
-              unique_host_params = {
-                :mac => mac,
-                :hostname => hostname
-              }
-
-              host_params = common_host_params.merge(unique_host_params)
-              host = ::Host.create(host_params)
-
-              unless host.errors.empty?
-                fail _("OSE Infra Node Host Record creation with mac #{mac} failed with errors: #{host.errors.messages}")
-              end
+              create_satellite_host_entry(hostname, mac)
 
               # Arrange parameters so that Ansible can create OSE VM's
-              ose_vm = {
-                :name => hostname,
-                :memory => deployment.openshift_node_ram.to_s + "MiB",
-                :cpus => deployment.openshift_node_vcpu,
-                :disks => [{
-                  :name => "#{deployment.label.tr('_', '-')}-ose-node#{i}-disk1",
-                  :size => deployment.openshift_node_disk,
-                  :image_path => bootable_image_path,
-                  :bootable => "True"
-                }],
-                :nic => {
-                  :boot_protocol => "dhcp",
-                  :mac => mac
-                }
+              vm_params = {
+                  :hostname => hostname,
+                  :mac => mac,
+                  :memory => deployment.openshift_node_ram,
+                  :cpus => deployment.openshift_node_vcpu,
+                  :vda_size => deployment.openshift_node_disk,
+                  :storage_size => deployment.openshift_storage_size,
+                  :disk_tag => vm_tag
               }
 
-              # Create additional N disks
-              [deployment.openshift_storage_size].each_with_index do |disk_size, disk_index|
-                ose_vm[:disks] << {
-                  :name => "#{deployment.label.tr('_', '-')}-ose-node#{i}-disk#{disk_index+2}",
-                  :size => disk_size,
-                }
-              end
-
+              ose_vm = create_ose_vm_definition(vm_params, i)
               ose_vms_to_create << ose_vm
             end
 
@@ -221,46 +196,25 @@ module Actions
             # CREATE HA NODES
             # ===============
             for i in 1..deployment.openshift_number_ha_nodes do
+              vm_tag = "ose-ha"
+              hostname = create_ose_hostname(deployment, vm_tag)
               mac = Utils::Fusor::MacAddresses.generate_mac_address # TODO generate from pool of safe addresses
-              hostname = "#{deployment.label.tr('_', '-')}-ose-node#{i}"
 
               # Create Satellite host entry
-              unique_host_params = {
-                :mac => mac,
-                :hostname => hostname
-              }
-
-              host_params = common_host_params.merge(unique_host_params)
-              host = ::Host.create(host_params)
-
-              unless host.errors.empty?
-                fail _("OSE HA Node Host Record creation with mac #{mac} failed with errors: #{host.errors.messages}")
-              end
+              create_satellite_host_entry(hostname, mac)
 
               # Arrange parameters so that Ansible can create OSE VM's
-              ose_vm = {
-                :name => hostname,
-                :memory => deployment.openshift_node_ram.to_s + "MiB",
-                :cpus => deployment.openshift_node_vcpu,
-                :disks => [{
-                  :name => "#{deployment.label.tr('_', '-')}-ose-ha#{i}-disk1",
-                  :size => deployment.openshift_node_disk,
-                  :image_path => bootable_image_path,
-                  :bootable => "True"
-                }],
-                :nic => {
-                  :boot_protocol => "dhcp",
-                  :mac => mac
-                }
+              vm_params = {
+                  :hostname => hostname,
+                  :mac => mac,
+                  :memory => deployment.openshift_node_ram,
+                  :cpus => deployment.openshift_node_vcpu,
+                  :vda_size => deployment.openshift_node_disk,
+                  :storage_size => deployment.openshift_storage_size,
+                  :disk_tag => vm_tag
               }
 
-              # Create additional N disks
-              [deployment.openshift_storage_size].each_with_index do |disk_size, disk_index|
-                ose_vm[:disks] << {
-                  :name => "#{deployment.label.tr('_', '-')}-ose-ha#{i}-disk#{disk_index+2}",
-                  :size => disk_size,
-                }
-              end
+              ose_vm = create_ose_vm_definition(vm_params, i)
               ose_vms_to_create << ose_vm
             end
 
@@ -301,64 +255,6 @@ module Actions
             deployment.save!
           end
 
-          def ensure_vda_only_ptable(ptable_name)
-            default_name = "Kickstart default"
-
-            if !Ptable.exists?(:name => default_name)
-              fail _("====== The expected '#{default_name}' ptable does not exist! ======")
-            end
-
-            if Ptable.exists?(:name => ptable_name)
-              ::Fusor.log.debug "====== Partition table '#{ptable_name}' already exists! Nothing to do. ====== "
-              return
-            end
-
-            defaultptable = Ptable.find_by_name(default_name)
-            oseptable = defaultptable.dup
-
-            layoutstring = oseptable.layout.clone
-            layoutstring.sub! default_name, ptable_name
-            layoutstring.sub! "autopart", "ignoredisk --only-use=vda\nautopart"
-
-            oseptable.layout = layoutstring
-            oseptable.name = ptable_name
-            oseptable.save!
-            ::Fusor.log.debug "====== Created a new Partition table '#{ptable_name}' ====== "
-          end
-
-          def update_ptable_for_os(ptable_name, os_name)
-            ptable = Ptable.find_by_name(ptable_name)
-            if ptable.nil?
-              fail _("====== ptable name '#{ptable_name}' does not exist! ======")
-            end
-
-            os = Operatingsystem.find_by_to_label(os_name)
-            if os.nil?
-              fail _("====== OS name '#{os_name}' does not exist! ======")
-            end
-
-            if os.ptables.exists?(ptable)
-              ::Fusor.log.debug "====== The '#{ptable_name}' ptable already exists as option in '#{os_name}'! Nothing to do. ====== "
-              return
-            end
-            os.ptables << ptable
-            os.save!
-            ::Fusor.log.debug "====== Added '#{ptable_name}' ptable option to '#{os_name}' ====== "
-          end
-
-          def update_hostgroup_ptable(hostgroup, ptable_name)
-            ptable = Ptable.find_by_name(ptable_name)
-            if ptable.nil?
-              fail _("====== ptable name '#{ptable_name}' does not exist! ======")
-            end
-
-            if hostgroup.nil?
-              fail _("====== Hostgroup is nill ======")
-            end
-            hostgroup.ptable_id = ptable.id
-            hostgroup.save!
-            ::Fusor.log.debug "====== Updated host group '#{hostgroup}' to use '#{ptable_name}' ptable ====== "
-          end
         end
       end
     end
