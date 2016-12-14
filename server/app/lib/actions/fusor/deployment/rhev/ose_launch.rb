@@ -46,6 +46,52 @@ module Actions
             }
           end
 
+          def create_satellite_host_entry(hostname, mac)
+            unique_host_params = {
+              :hostname => hostname,
+              :mac => mac
+            }
+
+            host_params = common_host_params.merge(unique_host_params)
+            host = ::Host.create(host_params)
+
+            unless host.errors.empty?
+              fail _("OCP Node Host Record creation with mac #{mac} and hostname #{hostname} failed with errors: #{host.errors.messages}")
+            end
+
+            return host
+          end
+
+          def create_ose_vm_hostname(deployment, vm_tag)
+            # vm_tag is an identifier such as ose-master or ose-node
+            return "#{deployment.label.tr('_', '-')}-#{vm_tag}#{i}"
+          end
+
+          def create_ose_vm_definition(vm_params, index)
+            ose_vm = {
+              :name => vm_params[:hostname],
+              :memory => vm_params[:memory].to_s + "MiB",
+              :cpus => vm_params[:cpus],
+              :disks => [
+                {
+                  :name => "#{deployment.label.tr('_', '-')}-#{vm_params[:disk_tag]}#{index}-disk1",
+                  :size => bootable_size,
+                  :image_path => bootable_image_path,
+                  :bootable => "True"
+                },
+                {
+                  :name => "#{deployment.label.tr('_', '-')}-#{vm_params[:disk_tag]}#{index}-disk#{index+2}",
+                  :size => vm_params[:storage_size],
+                }
+              ],
+              :nic => {
+                :boot_protocol => "dhcp",
+                :mac => vm_params[:mac]
+              }
+            }
+            return ose_vm
+          end
+
           def get_ose_vms(deployment)
             ose_vms_to_create = []
             bootable_image_path = '/usr/share/rhel-guest-image-7/rhel-guest-image-7.3-32.x86_64.qcow2'
@@ -67,52 +113,6 @@ module Actions
               :build => "0",
               :provider => deployment.openshift_install_loc
             }
-
-            def create_satellite_host_entry(hostname, mac)
-              unique_host_params = {
-                :hostname => hostname,
-                :mac => mac
-              }
-
-              host_params = common_host_params.merge(unique_host_params)
-              host = ::Host.create(host_params)
-
-              unless host.errors.empty?
-                fail _("OCP Node Host Record creation with mac #{mac} and hostname #{hostname} failed with errors: #{host.errors.messages}")
-              end
-
-              return host
-            end
-
-            def create_ose_vm_hostname(deployment, vm_tag)
-              # vm_tag is an identifier such as ose-master or ose-node
-              return "#{deployment.label.tr('_', '-')}-#{vm_tag}#{i}"
-            end
-
-            def create_ose_vm_definition(vm_params, index)
-              ose_vm = {
-                :name => vm_params[:hostname],
-                :memory => vm_params[:memory].to_s + "MiB",
-                :cpus => vm_params[:cpus],
-                :disks => [
-                  {
-                    :name => "#{deployment.label.tr('_', '-')}-#{vm_params[:disk_tag]}#{index}-disk1",
-                    :size => bootable_size,
-                    :image_path => bootable_image_path,
-                    :bootable => "True"
-                  },
-                  {
-                    :name => "#{deployment.label.tr('_', '-')}-#{vm_params[:disk_tag]}#{index}-disk#{index+2}",
-                    :size => vm_params[:storage_size],
-                  }
-                ],
-                :nic => {
-                  :boot_protocol => "dhcp",
-                  :mac => vm_params[:mac]
-                }
-              }
-              return ose_vm
-            end
 
             # ===================
             # CREATE MASTER NODES
