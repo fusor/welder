@@ -66,7 +66,7 @@ module Actions
             subdomain = Net::DNS::ARecord.new({
               :ip => master_node_host.ip,
               :hostname => "*.#{deployment.openshift_subdomain_name}.#{parent_domain}",
-              :proxy => Domain.find(host.domain_id).proxy
+              :proxy => Domain.find(master_node_host.domain_id).proxy
             })
             # subdomain.valid? returns true if the subdomain already exists
             if subdomain.valid?
