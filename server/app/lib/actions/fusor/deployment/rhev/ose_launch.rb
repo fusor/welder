@@ -16,7 +16,7 @@ module Actions
     module Deployment
       module Rhev
         # Setup and Launch OCP VMs
-        class OcpLaunch < Actions::Fusor::FusorBaseAction
+        class OseLaunch < Actions::Fusor::FusorBaseAction
           def humanized_name
             _('Setup and Launch OSE VM')
           end
@@ -30,8 +30,8 @@ module Actions
             ::Fusor.log.info '====== OpenShift VM Launch run method ======'
 
             playbook = '/usr/share/ansible-ovirt/launch_vms.yml'
-            config_dir = "#{Rails.root}/tmp/ansible-ovirt/launch_vms/#{deployment.label}"
             deployment = ::Fusor::Deployment.find(input[:deployment_id])
+            config_dir = "#{Rails.root}/tmp/ansible-ovirt/launch_vms/#{deployment.label}"
 
             generate_root_password(deployment)
             vars = get_ansible_vars(deployment)
@@ -78,8 +78,8 @@ module Actions
           end
 
           def get_ansible_environment(deployment, config_dir)
-            {
-              ::Fusor.log.debug '====== Populating environment for OpenShift Launch VMs playbook ======'
+            ::Fusor.log.debug '====== Populating environment for OpenShift Launch VMs playbook ======'
+            return {
               'ANSIBLE_HOST_KEY_CHECKING' => 'False',
               'ANSIBLE_LOG_PATH' => "#{::Fusor.log_file_dir(deployment.label, deployment.id)}/ansible.log",
               'ANSIBLE_RETRY_FILES_ENABLED' => "False",
