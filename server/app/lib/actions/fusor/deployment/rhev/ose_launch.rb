@@ -38,7 +38,7 @@ module Actions
             environment = get_ansible_environment(deployment, config_dir)
 
             # Ensure SSH key is copied to engine.
-            ::Utils::Fusor::SSHKeyUtils.new(deployment).copy_keys_to_root(deployment.rhev_engine_host.name, deployment.openshift_root_password)
+            ::Utils::Fusor::SSHKeyUtils.new(deployment).copy_keys_to_root(deployment.rhev_engine_host.name, deployment.rhev_root_password)
 
             create_initial_host_inventory(deployment, config_dir)
             trigger_ansible_run(playbook, vars, config_dir, environment)
