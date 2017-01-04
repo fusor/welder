@@ -38,7 +38,6 @@ module Actions
               plan_action(::Actions::Fusor::Deployment::OpenShift::PostInstallOSE,
                           deployment)
             end
-            ::Fusor.log.info "================ Finished OpenShift Deployment ===================="
           end
         end
       end
