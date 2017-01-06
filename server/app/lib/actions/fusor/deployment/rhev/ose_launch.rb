@@ -33,7 +33,7 @@ module Actions
             deployment = ::Fusor::Deployment.find(input[:deployment_id])
             config_dir = "#{Rails.root}/tmp/ansible-ovirt/launch_vms/#{deployment.label}"
 
-            generate_root_password(deployment)
+            generate_ocp_root_password(deployment)
             vars = get_ansible_vars(deployment)
             environment = get_ansible_environment(deployment, config_dir)
 
@@ -181,16 +181,21 @@ module Actions
                   :image_path => bootable_image_path,
                   :bootable => "True"
                 },
-                {
-                  :name => "#{vm_params[:hostname]}-disk2",
-                  :size => vm_params[:storage_size]
-                }
               ],
               :nic => {
                 :boot_protocol => "dhcp",
                 :mac => vm_params[:mac]
               }
             }
+
+            # certain nodes use an additional disk for container storage
+            if (vm_params[:storage_size] > 0)
+              ocp_vm[:disks] << {
+                :name => "#{vm_params[:hostname]}-disk2",
+                :size => vm_params[:storage_size]
+              }
+            end
+
             return ocp_vm
           end
 
@@ -203,7 +208,7 @@ module Actions
               extra_args = '-vvvv '
             end
 
-            cmd = "ansible-playbook #{playbook} -i #{config_dir}/inventory -e '#{vars.to_json}' #{extra_args}"
+            cmd = "ansible-playbook #{playbook} -i #{config_dir}/inventory -e '#{vars.to_json}' #{extra_args} -vvvv"
             status, output = ::Utils::Fusor::CommandUtils.run_command(cmd, true, environment)
 
             if status != 0
@@ -297,7 +302,8 @@ module Actions
                   :memory => deployment.openshift_node_ram,
                   :cpus => deployment.openshift_node_vcpu,
                   :bootable_size => deployment.openshift_node_disk,
-                  :storage_size => deployment.openshift_storage_size,
+                  # OCP HA nodes shouldn't have additional storage attached
+                  :storage_size => 0,
                   :disk_tag => vm_tag
               }
 
@@ -336,7 +342,7 @@ module Actions
                 where("taxonomies.id in (?)", [deployment.organization.id]).first
           end
 
-          def generate_root_password(deployment)
+          def generate_ocp_root_password(deployment)
             ::Fusor.log.info '====== Generating password for OpenShift root access ======'
             deployment.openshift_root_password = SecureRandom.hex(10)
             deployment.save!
