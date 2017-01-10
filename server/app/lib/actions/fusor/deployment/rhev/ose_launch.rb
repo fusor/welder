@@ -128,8 +128,7 @@ module Actions
             # launch ha nodes
             ha_vm_launch_params = {:cpu => deployment.openshift_node_vcpu,
                                    :ram => deployment.openshift_node_ram,
-                                   :vda_size => deployment.openshift_node_disk,
-                                   :other_disks => [deployment.openshift_storage_size]}
+                                   :vda_size => deployment.openshift_node_disk}
             for i in 1..deployment.openshift_number_ha_nodes do
               vmlauncher = Utils::Fusor::VMLauncher.new(vm_init_params)
               fail _("====== vmlauncher is nil for HA #{i}! ======") unless vmlauncher
