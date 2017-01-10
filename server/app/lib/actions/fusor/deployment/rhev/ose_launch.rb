@@ -15,7 +15,8 @@ module Actions
   module Fusor
     module Deployment
       module Rhev
-        # Setup and Launch OCP VMs
+        # Setup and Launch OCP VMs using Ansible
+        # rubocop:disable ClassLength
         class OseLaunch < Actions::Fusor::FusorBaseAction
           def humanized_name
             _('Setup and Launch OSE VM')
@@ -132,7 +133,7 @@ module Actions
               :ptable_id => Ptable.find { |p| p["name"] == "Kickstart default" }.id,
               :domain_id => 1,
               :root_pass => deployment.openshift_root_password,
-              :build => "0",
+              :build => "0"
             }
 
             unique_host_params = {
@@ -159,7 +160,7 @@ module Actions
           def get_mac_address(hostname)
             # Checks for a pre-existing host record in satellite and re-uses if present
             pre_existing_host = ::Host.find_by_name("#{hostname}.#{::Domain.find(1).name}")
-            mac = pre_existing_host ? pre_existing_host.mac : Utils::Fusor::MacAddresses.generate_mac_address
+            return pre_existing_host ? pre_existing_host.mac : Utils::Fusor::MacAddresses.generate_mac_address
           end
 
           def create_hostname(deployment, vm_tag, index)
@@ -167,7 +168,7 @@ module Actions
             return "#{deployment.label.tr('_', '-')}-#{vm_tag}#{index}"
           end
 
-          def create_ocp_vm_definition(deployment, vm_params, index)
+          def create_ocp_vm_definition(vm_params)
             bootable_image_path = '/usr/share/rhel-guest-image-7/rhel-guest-image-7.3-32.x86_64.qcow2'
 
             ocp_vm = {
@@ -180,7 +181,7 @@ module Actions
                   :size => vm_params[:bootable_size],
                   :image_path => bootable_image_path,
                   :bootable => "True"
-                },
+                }
               ],
               :nic => {
                 :boot_protocol => "dhcp",
@@ -208,7 +209,7 @@ module Actions
               extra_args = '-vvvv '
             end
 
-            cmd = "ansible-playbook #{playbook} -i #{config_dir}/inventory -e '#{vars.to_json}' #{extra_args} -vvvv"
+            cmd = "ansible-playbook #{playbook} -i #{config_dir}/inventory -e '#{vars.to_json}' #{extra_args}"
             status, output = ::Utils::Fusor::CommandUtils.run_command(cmd, true, environment)
 
             if status != 0
