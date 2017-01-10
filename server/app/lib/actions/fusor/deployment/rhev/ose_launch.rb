@@ -161,15 +161,7 @@ module Actions
             # Checks for a pre-existing host record in satellite and re-uses if present
             ::Fusor.log.debug "====== Generating MAC address for #{hostname} ======"
             pre_existing_host = ::Host.find_by_name("#{hostname}.#{::Domain.find(1).name}")
-            if pre_existing_host
-              return pre_existing_host.mac
-            else
-              loop do
-                random_mac = Utils::Fusor::MacAddresses.generate_mac_address.downcase
-                break unless ::Nic::Interface.where(mac: random_mac).count > 0
-              end
-              return random_mac
-            end
+            return pre_existing_host ? pre_existing_host.mac : Utils::Fusor::MacAddresses.generate_unique_mac_address
           end
 
           def create_hostname(deployment, vm_tag, index)
