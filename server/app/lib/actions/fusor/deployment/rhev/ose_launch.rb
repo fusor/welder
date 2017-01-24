@@ -108,6 +108,7 @@ module Actions
               :packages => ['http://download.eng.bos.redhat.com/brewroot/packages/rhel-guest-image/7.3/32.el7/noarch/rhel-guest-image-7-7.3-32.el7.noarch.rpm'],
               :repositories => SETTINGS[:fusor][:content][:openshift].map { |p| p[:repository_set_label] if p[:repository_set_label] =~ /rpms$/ }.compact,
               :username => deployment.openshift_username,
+              :private_key_path => ::Utils::Fusor::SSHKeyUtils.new(deployment).get_ssh_private_key_path,
               :root_password => deployment.openshift_user_password,
               :ssh_key => deployment.ssh_public_key,
               :vms => get_ocp_vms(deployment),
