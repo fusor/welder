@@ -18,6 +18,8 @@ class MultiLogger
       logger.level = log_level
       @logdev[name] = logger
     end
+    # Also update password filter on original logger.
+    @original.add_passwords_to_filter(deployment)
   end
 
   # Closes a secondary log file.

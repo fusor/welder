@@ -459,8 +459,9 @@ module Fusor
       FileUtils.rmtree(file) if File.exist?(file)
 
       # Remove sensitive data from text being written
-      PasswordFilter.extract_deployment_passwords(@deployment)
-      text = PasswordFilter.filter_passwords(text)
+      password_filter = PasswordFilter.new
+      password_filter.extract_deployment_passwords(@deployment)
+      text = password_filter.filter_passwords(text)
 
       Fusor.log.info "====== '#{file}' ====== \n #{text}"
       begin

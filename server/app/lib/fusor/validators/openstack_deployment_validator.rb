@@ -155,7 +155,7 @@ module Fusor
       def add_warning(openstack_deployment, warning, other_info = '')
         openstack_deployment.warnings << warning
         full_warning = other_info.blank? ? warning : "#{warning} #{other_info}"
-        Rails.logger.warn("#{full_warning}")
+        ::Fusor.log.warn("#{full_warning}")
       end
     end
   end
