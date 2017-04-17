@@ -12,9 +12,9 @@ Metrics/ClassLength:
   Exclude:
     - 'server/app/controllers/fusor/api/v21/deployments_controller.rb'
 
-#MethodLength:
+MethodLength:
   #Description: 'Avoid methods longer than 30 lines of code.'
-  #Max: 30 # default is 10
+  Max: 30 # default is 10
 
 SpaceInsideHashLiteralBraces:
   EnforcedStyleIsWithSpaces: false
