@@ -241,6 +241,20 @@ const IpAddressValidator = RegExpValidator.extend({
   message: 'This is an invalid ip address.'
 });
 
+const IpTypoValidator = Validator.extend({
+  isValid(value) {
+    let a = value.split('.');
+    if (a && a.get('length') === 4) {
+      let matches = value.match(/[^0-9\\.]/g);
+      if (matches && matches.length < 3) {
+        return false;
+      }
+    }
+    return true;
+  },
+  message: 'There appears to be a typo in the IP address.'
+});
+
 const CidrValidator = RegExpValidator.extend({
   regExp: new RegExp([
     '^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}',
@@ -367,6 +381,7 @@ export {
   AlphaNumericDashUnderscoreValidator,
   IpRangeValidator,
   IpAddressValidator,
+  IpTypoValidator,
   CidrValidator,
   IpSubnetValidator,
   HostAddressValidator,

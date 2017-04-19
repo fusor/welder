@@ -7,6 +7,7 @@ import {
   NumberValidator,
   HostAddressValidator,
   IpAddressValidator,
+  IpTypoValidator,
   IpSubnetValidator,
   CidrValidator,
   AllValidator
@@ -15,7 +16,8 @@ import {
 const PresentHostAddressValidator = AllValidator.extend({
   validators: [
     PresenceValidator.create({}),
-    HostAddressValidator.create({})
+    HostAddressValidator.create({}),
+    IpTypoValidator.create({})
   ]
 });
 

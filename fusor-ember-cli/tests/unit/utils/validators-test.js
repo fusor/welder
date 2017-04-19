@@ -9,6 +9,7 @@ import {
   AlphaNumericDashUnderscoreValidator,
   IpRangeValidator,
   IpAddressValidator,
+  IpTypoValidator,
   CidrValidator,
   IpSubnetValidator,
   MacAddressValidator,
@@ -305,6 +306,35 @@ test('IpAddressValidator rejects invalid values', function (assert) {
     assert.notOk(ipAddressValidator.isValid(value), `"${value}" was accepted as valid`);
     assert.equal(ipAddressValidator.getMessages(value).length, 1);
     assert.equal(ipAddressValidator.getMessages(value)[0], 'This is an invalid ip address.');
+  });
+});
+
+test('IpTypoValidator accepts valid values of 3 or more characters', function (assert) {
+  let ipTypoValidator = IpTypoValidator.create({});
+  let validValues = [
+    'abc.168.2.0',
+    'a192.b168.c153.0',
+  ];
+
+  validValues.forEach((value) => {
+    assert.ok(ipTypoValidator.isValid(value), `"${value}" was not accepted as valid`);
+    assert.notOk(ipTypoValidator.isInvalid(value), `"${value}" was rejected as invalid`);
+    assert.equal(ipTypoValidator.getMessages(value).length, 0);
+  });
+});
+
+test('IpTypoValidator rejects invalid values 2 or less characters', function (assert) {
+  let ipTypoValidator = IpTypoValidator.create({});
+  let invalidValues = [
+    '192.168.2.1a',
+    '192a.1b62.257.1',
+    'ab192.168.1.2',
+  ];
+  invalidValues.forEach((value) => {
+    assert.ok(ipTypoValidator.isInvalid(value), `"${value}" was not rejected as invalid`);
+    assert.notOk(ipTypoValidator.isValid(value), `"${value}" was accepted as valid`);
+    assert.equal(ipTypoValidator.getMessages(value).length, 1);
+    assert.equal(ipTypoValidator.getMessages(value)[0], 'There appears to be a typo in the IP address.');
   });
 });
 
