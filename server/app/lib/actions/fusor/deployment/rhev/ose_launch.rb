@@ -115,6 +115,7 @@ module Actions
               :image_path => guest_image_path,
               :repositories => SETTINGS[:fusor][:content][:openshift].map { |p| p[:repository_set_label] if p[:repository_set_label] =~ /rpms$/ }.compact,
               :username => deployment.openshift_username,
+              :private_key_path => ::Utils::Fusor::SSHKeyUtils.new(deployment).get_ssh_private_key_path,
               :root_password => deployment.openshift_user_password,
               :ssh_key => deployment.ssh_public_key,
               :vms => get_ocp_vms(deployment),
