@@ -1,4 +1,5 @@
 require "fusor/multilog"
+require "fusor/deployment_logger"
 
 module Fusor
   if Rails.root.nil?
@@ -8,7 +9,7 @@ module Fusor
   end
 
   def self.log
-    @log ||= MultiLogger.new(Rails.logger)
+    @log ||= MultiLogger.new(DeploymentLogger.new(deployment: nil))
   end
 
   def self.log_change_deployment(deployment = nil)

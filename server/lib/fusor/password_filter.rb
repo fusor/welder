@@ -5,11 +5,11 @@
 # Provides functionality for filtering sensitive data (passwords) from text.
 
 class PasswordFilter
-  def self.password_cache
+  def password_cache
     return @password_cache
   end
 
-  def self.extract_deployment_passwords(deployment)
+  def extract_deployment_passwords(deployment)
     # act as passthrough (no filtering) if we're in dev/test AND show_passwords is enabled
     if !Rails.env.production? && SETTINGS[:fusor][:system][:logging][:show_passwords]
       return nil
@@ -60,7 +60,7 @@ class PasswordFilter
     return attr_values
   end
 
-  def self.filter_passwords(text_to_filter, passwords = nil, replacement_text = "[FILTERED]")
+  def filter_passwords(text_to_filter, passwords = nil, replacement_text = "[FILTERED]")
     # act as passthrough (no filtering) if we're in dev/test AND show_passwords is enabled
     if !Rails.env.production? && SETTINGS[:fusor][:system][:logging][:show_passwords]
       return text_to_filter
