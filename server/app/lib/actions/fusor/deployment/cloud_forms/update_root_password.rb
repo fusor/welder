@@ -42,7 +42,7 @@ module Actions
 
               @success = false
               @retry = false
-              @retries = 30
+              @retries = 60
               @io = StringIO.new
 
               client = Utils::Fusor::SSHConnection.new(cfme_address, ssh_user, ssh_password)
